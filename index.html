@@ -402,15 +402,36 @@ async function fetchJSON(sheet){
 async function syncData(){
   showL('กำลังเชื่อมต่อ Google Sheets…');
   try{
-    showL('กำลังอ่านรายชื่อสินค้า…');
-    const prod=await fetchJSON('Product name');
+    showL('กำลังอ่านรายชื่อสินค้าจาก Page 365…');
+    const prod=await fetchJSON('สินค้าจาก Page 365');
     const dict={};
+    // Col A=0 parent_sku | B=1 product_category | C=2 sku | E=4 product_name | F=5 variant_name
     prod.table.rows.forEach(row=>{
       if(!row?.c) return;
-      const sku=row.c[0]?.v?String(row.c[0].v).trim():'';
-      const name=row.c[3]?.v?String(row.c[3].v).trim():'';
-      if(sku&&!['ต้องกรอกทุกช่อง','รหัสสินค้าของแต่แต่ละแบบสินค้า'].includes(sku))
-        dict[sku]=name||'ไม่มีชื่อสินค้า';
+      const parentSku = row.c[0]?.v ? String(row.c[0].v).trim() : '';
+      const category  = row.c[1]?.v ? String(row.c[1].v).trim() : '';
+      const sku       = row.c[2]?.v ? String(row.c[2].v).trim() : '';
+      const name      = row.c[4]?.v ? String(row.c[4].v).trim() : '';
+      const variant   = row.c[5]?.v ? String(row.c[5].v).trim() : '';
+
+      if(!sku) return;
+
+      // แยก variant_name "สี, ไซส์" → color + size
+      // รองรับ separator ทั้ง ", " "," " / " และ " - "
+      let color = '', size = '';
+      if(variant){
+        const sep = variant.includes(',') ? ',' : variant.includes('/') ? '/' : variant.includes(' - ') ? ' - ' : null;
+        if(sep){
+          const parts = variant.split(sep).map(s=>s.trim());
+          color = parts[0] || '';
+          size  = parts.slice(1).join(sep.trim()||',').trim() || '';
+        } else {
+          // ถ้าไม่มี separator ถือทั้งหมดเป็น color
+          color = variant;
+        }
+      }
+
+      dict[sku] = { name: name||'ไม่มีชื่อสินค้า', parentSku, category, variant, color, size };
     });
 
     showL('กำลังอ่านข้อมูลคำสั่งซื้อ…');
@@ -544,8 +565,15 @@ async function syncData(){
       if(stockoutScore>60) safetyMult=2.0;
       else if(stockoutScore>=40) safetyMult=1.5;
 
+      const info = dict[sku] || { name:'รหัสสินค้าใหม่ (ยังไม่มีในระบบ)', parentSku:'', category:'', variant:'', color:'', size:'' };
       return{
-        sku, name:dict[sku]||'รหัสสินค้าใหม่ (ยังไม่มีในระบบ)',
+        sku,
+        name:       info.name,
+        parentSku:  info.parentSku,
+        category:   info.category,
+        variant:    info.variant,
+        color:      info.color,
+        size:       info.size,
         totalSold:d.total, activeDays, rawVel, adjVel, coverageRate,
         maxGap, avgGap, stockoutScore,
         trendPct:Math.round(trendPct), trendLabel, trendColor,
@@ -661,7 +689,12 @@ function renderAll(data){
         <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)">${i+1}</span></td>
         <td>
           <div class="pname">${item.name}</div>
-          <div class="psku">${item.sku}</div>
+          <div class="psku">${item.sku}${item.parentSku&&item.parentSku!==item.sku?' · <span style="color:var(--muted)">'+item.parentSku+'</span>':''}</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">
+            ${item.category?`<span style="font-size:10px;background:var(--bg);box-shadow:var(--sx);border-radius:5px;padding:2px 7px;color:var(--mid);font-weight:600">${item.category}</span>`:''}
+            ${item.color?`<span style="font-size:10px;background:var(--bg);box-shadow:var(--sx);border-radius:5px;padding:2px 7px;color:var(--purple);font-weight:600">🎨 ${item.color}</span>`:''}
+            ${item.size?`<span style="font-size:10px;background:var(--bg);box-shadow:var(--sx);border-radius:5px;padding:2px 7px;color:var(--blue);font-weight:600">📐 ${item.size}</span>`:''}
+          </div>
         </td>
         <td>
           <div class="star-wrap">
@@ -717,7 +750,7 @@ function renderInsight(sorted, months){
     'คะแนนรวม Velocity + Consistency + Trend − Stockout Penalty',
     top10.map((d,i)=>iRow(i,d.name,d.sku,
       `<span style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:${d.starScore>=70?'var(--green)':d.starScore>=50?'var(--orange)':'var(--red)'}">${d.starScore}</span>`,
-      (d.starScore/maxStar)*100,'linear-gradient(90deg,#5ddaaa,var(--green))'
+      (d.starScore/maxStar)*100,'linear-gradient(90deg,#5ddaaa,var(--green))',d.color,d.size,d.category
     )).join('')
   )}
 
@@ -725,7 +758,7 @@ function renderInsight(sorted, months){
     'Velocity ครึ่งหลัง สูงกว่าครึ่งแรกมากที่สุด (Trend %)',
     rising.map((d,i)=>iRow(i,d.name,d.sku,
       `<span style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:${d.trendPct>=30?'var(--orange)':d.trendPct>=0?'var(--green)':'var(--red)'}">${d.trendPct>0?'+':''}${d.trendPct}%</span>`,
-      Math.max(0,(d.trendPct/maxTrend)*100),'linear-gradient(90deg,#f5c067,var(--orange))'
+      Math.max(0,(d.trendPct/maxTrend)*100),'linear-gradient(90deg,#f5c067,var(--orange))',d.color,d.size,d.category
     )).join('')
   )}
 
@@ -733,7 +766,7 @@ function renderInsight(sorted, months){
     'CV ต่ำ = ทำนายยอดขายได้แม่น — วางแผนสต๊อกได้ง่าย',
     consistent.map((d,i)=>iRow(i,d.name,d.sku,
       `<span style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:${d.cv<=0.5?'var(--green)':d.cv<=1.0?'var(--blue)':'var(--orange)'}">CV ${d.cv.toFixed(2)}</span>`,
-      Math.max(0,(1-d.cv/2)*100),'linear-gradient(90deg,#5ddaaa,var(--green))'
+      Math.max(0,(1-d.cv/2)*100),'linear-gradient(90deg,#5ddaaa,var(--green))',d.color,d.size,d.category
     )).join('')
   )}
 
@@ -741,7 +774,7 @@ function renderInsight(sorted, months){
     'Max Gap สูง = เคยหายไปจากชั้นวางนานมาก → ต้องเพิ่ม Safety Buffer',
     highGap.map((d,i)=>iRow(i,d.name,d.sku,
       `<span style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:${d.maxGap>=14?'var(--red)':d.maxGap>=7?'var(--orange)':'var(--green)'}">GAP ${d.maxGap}วัน</span>`,
-      (d.maxGap/maxGapV)*100,'linear-gradient(90deg,#f08090,var(--red))'
+      (d.maxGap/maxGapV)*100,'linear-gradient(90deg,#f08090,var(--red))',d.color,d.size,d.category
     )).join('')
   )}
 
@@ -749,7 +782,7 @@ function renderInsight(sorted, months){
     'Weekend Velocity สูงกว่า Weekday Velocity — ควรสต๊อกเพิ่มก่อนวันหยุด',
     weStars.map((d,i)=>iRow(i,d.name,d.sku,
       `<span style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:${d.weekendEffect>=30?'var(--purple)':d.weekendEffect>=0?'var(--blue)':'var(--muted)'}">${d.weekendEffect>0?'+':''}${d.weekendEffect}%</span>`,
-      Math.max(0,(d.weekendEffect/maxWE)*100),'linear-gradient(90deg,#a78bfa,var(--purple))'
+      Math.max(0,(d.weekendEffect/maxWE)*100),'linear-gradient(90deg,#a78bfa,var(--purple))',d.color,d.size,d.category
     )).join('')
   )}
 
@@ -773,13 +806,19 @@ function iCard(title,sub,rows){
   return`<div class="i-card"><div class="i-card-ttl">${title}</div><div class="i-card-sub">${sub}</div>${rows}</div>`;
 }
 
-function iRow(i,name,sku,valHtml,pct,grad){
+function iRow(i,name,sku,valHtml,pct,grad,color,size,category){
   let rankCls=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+  const tags=[
+    category?`<span style="font-size:9px;background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:1px 6px;color:var(--mid);font-weight:700">${category}</span>`:'',
+    color?`<span style="font-size:9px;background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:1px 6px;color:var(--purple);font-weight:700">🎨 ${color}</span>`:'',
+    size?`<span style="font-size:9px;background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:1px 6px;color:var(--blue);font-weight:700">📐 ${size}</span>`:''
+  ].filter(Boolean).join(' ');
   return`<div class="i-row">
     <div class="i-rank ${rankCls}">${i+1}</div>
     <div class="i-info">
       <div class="i-pname">${name}</div>
       <div class="i-psku">${sku}</div>
+      ${tags?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">${tags}</div>`:''}
       <div class="i-mini-bar"><div class="i-mini-fill" style="width:${Math.max(0,Math.min(100,pct))}%;background:${grad}"></div></div>
     </div>
     <div class="i-val">${valHtml}</div>
