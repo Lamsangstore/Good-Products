@@ -388,11 +388,12 @@ canvas{display:block;width:100%!important}
             <th>🕳️ Max Gap</th>
             <th>📊 Consistency</th>
             <th>สต๊อกที่แนะนำ</th>
+            <th>📅 ขายล่าสุด / Peak</th>
             <th class="tc">สถานะ</th>
           </tr>
         </thead>
         <tbody id="tbl-body">
-          <tr><td colspan="9"><div class="empty"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><div>กำลังดึงข้อมูล…</div></div></td></tr>
+          <tr><td colspan="10"><div class="empty"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><div>กำลังดึงข้อมูล…</div></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -654,7 +655,18 @@ async function syncData(){
         weekendEffect:Math.round(weekendEffect),
         cv:Number(cv.toFixed(2)), consistLabel, consistColor,
         starScore:clampedStar, safetyMult,
-        dailySales  // เก็บไว้สำหรับ chart
+        dailySales,  // เก็บไว้สำหรับ chart
+        lastSaleDate: (()=>{
+          const sorted2=Object.keys(dailySales).filter(k=>dailySales[k]>0)
+            .map(s=>({s,t:parseDate(s)})).filter(x=>!isNaN(x.t))
+            .sort((a,b)=>b.t-a.t);
+          return sorted2.length ? sorted2[0].s : null;
+        })(),
+        peakDate: (()=>{
+          const entries=Object.entries(dailySales).filter(([,v])=>v>0);
+          if(!entries.length) return null;
+          return entries.reduce((best,[d,v])=>v>best[1]?[d,v]:best, entries[0])[0];
+        })()
       };
     });
 
@@ -744,7 +756,8 @@ function renderAll(data){
       const rec=calcStock(item.adjVel,months,item.safetyMult);
       return`<div class="a-card">
         <div class="a-name" title="${item.name}">${item.name}</div>
-        <div class="a-stats">
+        ${colorSizeTags(item,'xs')}
+        <div class="a-stats" style="margin-top:6px">
           <span>Gap สูงสุด: <b style="color:var(--red)">${item.maxGap} วัน</b></span>
           <span>Score: <b style="color:var(--red)">${item.stockoutScore}</b></span>
         </div>
@@ -756,7 +769,7 @@ function renderAll(data){
   // Main Table
   const tbody=$('tbl-body');
   if(!sorted.length){
-    tbody.innerHTML=`<tr><td colspan="9"><div class="empty"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><div>ไม่พบสินค้า</div></div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="10"><div class="empty"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><div>ไม่พบสินค้า</div></div></td></tr>`;
   } else {
     tbody.innerHTML=sorted.map((item,i)=>{
       const rec=calcStock(item.adjVel,months,item.safetyMult);
@@ -830,6 +843,35 @@ function renderAll(data){
             <div class="stk-mini"><div class="stk-fill" style="width:${stPct}%"></div></div>
           </div>
         </td>
+        <td>
+          ${(()=>{
+            const today=new Date();
+            // วันขายล่าสุด
+            let lastTxt='—', lastColor='var(--muted)', daysLast=null;
+            if(item.lastSaleDate){
+              const t=parseDate(item.lastSaleDate);
+              if(!isNaN(t)){
+                daysLast=Math.round((today.getTime()-t)/(1000*60*60*24));
+                lastTxt=daysLast+' วันที่แล้ว';
+                lastColor=daysLast>=14?'var(--red)':daysLast>=7?'var(--orange)':'var(--green)';
+              }
+            }
+            // วันจาก peak
+            let peakTxt='—', peakColor='var(--muted)';
+            if(item.peakDate){
+              const tp=parseDate(item.peakDate);
+              if(!isNaN(tp)){
+                const dp=Math.round((today.getTime()-tp)/(1000*60*60*24));
+                peakTxt='Peak '+dp+'วันที่แล้ว';
+                peakColor=dp>=30?'var(--red)':dp>=14?'var(--orange)':'var(--mid)';
+              }
+            }
+            return '<div style="display:flex;flex-direction:column;gap:5px;min-width:130px">'
+              +'<span style="font-family:IBM Plex Mono,monospace;font-size:12px;font-weight:700;color:'+lastColor+'">'+lastTxt+'</span>'
+              +'<span style="font-size:10px;color:'+peakColor+'">⚡ '+peakTxt+'</span>'
+              +'</div>';
+          })()}
+        </td>
         <td class="tc">${badge}</td>
       </tr>`;
     }).join('');
@@ -857,7 +899,7 @@ function renderInsight(sorted, months){
     'คะแนนรวม Velocity + Consistency + Trend − Stockout Penalty',
     top10.map((d,i)=>iRow(i,d.name,d.sku,
       `<span style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:${d.starScore>=70?'var(--green)':d.starScore>=50?'var(--orange)':'var(--red)'}">${d.starScore}</span>`,
-      (d.starScore/maxStar)*100,'linear-gradient(90deg,#5ddaaa,var(--green))',d.color,d.size,d.category
+      (d.starScore/maxStar)*100,'linear-gradient(90deg,#5ddaaa,var(--green))',d
     )).join('')
   )}
 
@@ -865,7 +907,7 @@ function renderInsight(sorted, months){
     'Velocity ครึ่งหลัง สูงกว่าครึ่งแรกมากที่สุด (Trend %)',
     rising.map((d,i)=>iRow(i,d.name,d.sku,
       `<span style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:${d.trendPct>=30?'var(--orange)':d.trendPct>=0?'var(--green)':'var(--red)'}">${d.trendPct>0?'+':''}${d.trendPct}%</span>`,
-      Math.max(0,(d.trendPct/maxTrend)*100),'linear-gradient(90deg,#f5c067,var(--orange))',d.color,d.size,d.category
+      Math.max(0,(d.trendPct/maxTrend)*100),'linear-gradient(90deg,#f5c067,var(--orange))',d
     )).join('')
   )}
 
@@ -873,7 +915,7 @@ function renderInsight(sorted, months){
     'CV ต่ำ = ทำนายยอดขายได้แม่น — วางแผนสต๊อกได้ง่าย',
     consistent.map((d,i)=>iRow(i,d.name,d.sku,
       `<span style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:${d.cv<=0.5?'var(--green)':d.cv<=1.0?'var(--blue)':'var(--orange)'}">CV ${d.cv.toFixed(2)}</span>`,
-      Math.max(0,(1-d.cv/2)*100),'linear-gradient(90deg,#5ddaaa,var(--green))',d.color,d.size,d.category
+      Math.max(0,(1-d.cv/2)*100),'linear-gradient(90deg,#5ddaaa,var(--green))',d
     )).join('')
   )}
 
@@ -881,7 +923,7 @@ function renderInsight(sorted, months){
     'Max Gap สูง = เคยหายไปจากชั้นวางนานมาก → ต้องเพิ่ม Safety Buffer',
     highGap.map((d,i)=>iRow(i,d.name,d.sku,
       `<span style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:${d.maxGap>=14?'var(--red)':d.maxGap>=7?'var(--orange)':'var(--green)'}">GAP ${d.maxGap}วัน</span>`,
-      (d.maxGap/maxGapV)*100,'linear-gradient(90deg,#f08090,var(--red))',d.color,d.size,d.category
+      (d.maxGap/maxGapV)*100,'linear-gradient(90deg,#f08090,var(--red))',d
     )).join('')
   )}
 
@@ -889,7 +931,7 @@ function renderInsight(sorted, months){
     'Weekend Velocity สูงกว่า Weekday Velocity — ควรสต๊อกเพิ่มก่อนวันหยุด',
     weStars.map((d,i)=>iRow(i,d.name,d.sku,
       `<span style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:${d.weekendEffect>=30?'var(--purple)':d.weekendEffect>=0?'var(--blue)':'var(--muted)'}">${d.weekendEffect>0?'+':''}${d.weekendEffect}%</span>`,
-      Math.max(0,(d.weekendEffect/maxWE)*100),'linear-gradient(90deg,#a78bfa,var(--purple))',d.color,d.size,d.category
+      Math.max(0,(d.weekendEffect/maxWE)*100),'linear-gradient(90deg,#a78bfa,var(--purple))',d
     )).join('')
   )}
 
@@ -913,19 +955,17 @@ function iCard(title,sub,rows){
   return`<div class="i-card"><div class="i-card-ttl">${title}</div><div class="i-card-sub">${sub}</div>${rows}</div>`;
 }
 
-function iRow(i,name,sku,valHtml,pct,grad,color,size,category){
+function iRow(i,name,sku,valHtml,pct,grad,item){
   let rankCls=i===0?'gold':i===1?'silver':i===2?'bronze':'';
-  const tags=[
-    category?`<span style="font-size:9px;background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:1px 6px;color:var(--mid);font-weight:700">${category}</span>`:'',
-    color?`<span style="font-size:9px;background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:1px 6px;color:var(--purple);font-weight:700">🎨 ${color}</span>`:'',
-    size?`<span style="font-size:9px;background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:1px 6px;color:var(--blue);font-weight:700">📐 ${size}</span>`:''
-  ].filter(Boolean).join(' ');
+  const catTag = item&&item.category ? `<span style="font-size:9px;background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:1px 6px;color:var(--mid);font-weight:700">${item.category}</span>` : '';
+  const csHtml = item ? colorSizeTags(item,'xs') : '';
   return`<div class="i-row">
     <div class="i-rank ${rankCls}">${i+1}</div>
     <div class="i-info">
       <div class="i-pname">${name}</div>
       <div class="i-psku">${sku}</div>
-      ${tags?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">${tags}</div>`:''}
+      ${catTag ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px">${catTag}</div>` : ''}
+      ${csHtml}
       <div class="i-mini-bar"><div class="i-mini-fill" style="width:${Math.max(0,Math.min(100,pct))}%;background:${grad}"></div></div>
     </div>
     <div class="i-val">${valHtml}</div>
@@ -945,6 +985,15 @@ function truncate(s,n){ return s.length>n?s.slice(0,n)+'…':s }
 // ─────────────────────────────────────────
 // CATEGORY → RESTOCK THRESHOLD
 // ─────────────────────────────────────────
+function colorSizeTags(item, size='sm'){
+  const fs = size==='xs' ? '9px' : '10px';
+  const py = size==='xs' ? '1px' : '2px';
+  const tags = [];
+  if(item.color) tags.push(`<span style="font-size:${fs};background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:${py} 6px;color:var(--purple);font-weight:700">🎨 ${item.color}</span>`);
+  if(item.size)  tags.push(`<span style="font-size:${fs};background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:${py} 6px;color:var(--blue);font-weight:700">📐 ${item.size}</span>`);
+  return tags.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">${tags.join('')}</div>` : '';
+}
+
 function getCategoryThreshold(cat){
   if(!cat) return {min:5, skip:false};
   const c = cat.trim().toLowerCase();
@@ -1024,6 +1073,26 @@ function openChart(sku){
   const intercept=(sumY-slope*sumX)/n;
   const trendData=values.map((_,i)=>Math.max(0,+(intercept+slope*i).toFixed(2)));
 
+  // ── Parabola (quadratic regression: y = a·x² + b·x + c) ──
+  let sx=0,sx2=0,sx3=0,sx4=0,sy=0,sxy=0,sx2y=0;
+  values.forEach((v,i)=>{
+    sx+=i; sx2+=i**2; sx3+=i**3; sx4+=i**4;
+    sy+=v; sxy+=i*v; sx2y+=i**2*v;
+  });
+  // Solve 3x3 using Cramer's rule [n,sx,sx2; sx,sx2,sx3; sx2,sx3,sx4] * [c,b,a]' = [sy,sxy,sx2y]
+  const M=[[n,sx,sx2],[sx,sx2,sx3],[sx2,sx3,sx4]];
+  const R=[sy,sxy,sx2y];
+  function det3(m){ return m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1])-m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0])+m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]); }
+  const D=det3(M);
+  let qa=0,qb=0,qc=0;
+  if(Math.abs(D)>1e-10){
+    const Mc=[[R[0],M[0][1],M[0][2]],[R[1],M[1][1],M[1][2]],[R[2],M[2][1],M[2][2]]];
+    const Mb=[[M[0][0],R[0],M[0][2]],[M[1][0],R[1],M[1][2]],[M[2][0],R[2],M[2][2]]];
+    const Ma=[[M[0][0],M[0][1],R[0]],[M[1][0],M[1][1],R[1]],[M[2][0],M[2][1],R[2]]];
+    qc=det3(Mc)/D; qb=det3(Mb)/D; qa=det3(Ma)/D;
+  }
+  const parabolaData=values.map((_,i)=>Math.max(0,+(qa*i**2+qb*i+qc).toFixed(2)));
+
   // ── Stockout banner ──
   const banner=$('stockoutBanner');
   const likelySO = stockoutSegs.length>0 || (daysSinceLastSale!==null && daysSinceLastSale>=minStockoutGap);
@@ -1060,7 +1129,8 @@ function openChart(sku){
     <div class="seg-dot" style="background:rgba(37,99,214,.6)"></div><span class="seg-lbl">ยอดขายรายวัน</span>
     <div class="seg-dot" style="background:rgba(200,54,79,.25);margin-left:8px"></div><span class="seg-lbl">ช่วงน่าจะหมดสต๊อก</span>
     <div class="seg-dot" style="background:var(--orange);margin-left:8px"></div><span class="seg-lbl">Trend line</span>
-    <div class="seg-dot" style="background:var(--gold);border-radius:50%;margin-left:8px"></div><span class="seg-lbl">Peak</span>`;
+    <div class="seg-dot" style="background:var(--gold);border-radius:50%;margin-left:8px"></div><span class="seg-lbl">Peak</span>
+    <div class="seg-dot" style="background:var(--purple);opacity:.75;margin-left:8px;border:1px dashed var(--purple)"></div><span class="seg-lbl">Parabola</span>`;
 
   // ── Draw chart ──
   if(chartInstance){ chartInstance.destroy(); chartInstance=null; }
@@ -1132,6 +1202,18 @@ function openChart(sku){
           tension:.4,
           fill:false,
           order:1
+        },
+        {
+          label:'Parabola',
+          data:parabolaData,
+          type:'line',
+          borderColor:'rgba(98,80,212,.75)',
+          borderWidth:2,
+          borderDash:[6,3],
+          pointRadius:0,
+          tension:.5,
+          fill:false,
+          order:0
         }
       ]
     },
