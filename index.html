@@ -517,7 +517,12 @@ function loadVisibleCols(){
     const saved = localStorage.getItem(COL_STORAGE_KEY);
     if(saved){
       const arr = JSON.parse(saved);
-      if(Array.isArray(arr) && arr.length >= 2) return new Set(arr);
+      if(Array.isArray(arr) && arr.length >= 2){
+        // merge: เพิ่ม column ใหม่ที่ยังไม่เคยบันทึก เข้าไปใน saved list อัตโนมัติ
+        const merged = new Set(arr);
+        COL_DEFAULTS.forEach(col => merged.add(col));
+        return merged;
+      }
     }
   } catch(e){}
   return new Set(COL_DEFAULTS);
