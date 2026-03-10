@@ -537,23 +537,80 @@ canvas{display:block;width:100%!important}
 <!-- TAB: RISK -->
 <div id="tab-risk" class="tab-content">
   <div class="panel" style="margin-top:0">
-    <div class="panel-hdr">
+    <div class="panel-hdr" style="flex-wrap:wrap;gap:10px">
       <div>
         <div class="panel-ttl">⚠️ รายการเสี่ยงหมดสต๊อก</div>
-        <div class="panel-sub">ตรวจพบจาก Gap Analysis + Velocity สูง (Stockout Score &gt; 60)</div>
+        <div class="panel-sub" id="risk-sort-label">เรียงตาม Stockout Score สูงสุด</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <!-- Score filter -->
+        <div style="display:flex;gap:5px;align-items:center">
+          <span style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">Score:</span>
+          <button class="ctog on" data-risk="60" onclick="setRiskThreshold(this,60)">&gt;60</button>
+          <button class="ctog"    data-risk="40" onclick="setRiskThreshold(this,40)">&gt;40</button>
+          <button class="ctog"    data-risk="0"  onclick="setRiskThreshold(this,0)">ทั้งหมด</button>
+        </div>
+        <!-- Column popup -->
+        <div style="position:relative">
+          <button class="btn" id="riskColBtn" onclick="toggleRiskColPopup()" style="gap:6px">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            คอลัมน์
+          </button>
+          <div id="riskColPopup" style="display:none;position:absolute;top:calc(100% + 8px);right:0;z-index:500;background:var(--bg);box-shadow:14px 14px 32px #9ab0cc,-6px -6px 20px #ffffff;border-radius:18px;padding:18px 20px;min-width:280px;animation:modalIn .2s ease">
+            <div style="font-size:12px;font-weight:800;color:var(--text);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+              📋 แสดง / ซ่อนคอลัมน์
+              <div style="display:flex;gap:8px">
+                <button onclick="setAllRiskCols(true)"  style="font-size:10px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;font-family:Anuphan,sans-serif">ทั้งหมด</button>
+                <button onclick="setAllRiskCols(false)" style="font-size:10px;font-weight:700;color:var(--muted);background:none;border:none;cursor:pointer;font-family:Anuphan,sans-serif">ซ่อน</button>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px" id="riskColList">
+              <label class="col-chk-row" data-rcol="rscore">  <input type="checkbox" onchange="toggleRiskCol('rscore')"  > ⚠️ Score</label>
+              <label class="col-chk-row" data-rcol="rsku">    <input type="checkbox" onchange="toggleRiskCol('rsku')"    > 🔖 SKU</label>
+              <label class="col-chk-row" data-rcol="rcolor">  <input type="checkbox" onchange="toggleRiskCol('rcolor')"  > 🎨 สี</label>
+              <label class="col-chk-row" data-rcol="rsize">   <input type="checkbox" onchange="toggleRiskCol('rsize')"   > 📐 ไซส์</label>
+              <label class="col-chk-row" data-rcol="rvel">    <input type="checkbox" onchange="toggleRiskCol('rvel')"    > 🚀 Adj. Vel</label>
+              <label class="col-chk-row" data-rcol="rvel7">   <input type="checkbox" onchange="toggleRiskCol('rvel7')"   > 📆 Vel 7วัน</label>
+              <label class="col-chk-row" data-rcol="rtrend">  <input type="checkbox" onchange="toggleRiskCol('rtrend')"  > 📈 Trend</label>
+              <label class="col-chk-row" data-rcol="rgap">    <input type="checkbox" onchange="toggleRiskCol('rgap')"    > 🕳️ Max Gap</label>
+              <label class="col-chk-row" data-rcol="rconsist"><input type="checkbox" onchange="toggleRiskCol('rconsist')"> 📊 Consistency</label>
+              <label class="col-chk-row" data-rcol="rlastsale"><input type="checkbox" onchange="toggleRiskCol('rlastsale')"> 🕐 ขายล่าสุด</label>
+              <label class="col-chk-row" data-rcol="rpeakday"><input type="checkbox" onchange="toggleRiskCol('rpeakday')"> ⚡ Peak วัน</label>
+              <label class="col-chk-row" data-rcol="rstock">  <input type="checkbox" onchange="toggleRiskCol('rstock')"  > 📦 สต๊อก</label>
+            </div>
+          </div>
+        </div>
+        <!-- Search -->
+        <div class="srch-wrap">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="risk-srch" class="srch" placeholder="ค้นหา…" oninput="renderRiskTab(window._lastSorted,window._lastMonths)">
+        </div>
       </div>
     </div>
-    <div style="padding:16px">
-      <!-- Filter bar -->
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:center">
-        <span style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase">กรอง Score:</span>
-        <button class="ctog on" data-risk="60" onclick="setRiskThreshold(this,60)">Score &gt; 60 (เสี่ยงสูง)</button>
-        <button class="ctog"    data-risk="40" onclick="setRiskThreshold(this,40)">Score &gt; 40 (ติดตาม)</button>
-        <button class="ctog"    data-risk="0"  onclick="setRiskThreshold(this,0)">ทั้งหมด</button>
-      </div>
-      <div id="risk-grid" class="alert-grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
-        <div class="empty">กำลังโหลดข้อมูล…</div>
-      </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead id="risk-tbl-head">
+          <tr>
+            <th>#</th>
+            <th>ชื่อสินค้า</th>
+            <th class="sortable" data-rcol="rscore"   data-rkey="stockoutScore" onclick="sortRiskBy(this)">⚠️ Score<span class="sort-ico"></span></th>
+            <th class="sortable" data-rcol="rsku"     data-rkey="sku"           onclick="sortRiskBy(this)">🔖 SKU<span class="sort-ico"></span></th>
+            <th class="sortable" data-rcol="rcolor"   data-rkey="color"         onclick="sortRiskBy(this)">🎨 สี<span class="sort-ico"></span></th>
+            <th class="sortable" data-rcol="rsize"    data-rkey="size"          onclick="sortRiskBy(this)">📐 ไซส์<span class="sort-ico"></span></th>
+            <th class="sortable" data-rcol="rvel"     data-rkey="adjVel"        onclick="sortRiskBy(this)">🚀 Adj. Vel<span class="sort-ico"></span></th>
+            <th class="sortable" data-rcol="rvel7"    data-rkey="vel7"          onclick="sortRiskBy(this)">📆 Vel 7วัน<span class="sort-ico"></span></th>
+            <th class="sortable" data-rcol="rtrend"   data-rkey="trendPct"      onclick="sortRiskBy(this)">📈 Trend<span class="sort-ico"></span></th>
+            <th class="sortable" data-rcol="rgap"     data-rkey="maxGap"        onclick="sortRiskBy(this)">🕳️ Max Gap<span class="sort-ico"></span></th>
+            <th class="sortable" data-rcol="rconsist" data-rkey="cv"            onclick="sortRiskBy(this)">📊 Consistency<span class="sort-ico"></span></th>
+            <th class="sortable" data-rcol="rlastsale" data-rkey="daysLastSale" onclick="sortRiskBy(this)">🕐 ขายล่าสุด<span class="sort-ico"></span></th>
+            <th class="sortable" data-rcol="rpeakday" data-rkey="daysSincePeak" onclick="sortRiskBy(this)">⚡ Peak วัน<span class="sort-ico"></span></th>
+            <th class="sortable" data-rcol="rstock"   data-rkey="recStock"      onclick="sortRiskBy(this)">📦 สต๊อก<span class="sort-ico"></span></th>
+          </tr>
+        </thead>
+        <tbody id="risk-tbl-body">
+          <tr><td colspan="13"><div class="empty">กำลังโหลดข้อมูล…</div></td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -1239,6 +1296,17 @@ function renderAll(data){
 }
 
 window.riskThreshold = 60;
+let riskSortKey = 'stockoutScore', riskSortDir = 'desc';
+const RISK_COL_KEY = 'lamsang_riskCols_v1';
+const RISK_COL_DEFAULTS = ['rscore','rsku','rcolor','rsize','rvel','rvel7','rtrend','rgap','rconsist','rlastsale','rpeakday','rstock'];
+let riskVisibleCols = (()=>{
+  try {
+    const s = localStorage.getItem(RISK_COL_KEY);
+    if(s){ const a=JSON.parse(s); if(Array.isArray(a)&&a.length>=1){ const m=new Set(a); RISK_COL_DEFAULTS.forEach(c=>m.add(c)); return m; } }
+  } catch(e){}
+  return new Set(RISK_COL_DEFAULTS);
+})();
+function saveRiskCols(){ try{ localStorage.setItem(RISK_COL_KEY,JSON.stringify([...riskVisibleCols])); }catch(e){} }
 
 function setRiskThreshold(btn, val){
   window.riskThreshold = val;
@@ -1247,57 +1315,138 @@ function setRiskThreshold(btn, val){
   if(window._lastSorted) renderRiskTab(window._lastSorted, window._lastMonths);
 }
 
+function sortRiskBy(th){
+  const key = th.dataset.rkey;
+  if(riskSortKey===key) riskSortDir = riskSortDir==='desc'?'asc':'desc';
+  else { riskSortKey=key; riskSortDir='desc'; }
+  document.querySelectorAll('#risk-tbl-head th.sortable').forEach(t=>{
+    t.classList.remove('asc','desc');
+    if(t.dataset.rkey===riskSortKey) t.classList.add(riskSortDir);
+  });
+  const lbl = th.textContent.replace(/[⇅▲▼⭐🚀📈🕳️📊📦📅🔰⚠️🔖🎨📐📆🕐⚡]/gu,'').trim();
+  const sl=$('risk-sort-label'); if(sl) sl.textContent=`เรียงตาม ${lbl} (${riskSortDir==='desc'?'มาก→น้อย':'น้อย→มาก'})`;
+  if(window._lastSorted) renderRiskTab(window._lastSorted, window._lastMonths);
+}
+
+function toggleRiskColPopup(){
+  const p=$('riskColPopup'); if(!p) return;
+  const open=p.style.display==='block';
+  p.style.display=open?'none':'block';
+  if(!open) syncRiskColCheckboxes();
+}
+function syncRiskColCheckboxes(){
+  document.querySelectorAll('#riskColList .col-chk-row').forEach(row=>{
+    const cb=row.querySelector('input'); if(cb) cb.checked=riskVisibleCols.has(row.dataset.rcol);
+  });
+}
+function toggleRiskCol(col){
+  if(riskVisibleCols.has(col)){ if(riskVisibleCols.size<=2) return; riskVisibleCols.delete(col); }
+  else riskVisibleCols.add(col);
+  saveRiskCols();
+  applyRiskColVisibility();
+  if(window._lastSorted) renderRiskTab(window._lastSorted, window._lastMonths);
+}
+function setAllRiskCols(on){
+  if(on) RISK_COL_DEFAULTS.forEach(c=>riskVisibleCols.add(c));
+  else { riskVisibleCols.clear(); RISK_COL_DEFAULTS.slice(0,1).forEach(c=>riskVisibleCols.add(c)); }
+  saveRiskCols(); syncRiskColCheckboxes();
+  if(window._lastSorted) renderRiskTab(window._lastSorted, window._lastMonths);
+}
+function applyRiskColVisibility(){
+  document.querySelectorAll('#risk-tbl-head th[data-rcol], #risk-tbl-body td[data-rcol]').forEach(el=>{
+    el.style.display = riskVisibleCols.has(el.dataset.rcol) ? '' : 'none';
+  });
+}
+document.addEventListener('click', e=>{
+  if(!e.target.closest('#riskColPopup')&&!e.target.closest('#riskColBtn')){ const p=$('riskColPopup'); if(p) p.style.display='none'; }
+});
+
 function renderRiskTab(sorted, months){
   window._lastSorted = sorted;
   window._lastMonths = months;
   const threshold = window.riskThreshold ?? 60;
-  const items = [...sorted].sort((a,b)=>b.stockoutScore-a.stockoutScore)
-    .filter(d=>d.stockoutScore > threshold);
-  const grid = $('risk-grid');
-  if(!grid) return;
+  const srch = ($('risk-srch')||{}).value?.toLowerCase().trim()||'';
 
   // update badge
-  const badge = $('risk-badge');
-  const highCount = sorted.filter(d=>d.stockoutScore>60).length;
-  if(highCount){ badge.style.display=''; badge.textContent=highCount; }
-  else { badge.style.display='none'; }
+  const badge=$('risk-badge');
+  const highCount=sorted.filter(d=>d.stockoutScore>60).length;
+  if(highCount){ badge.style.display=''; badge.textContent=highCount; } else badge.style.display='none';
+
+  let items = sorted.filter(d=>{
+    if(d.stockoutScore<=threshold) return false;
+    if(srch && !d.name.toLowerCase().includes(srch) && !d.sku.toLowerCase().includes(srch)) return false;
+    return true;
+  });
+
+  // sort
+  items = [...items].sort((a,b)=>{
+    const va=a[riskSortKey]??'', vb=b[riskSortKey]??'';
+    if(typeof va==='string'||typeof vb==='string')
+      return riskSortDir==='desc'?String(vb).localeCompare(String(va),'th'):String(va).localeCompare(String(vb),'th');
+    return riskSortDir==='desc'?vb-va:va-vb;
+  });
+
+  const tbody=$('risk-tbl-body');
+  if(!tbody) return;
 
   if(!items.length){
-    grid.innerHTML=`<div class="empty" style="padding:40px;text-align:center;color:var(--muted)">
-      <svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:var(--green);fill:none;stroke-width:1.5;display:block;margin:0 auto 10px">
-        <polyline points="20 6 9 17 4 12"/>
-      </svg>ไม่พบรายการเสี่ยง (Score > ${threshold})
-    </div>`;
-    return;
+    tbody.innerHTML=`<tr><td colspan="13"><div class="empty" style="padding:40px">
+      <svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:var(--green);fill:none;stroke-width:1.5;display:block;margin:0 auto 10px"><polyline points="20 6 9 17 4 12"/></svg>
+      ไม่พบรายการเสี่ยง (Score &gt; ${threshold})
+    </div></td></tr>`;
+    applyRiskColVisibility(); return;
   }
 
-  grid.innerHTML = items.map(item=>{
-    const rec = calcStock(item.adjVel, months, item.safetyMult);
+  function rtd(col,inner,cls=''){
+    return `<td data-rcol="${col}" class="${cls}" style="display:${riskVisibleCols.has(col)?'':'none'}">${inner}</td>`;
+  }
+
+  tbody.innerHTML = items.map((item,i)=>{
+    const rec = calcStock(item.adjVel,months,item.safetyMult);
     const scoreColor = item.stockoutScore>60?'var(--red)':'var(--orange)';
-    const lastColor = item.daysLastSale>=14?'var(--red)':item.daysLastSale>=7?'var(--orange)':'var(--green)';
-    const lastTxt = item.daysLastSale<9999?item.daysLastSale+' วันที่แล้ว':'—';
-    return`<div class="a-card" style="cursor:pointer" onclick="openChart('${item.sku}')">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
-        <div class="a-name" title="${item.name}" style="font-size:13px">${item.name}</div>
-        <div style="background:var(--bg);box-shadow:var(--sm);border-radius:8px;padding:4px 10px;text-align:center;flex-shrink:0">
-          <div style="font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.5px">SCORE</div>
-          <div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${scoreColor}">${item.stockoutScore}</div>
-        </div>
-      </div>
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px">${item.sku}</div>
-      ${colorSizeTags(item,'xs')}
-      <div class="a-stats" style="margin-top:8px;margin-bottom:8px">
-        <span>Gap สูงสุด: <b style="color:${scoreColor}">${item.maxGap} วัน</b></span>
-        <span>Vel: <b style="color:var(--blue)">${item.adjVel.toFixed(2)}/วัน</b></span>
-        <span>ขายล่าสุด: <b style="color:${lastColor}">${lastTxt}</b></span>
-        <span>Peak: <b style="color:var(--gold)">${item.peakSold} ชิ้น/วัน</b></span>
-      </div>
-      <div class="a-rec" style="background:var(--bg);border-radius:8px;padding:8px 12px">
-        📦 ควรสต๊อก <b style="color:var(--blue);font-size:15px">${rec.toLocaleString()}</b> ชิ้น / ${months} เดือน
-        <span style="font-size:10px;color:var(--muted)">(×${item.safetyMult} safety)</span>
-      </div>
-    </div>`;
+    const isHigh = item.stockoutScore>60, isMed = item.stockoutScore>=40;
+    let gapColor='var(--green)',gapIcon='✓';
+    if(item.maxGap>=14){gapColor='var(--red)';gapIcon='⚠'} else if(item.maxGap>=7){gapColor='var(--orange)';gapIcon='!'}
+    const lastColor=item.daysLastSale>=14?'var(--red)':item.daysLastSale>=7?'var(--orange)':'var(--green)';
+    const lastTxt=item.daysLastSale<9999?item.daysLastSale+' วันที่แล้ว':'—';
+    const peakColor=item.daysSincePeak>=30?'var(--red)':item.daysSincePeak>=14?'var(--orange)':'var(--mid)';
+    const peakTxt=item.daysSincePeak<9999?item.daysSincePeak+' วันที่แล้ว':'—';
+    const trendHtml=`<span class="trend-pill" style="color:${item.trendColor}">${item.trendLabel} ${item.trendPct>0?'+':''}${item.trendPct}%</span>`;
+    const cvHtml=`<span class="cv-pill" style="color:${item.consistColor}">${item.consistLabel}</span>`;
+    const stPct=Math.min((rec/(Math.max(...(window._lastSorted||[items[0]]).map(d=>calcStock(d.adjVel,months,d.safetyMult)),1)))*100,100);
+
+    return`<tr style="animation-delay:${i*.02}s;cursor:pointer" onclick="openChart('${item.sku}')">
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)">${i+1}</span></td>
+      <td>
+        <div class="pname">${item.name} <span style="font-size:10px;color:var(--blue)">📊</span></div>
+        ${item.category?`<div style="margin-top:2px"><span style="font-size:10px;background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:1px 6px;color:var(--mid);font-weight:600">${item.category}</span></div>`:''}
+      </td>
+      ${rtd('rscore',`<div style="text-align:center"><span style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:700;color:${scoreColor}">${item.stockoutScore}</span><div style="font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">${isHigh?'เสี่ยงสูง':'ติดตาม'}</div></div>`,'tc')}
+      ${rtd('rsku',  `<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">${item.sku}</span>`)}
+      ${rtd('rcolor',item.color?`<span style="font-size:12px;font-weight:700;color:var(--purple)">🎨 ${item.color}</span>`:'<span style="color:var(--faint)">—</span>')}
+      ${rtd('rsize', item.size ?`<span style="font-size:12px;font-weight:700;color:var(--blue)">📐 ${item.size}</span>`:'<span style="color:var(--faint)">—</span>')}
+      ${rtd('rvel',  `<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:${isHigh?'var(--red)':'var(--blue)'}">${item.adjVel.toFixed(2)}</span><div style="font-size:10px;color:var(--muted)">ชิ้น/วัน</div>`,'tr')}
+      ${rtd('rvel7', `<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--purple)">${item.vel7.toFixed(2)}</span><div style="font-size:10px;color:var(--muted)">ชิ้น/วัน</div>`,'tr')}
+      ${rtd('rtrend',trendHtml)}
+      ${rtd('rgap',  `<span class="gap-pill" style="color:${gapColor}">${gapIcon} ${item.maxGap}วัน</span>`)}
+      ${rtd('rconsist',cvHtml)}
+      ${rtd('rlastsale',`<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:${lastColor}">${lastTxt}</span>`)}
+      ${rtd('rpeakday', `<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:${peakColor}">${peakTxt}</span>`)}
+      ${rtd('rstock',`<div class="stk-box">
+        <span class="stk-main">${rec.toLocaleString()}</span>
+        <span style="font-size:10px;color:var(--mid)"> ชิ้น/${months}เดือน</span>
+        <div class="stk-sub">×${item.safetyMult} safety</div>
+        <div class="stk-mini"><div class="stk-fill" style="width:${stPct}%"></div></div>
+      </div>`)}
+    </tr>`;
   }).join('');
+
+  applyRiskColVisibility();
+  // mark current sort header
+  document.querySelectorAll('#risk-tbl-head th.sortable').forEach(t=>{
+    t.classList.remove('asc','desc');
+    if(t.dataset.rkey===riskSortKey) t.classList.add(riskSortDir);
+  });
 }
 
 function renderInsight(sorted, months){
