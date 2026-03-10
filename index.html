@@ -480,6 +480,7 @@ canvas{display:block;width:100%!important}
               <label class="col-chk-row" data-col="star">     <input type="checkbox" onchange="toggleColByKey('star')"     > ⭐ True Star</label>
               <label class="col-chk-row" data-col="vel">      <input type="checkbox" onchange="toggleColByKey('vel')"      > 🚀 Adj. Velocity</label>
               <label class="col-chk-row" data-col="vel7">     <input type="checkbox" onchange="toggleColByKey('vel7')"     > 📆 Vel 7วัน</label>
+              <label class="col-chk-row" data-col="maxvel7">  <input type="checkbox" onchange="toggleColByKey('maxvel7')"  > 🔥 Max Vel 7วัน</label>
               <label class="col-chk-row" data-col="trend">    <input type="checkbox" onchange="toggleColByKey('trend')"    > 📈 Trend</label>
               <label class="col-chk-row" data-col="gap">      <input type="checkbox" onchange="toggleColByKey('gap')"      > 🕳️ Max Gap</label>
               <label class="col-chk-row" data-col="consist">  <input type="checkbox" onchange="toggleColByKey('consist')"  > 📊 Consistency</label>
@@ -489,6 +490,7 @@ canvas{display:block;width:100%!important}
               <label class="col-chk-row" data-col="lastsale"> <input type="checkbox" onchange="toggleColByKey('lastsale')" > 🕐 ขายล่าสุด</label>
               <label class="col-chk-row" data-col="peakday">  <input type="checkbox" onchange="toggleColByKey('peakday')"  > ⚡ Peak วัน</label>
               <label class="col-chk-row" data-col="stock">    <input type="checkbox" onchange="toggleColByKey('stock')"    > 📦 สต๊อก</label>
+              <label class="col-chk-row" data-col="stockmaxvel7"><input type="checkbox" onchange="toggleColByKey('stockmaxvel7')"> 📦 สต๊อก(MaxVel7)</label>
               <label class="col-chk-row" data-col="status">   <input type="checkbox" onchange="toggleColByKey('status')"   > 🔰 สถานะ</label>
             </div>
           </div>
@@ -514,6 +516,7 @@ canvas{display:block;width:100%!important}
             <th class="sortable" data-col="star"     data-key="starScore"    onclick="sortBy(this)">⭐ True Star<span class="sort-ico"></span></th>
             <th class="sortable" data-col="vel"      data-key="adjVel"       onclick="sortBy(this)">🚀 Adj. Vel<span class="sort-ico"></span></th>
             <th class="sortable" data-col="vel7"     data-key="vel7"         onclick="sortBy(this)">📆 Vel 7วัน<span class="sort-ico"></span></th>
+            <th class="sortable" data-col="maxvel7"  data-key="maxVel7"      onclick="sortBy(this)">🔥 Max Vel 7วัน<span class="sort-ico"></span></th>
             <th class="sortable" data-col="trend"    data-key="trendPct"     onclick="sortBy(this)">📈 Trend<span class="sort-ico"></span></th>
             <th class="sortable" data-col="gap"      data-key="maxGap"       onclick="sortBy(this)">🕳️ Max Gap<span class="sort-ico"></span></th>
             <th class="sortable" data-col="consist"  data-key="cv"           onclick="sortBy(this)">📊 Consistency<span class="sort-ico"></span></th>
@@ -523,6 +526,7 @@ canvas{display:block;width:100%!important}
             <th class="sortable" data-col="lastsale" data-key="daysLastSale" onclick="sortBy(this)">🕐 ขายล่าสุด<span class="sort-ico"></span></th>
             <th class="sortable" data-col="peakday"  data-key="daysSincePeak" onclick="sortBy(this)">⚡ Peak วัน<span class="sort-ico"></span></th>
             <th class="sortable" data-col="stock"    data-key="recStock"     onclick="sortBy(this)">📦 สต๊อกแนะนำ<span class="sort-ico"></span></th>
+            <th class="sortable" data-col="stockmaxvel7" data-key="stockMaxVel7" onclick="sortBy(this)">📦 สต๊อก(MaxVel7)<span class="sort-ico"></span></th>
             <th class="tc"       data-col="status">🔰 สถานะ</th>
           </tr>
         </thead>
@@ -571,12 +575,14 @@ canvas{display:block;width:100%!important}
               <label class="col-chk-row" data-rcol="rsize">   <input type="checkbox" onchange="toggleRiskCol('rsize')"   > 📐 ไซส์</label>
               <label class="col-chk-row" data-rcol="rvel">    <input type="checkbox" onchange="toggleRiskCol('rvel')"    > 🚀 Adj. Vel</label>
               <label class="col-chk-row" data-rcol="rvel7">   <input type="checkbox" onchange="toggleRiskCol('rvel7')"   > 📆 Vel 7วัน</label>
+              <label class="col-chk-row" data-rcol="rmaxvel7"><input type="checkbox" onchange="toggleRiskCol('rmaxvel7')"> 🔥 Max Vel 7วัน</label>
               <label class="col-chk-row" data-rcol="rtrend">  <input type="checkbox" onchange="toggleRiskCol('rtrend')"  > 📈 Trend</label>
               <label class="col-chk-row" data-rcol="rgap">    <input type="checkbox" onchange="toggleRiskCol('rgap')"    > 🕳️ Max Gap</label>
               <label class="col-chk-row" data-rcol="rconsist"><input type="checkbox" onchange="toggleRiskCol('rconsist')"> 📊 Consistency</label>
               <label class="col-chk-row" data-rcol="rlastsale"><input type="checkbox" onchange="toggleRiskCol('rlastsale')"> 🕐 ขายล่าสุด</label>
               <label class="col-chk-row" data-rcol="rpeakday"><input type="checkbox" onchange="toggleRiskCol('rpeakday')"> ⚡ Peak วัน</label>
               <label class="col-chk-row" data-rcol="rstock">  <input type="checkbox" onchange="toggleRiskCol('rstock')"  > 📦 สต๊อก</label>
+              <label class="col-chk-row" data-rcol="rstockmaxvel7"><input type="checkbox" onchange="toggleRiskCol('rstockmaxvel7')"> 📦 สต๊อก(MaxVel7)</label>
             </div>
           </div>
         </div>
@@ -599,16 +605,18 @@ canvas{display:block;width:100%!important}
             <th class="sortable" data-rcol="rsize"    data-rkey="size"          onclick="sortRiskBy(this)">📐 ไซส์<span class="sort-ico"></span></th>
             <th class="sortable" data-rcol="rvel"     data-rkey="adjVel"        onclick="sortRiskBy(this)">🚀 Adj. Vel<span class="sort-ico"></span></th>
             <th class="sortable" data-rcol="rvel7"    data-rkey="vel7"          onclick="sortRiskBy(this)">📆 Vel 7วัน<span class="sort-ico"></span></th>
+            <th class="sortable" data-rcol="rmaxvel7" data-rkey="maxVel7"       onclick="sortRiskBy(this)">🔥 Max Vel 7วัน<span class="sort-ico"></span></th>
             <th class="sortable" data-rcol="rtrend"   data-rkey="trendPct"      onclick="sortRiskBy(this)">📈 Trend<span class="sort-ico"></span></th>
             <th class="sortable" data-rcol="rgap"     data-rkey="maxGap"        onclick="sortRiskBy(this)">🕳️ Max Gap<span class="sort-ico"></span></th>
             <th class="sortable" data-rcol="rconsist" data-rkey="cv"            onclick="sortRiskBy(this)">📊 Consistency<span class="sort-ico"></span></th>
             <th class="sortable" data-rcol="rlastsale" data-rkey="daysLastSale" onclick="sortRiskBy(this)">🕐 ขายล่าสุด<span class="sort-ico"></span></th>
             <th class="sortable" data-rcol="rpeakday" data-rkey="daysSincePeak" onclick="sortRiskBy(this)">⚡ Peak วัน<span class="sort-ico"></span></th>
             <th class="sortable" data-rcol="rstock"   data-rkey="recStock"      onclick="sortRiskBy(this)">📦 สต๊อก<span class="sort-ico"></span></th>
+            <th class="sortable" data-rcol="rstockmaxvel7" data-rkey="stockMaxVel7" onclick="sortRiskBy(this)">📦 สต๊อก(MaxVel7)<span class="sort-ico"></span></th>
           </tr>
         </thead>
         <tbody id="risk-tbl-body">
-          <tr><td colspan="13"><div class="empty">กำลังโหลดข้อมูล…</div></td></tr>
+          <tr><td colspan="15"><div class="empty">กำลังโหลดข้อมูล…</div></td></tr>
         </tbody>
       </table>
     </div>
@@ -643,7 +651,7 @@ const SHEET_ID = '1rO8rJbVPfTRiuuZB0WVx3NnIFSYgs2Vh2Nu6bc-rKhk';
 let appData = [];
 let maxAdjVel = 1, maxStock = 1;
 let sortKey = 'starScore', sortDir = 'desc';
-const COL_DEFAULTS = ['sku','color','size','star','vel','vel7','trend','gap','consist','totalsold','activevel','peakval','lastsale','peakday','stock','status'];
+const COL_DEFAULTS = ['sku','color','size','star','vel','vel7','maxvel7','trend','gap','consist','totalsold','activevel','peakval','lastsale','peakday','stock','stockmaxvel7','status'];
 const COL_STORAGE_KEY = 'lamsang_visibleCols_v1';
 function loadVisibleCols(){
   try {
@@ -928,6 +936,24 @@ async function syncData(){
           if(saleDates.length<2) return d.total;
           const spanDays = Math.max(1, Math.round((saleDates[saleDates.length-1].t - saleDates[0].t)/(1000*60*60*24))+1);
           return Number((d.total/spanDays).toFixed(2));
+        })(),
+        maxVel7: (()=>{
+          // เลื่อน rolling window 7 วัน ตลอดทุกวันในข้อมูล หาค่าสูงสุด
+          const allDatesSorted = Object.keys(dailySales)
+            .map(s=>({s,t:parseDate(s)})).filter(x=>!isNaN(x.t))
+            .sort((a,b)=>a.t-b.t);
+          if(!allDatesSorted.length) return 0;
+          let best = 0;
+          for(let i=0; i<allDatesSorted.length; i++){
+            const windowEnd = allDatesSorted[i].t;
+            const windowStart = windowEnd - 6*24*60*60*1000; // 7-day window inclusive
+            const sum = allDatesSorted
+              .filter(x=>x.t>=windowStart && x.t<=windowEnd)
+              .reduce((a,x)=>a+(dailySales[x.s]||0),0);
+            const avg = sum/7;
+            if(avg > best) best = avg;
+          }
+          return Number(best.toFixed(2));
         })()
       };
     });
@@ -1163,7 +1189,7 @@ function renderAll(data){
     if(item.lastSaleDate){ const t=parseDate(item.lastSaleDate); if(!isNaN(t)) daysLastSale=Math.round((today.getTime()-t)/(1000*60*60*24)); }
     let daysSincePeak = 9999;
     if(item.peakDate){ const t=parseDate(item.peakDate); if(!isNaN(t)) daysSincePeak=Math.round((today.getTime()-t)/(1000*60*60*24)); }
-    return {...item, recStock:rec, daysLastSale, daysSincePeak};
+    return {...item, recStock:rec, daysLastSale, daysSincePeak, stockMaxVel7: Math.ceil((item.maxVel7||0)*30)};
   });
 
   const sorted=[...enriched].sort((a,b)=>{
@@ -1271,6 +1297,7 @@ function renderAll(data){
           </div>
           <div style="font-size:10px;color:var(--muted);text-align:right">ชิ้น/วัน</div>`, 'tr')}
         ${td('vel7', `<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--purple)">${item.vel7.toFixed(2)}</span><div style="font-size:10px;color:var(--muted)">ชิ้น/วัน</div>`, 'tr')}
+        ${td('maxvel7', `<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--red)">${(item.maxVel7||0).toFixed(2)}</span><div style="font-size:10px;color:var(--muted)">ชิ้น/วัน</div>`, 'tr')}
         ${td('trend',   trendHtml)}
         ${td('gap',     gapHtml)}
         ${td('consist', cvHtml)}
@@ -1285,6 +1312,12 @@ function renderAll(data){
             <div class="stk-sub">≈${Math.ceil(item.adjVel*30*item.safetyMult).toLocaleString()}/เดือน · ×${item.safetyMult}</div>
             <div class="stk-mini"><div class="stk-fill" style="width:${stPct}%"></div></div>
           </div>`)}
+        ${td('stockmaxvel7', `<div class="stk-box">
+            <span class="stk-main" style="color:var(--red)">${item.stockMaxVel7.toLocaleString()}</span>
+            <span style="font-size:10px;color:var(--mid)"> ชิ้น/เดือน</span>
+            <div class="stk-sub">จาก MaxVel7 × 30</div>
+            <div class="stk-mini"><div class="stk-fill" style="width:${Math.min((item.stockMaxVel7/(maxStock||1))*100,100)}%;background:var(--red)"></div></div>
+          </div>`)}
         ${td('status',  badge, 'tc')}
       </tr>`;
     }).join('');
@@ -1298,7 +1331,7 @@ function renderAll(data){
 window.riskThreshold = 60;
 let riskSortKey = 'stockoutScore', riskSortDir = 'desc';
 const RISK_COL_KEY = 'lamsang_riskCols_v1';
-const RISK_COL_DEFAULTS = ['rscore','rsku','rcolor','rsize','rvel','rvel7','rtrend','rgap','rconsist','rlastsale','rpeakday','rstock'];
+const RISK_COL_DEFAULTS = ['rscore','rsku','rcolor','rsize','rvel','rvel7','rmaxvel7','rtrend','rgap','rconsist','rlastsale','rpeakday','rstock','rstockmaxvel7'];
 let riskVisibleCols = (()=>{
   try {
     const s = localStorage.getItem(RISK_COL_KEY);
@@ -1427,6 +1460,7 @@ function renderRiskTab(sorted, months){
       ${rtd('rsize', item.size ?`<span style="font-size:12px;font-weight:700;color:var(--blue)">📐 ${item.size}</span>`:'<span style="color:var(--faint)">—</span>')}
       ${rtd('rvel',  `<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:${isHigh?'var(--red)':'var(--blue)'}">${item.adjVel.toFixed(2)}</span><div style="font-size:10px;color:var(--muted)">ชิ้น/วัน</div>`,'tr')}
       ${rtd('rvel7', `<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--purple)">${item.vel7.toFixed(2)}</span><div style="font-size:10px;color:var(--muted)">ชิ้น/วัน</div>`,'tr')}
+      ${rtd('rmaxvel7', `<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--red)">${(item.maxVel7||0).toFixed(2)}</span><div style="font-size:10px;color:var(--muted)">ชิ้น/วัน</div>`,'tr')}
       ${rtd('rtrend',trendHtml)}
       ${rtd('rgap',  `<span class="gap-pill" style="color:${gapColor}">${gapIcon} ${item.maxGap}วัน</span>`)}
       ${rtd('rconsist',cvHtml)}
@@ -1437,6 +1471,12 @@ function renderRiskTab(sorted, months){
         <span style="font-size:10px;color:var(--mid)"> ชิ้น/${months}เดือน</span>
         <div class="stk-sub">×${item.safetyMult} safety</div>
         <div class="stk-mini"><div class="stk-fill" style="width:${stPct}%"></div></div>
+      </div>`)}
+      ${rtd('rstockmaxvel7',`<div class="stk-box">
+        <span class="stk-main" style="color:var(--red)">${item.stockMaxVel7.toLocaleString()}</span>
+        <span style="font-size:10px;color:var(--mid)"> ชิ้น/เดือน</span>
+        <div class="stk-sub">MaxVel7 × 30</div>
+        <div class="stk-mini"><div class="stk-fill" style="width:${Math.min((item.stockMaxVel7/(maxStock||1))*100,100)}%;background:var(--red)"></div></div>
       </div>`)}
     </tr>`;
   }).join('');
