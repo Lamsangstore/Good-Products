@@ -205,13 +205,63 @@ tbody tr{animation:rf .3s ease both}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--bg-dark);border-radius:3px}
 ::-webkit-scrollbar-thumb{background:var(--muted);border-radius:3px}
+
+/* ─── CHART MODAL ─── */
+.modal-overlay{position:fixed;inset:0;background:rgba(15,36,65,.4);backdrop-filter:blur(8px);z-index:10000;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.on{display:flex}
+.modal-box{background:var(--bg);border-radius:24px;box-shadow:14px 14px 32px #9ab0cc,-6px -6px 20px #ffffff;width:100%;max-width:900px;max-height:90vh;overflow-y:auto;animation:modalIn .25s ease}
+@keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(12px)}to{opacity:1;transform:none}}
+.modal-hdr{padding:22px 26px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.modal-title{font-size:16px;font-weight:700;color:var(--text)}
+.modal-sub{font-size:12px;color:var(--mid);margin-top:3px}
+.modal-close{width:36px;height:36px;border-radius:10px;background:var(--bg);box-shadow:var(--sm);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);font-size:18px;transition:box-shadow .15s}
+.modal-close:hover{box-shadow:var(--so)}
+.modal-close:active{box-shadow:var(--sp)}
+.modal-body{padding:20px 26px 26px}
+.chart-stats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.cstat{background:var(--bg);box-shadow:var(--sm);border-radius:12px;padding:10px 16px;min-width:110px}
+.cstat-lbl{font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.cstat-val{font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace}
+.cstat-note{font-size:10px;color:var(--mid);margin-top:2px}
+.chart-wrap{background:var(--bg);box-shadow:var(--si);border-radius:16px;padding:16px;position:relative}
+canvas{display:block;width:100%!important}
+.stockout-banner{background:var(--bg);border-radius:12px;box-shadow:var(--sm);border-left:4px solid var(--red);padding:12px 16px;margin-bottom:14px;display:none}
+.stockout-banner.on{display:block}
+.stockout-banner-ttl{font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px}
+.stockout-banner-body{font-size:12px;color:var(--mid);line-height:1.6}
+.seg-legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center}
+.seg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.seg-lbl{font-size:11px;color:var(--mid)}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 
 <div class="loading" id="loading">
   <div class="spin-wrap"><div class="spin"></div></div>
   <div class="spin-label" id="loadingText">กำลังเชื่อมต่อ…</div>
+</div>
+
+<!-- CHART MODAL -->
+<div class="modal-overlay" id="chartModal" onclick="closeModal(event)">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title" id="modalTitle">—</div>
+        <div class="modal-sub" id="modalSub">—</div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('chartModal').classList.remove('on')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="stockout-banner" id="stockoutBanner">
+        <div class="stockout-banner-ttl" id="stockoutBannerTtl">⚠️ สัญญาณหมดสต๊อก</div>
+        <div class="stockout-banner-body" id="stockoutBannerBody"></div>
+      </div>
+      <div class="chart-stats" id="chartStats"></div>
+      <div class="seg-legend" id="segLegend"></div>
+      <div class="chart-wrap"><canvas id="salesChart"></canvas></div>
+    </div>
+  </div>
 </div>
 
 <div class="page">
@@ -508,7 +558,7 @@ async function syncData(){
         if(!row?.c) return;
         const dc=row.c[0];
         const ds=dc?(dc.f||String(dc.v)):'';
-        const dd=ds.split(' ')[0];
+        const dd=ds.split(/[\s,]/)[0].trim();
         if(!dd) return;
         for(let c=4;c<=25;c++){
           if(row.c[c]?.v===sku||(row.c[c]?.v&&String(row.c[c].v).trim()===sku)){
@@ -546,7 +596,7 @@ async function syncData(){
         if(!row?.c) return;
         const dc=row.c[0];
         const ds=dc?(dc.f||String(dc.v)):'';
-        const dd=ds.split(' ')[0];
+        const dd=ds.split(/[\s,]/)[0].trim();
         if(!dd||!dailySales.hasOwnProperty(dd)) return;
         for(let c=4;c<=25;c++){
           if(row.c[c]?.v&&String(row.c[c].v).trim()===sku)
@@ -579,6 +629,17 @@ async function syncData(){
       else if(stockoutScore>=40) safetyMult=1.5;
 
       const info = dict[sku] || { name:'รหัสสินค้าใหม่ (ยังไม่มีในระบบ)', parentSku:'', category:'', variant:'', color:'', size:'' };
+
+      // ── กรอง gap ที่ต่ำกว่า threshold (สินค้าตกค้าง) ออกจาก maxGap ──
+      const catThresh = getCategoryThreshold(info.category);
+      let filteredMaxGap = 0;
+      for(let i=1; i<sortedDays.length; i++){
+        const g = daysBetween(sortedDays[i-1], sortedDays[i]);
+        if(g > 0 && g < 3650 && g >= catThresh.min) {
+          if(g > filteredMaxGap) filteredMaxGap = g;
+        }
+      }
+
       return{
         sku,
         name:       info.name,
@@ -588,11 +649,12 @@ async function syncData(){
         color:      info.color,
         size:       info.size,
         totalSold:d.total, activeDays, rawVel, adjVel, coverageRate,
-        maxGap, avgGap, stockoutScore,
+        maxGap: filteredMaxGap, avgGap, stockoutScore,
         trendPct:Math.round(trendPct), trendLabel, trendColor,
         weekendEffect:Math.round(weekendEffect),
         cv:Number(cv.toFixed(2)), consistLabel, consistColor,
-        starScore:clampedStar, safetyMult
+        starScore:clampedStar, safetyMult,
+        dailySales  // เก็บไว้สำหรับ chart
       };
     });
 
@@ -733,7 +795,7 @@ function renderAll(data){
       return`<tr style="animation-delay:${i*.025}s">
         <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)">${i+1}</span></td>
         <td>
-          <div class="pname">${item.name}</div>
+          <div class="pname" style="cursor:pointer;text-decoration:underline dotted var(--blue-s)" onclick="openChart('${item.sku}')" title="คลิกดูกราฟ Timeline">${item.name} <span style="font-size:10px;color:var(--blue)">📊</span></div>
           <div class="psku">${item.sku}${item.parentSku&&item.parentSku!==item.sku?' · <span style="color:var(--muted)">'+item.parentSku+'</span>':''}</div>
           <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">
             ${item.category?`<span style="font-size:10px;background:var(--bg);box-shadow:var(--sx);border-radius:5px;padding:2px 7px;color:var(--mid);font-weight:600">${item.category}</span>`:''}
@@ -879,6 +941,227 @@ function dimCard(num,title,sub,desc,color){
 }
 
 function truncate(s,n){ return s.length>n?s.slice(0,n)+'…':s }
+
+// ─────────────────────────────────────────
+// CATEGORY → RESTOCK THRESHOLD
+// ─────────────────────────────────────────
+function getCategoryThreshold(cat){
+  if(!cat) return {min:5, skip:false};
+  const c = cat.trim().toLowerCase();
+  // ไม่เติมแล้ว — ข้ามทั้งหมด
+  if(c.includes('ไม่เติม') || c.includes('marketplace sync'))
+    return {min:0, skip:true};
+  // ทุก category ที่เหลือ min = 5
+  return {min:5, skip:false};
+}
+
+// ─────────────────────────────────────────
+// OPEN CHART POPUP
+// ─────────────────────────────────────────
+let chartInstance = null;
+
+function openChart(sku){
+  const item = appData.find(d=>d.sku===sku);
+  if(!item) return;
+
+  const modal = $('chartModal');
+  $('modalTitle').textContent = item.name;
+  $('modalSub').textContent   = `${item.sku}${item.category?' · '+item.category:''}${item.color?' · 🎨'+item.color:''}${item.size?' · 📐'+item.size:''}`;
+
+  // ── สร้าง daily series จาก item.dailySales ──
+  const ds = item.dailySales || {};
+  const dates = Object.keys(ds).sort((a,b)=>parseDate(a)-parseDate(b));
+  if(!dates.length){ alert('ไม่มีข้อมูลยอดขายรายวัน'); return; }
+
+  const values = dates.map(d=>ds[d]);
+  const labels = dates.map(d=>{
+    const t=parseDate(d); if(isNaN(t)) return d;
+    const dt=new Date(t);
+    return `${dt.getDate()}/${dt.getMonth()+1}`;
+  });
+
+  // ── หา Peak ──
+  let peakIdx=0;
+  values.forEach((v,i)=>{ if(v>values[peakIdx]) peakIdx=i; });
+  const peakDate = dates[peakIdx];
+  const peakVal  = values[peakIdx];
+
+  // ── นับวันจาก peak ถึงวันขายครั้งสุดท้าย ──
+  const lastSaleDate = [...dates].reverse().find(d=>ds[d]>0);
+  const daysSincePeak = lastSaleDate ? daysBetween(peakDate, lastSaleDate) : 0;
+
+  // ── วันสุดท้ายที่ขาย → นับถึงวันนี้ ──
+  const today = new Date();
+  const lastSaleTs = lastSaleDate ? parseDate(lastSaleDate) : NaN;
+  const daysSinceLastSale = !isNaN(lastSaleTs)
+    ? Math.round((today.getTime()-lastSaleTs)/(1000*60*60*24)) : null;
+
+  // ── ตรวจ stockout gap โดยใช้ threshold ──
+  const thresh = getCategoryThreshold(item.category);
+  // หา gap ที่ยาวกว่า threshold / velocity (อย่างน้อย 3 วัน)
+  const minStockoutGap = thresh.skip ? 9999
+    : Math.max(3, thresh.min > 0 ? Math.round(thresh.min / Math.max(item.adjVel,0.1)) : 7);
+
+  // เก็บ stockout segments (pairs of start/end index)
+  const stockoutSegs = [];
+  let gapStart = null;
+  for(let i=1; i<dates.length; i++){
+    const g = daysBetween(dates[i-1], dates[i]);
+    if(values[i-1]===0 && gapStart===null) continue;
+    if(g >= minStockoutGap){
+      if(gapStart===null) gapStart = i-1;
+    } else {
+      if(gapStart!==null){ stockoutSegs.push([gapStart,i]); gapStart=null; }
+    }
+  }
+  if(gapStart!==null) stockoutSegs.push([gapStart, dates.length-1]);
+
+  // ── Trend line (linear regression) ──
+  const n=values.length;
+  let sumX=0,sumY=0,sumXY=0,sumX2=0;
+  values.forEach((v,i)=>{sumX+=i;sumY+=v;sumXY+=i*v;sumX2+=i*i;});
+  const slope=(n*sumXY-sumX*sumY)/(n*sumX2-sumX*sumX||1);
+  const intercept=(sumY-slope*sumX)/n;
+  const trendData=values.map((_,i)=>Math.max(0,+(intercept+slope*i).toFixed(2)));
+
+  // ── Stockout banner ──
+  const banner=$('stockoutBanner');
+  const likelySO = stockoutSegs.length>0 || (daysSinceLastSale!==null && daysSinceLastSale>=minStockoutGap);
+  if(likelySO && !thresh.skip){
+    banner.classList.add('on');
+    let msg = '';
+    if(stockoutSegs.length>0)
+      msg += `พบ ${stockoutSegs.length} ช่วงที่น่าจะหมดสต๊อก (gap ≥${minStockoutGap} วัน สำหรับ category นี้) `;
+    if(daysSinceLastSale!==null && daysSinceLastSale>=minStockoutGap)
+      msg += `• ขายครั้งสุดท้ายเมื่อ <b>${daysSinceLastSale} วันก่อน</b> — ห่างจาก Peak ${daysSincePeak} วัน อาจหมดสต๊อกอยู่`;
+    $('stockoutBannerBody').innerHTML = msg || 'ตรวจพบสัญญาณหมดสต๊อก';
+  } else {
+    banner.classList.remove('on');
+  }
+
+  // ── Stat pills ──
+  const vel7 = (() => {
+    const last7 = dates.slice(-7);
+    const s=last7.reduce((a,d)=>a+(ds[d]||0),0);
+    return (s/Math.max(last7.length,1)).toFixed(2);
+  })();
+  $('chartStats').innerHTML = [
+    {lbl:'Peak ยอดขาย', val: peakVal+' ชิ้น', note: labels[peakIdx], color:'var(--gold)'},
+    {lbl:'วันขายล่าสุด', val: daysSinceLastSale!==null ? daysSinceLastSale+' วันที่แล้ว' : '—',
+      note: lastSaleDate?`(${lastSaleDate})`:'', color: daysSinceLastSale>=minStockoutGap?'var(--red)':'var(--green)'},
+    {lbl:'Adj. Velocity', val: item.adjVel+' ชิ้น/วัน', note:'ปรับ Stockout แล้ว', color:'var(--blue)'},
+    {lbl:'Vel 7 วันล่าสุด', val: vel7+' ชิ้น/วัน', note:'เทรนด์ล่าสุด', color:'var(--purple)'},
+    {lbl:'Stockout Segs', val: stockoutSegs.length+' ช่วง', note:`min gap ${minStockoutGap}วัน`, color: stockoutSegs.length>0?'var(--red)':'var(--green)'},
+    {lbl:'ยอดขายรวม', val: item.totalSold+' ชิ้น', note:`${item.activeDays} วันที่มียอด`, color:'var(--mid)'},
+  ].map(s=>`<div class="cstat"><div class="cstat-lbl">${s.lbl}</div><div class="cstat-val" style="color:${s.color}">${s.val}</div><div class="cstat-note">${s.note}</div></div>`).join('');
+
+  // ── Segment legend ──
+  $('segLegend').innerHTML = `
+    <div class="seg-dot" style="background:rgba(37,99,214,.6)"></div><span class="seg-lbl">ยอดขายรายวัน</span>
+    <div class="seg-dot" style="background:rgba(200,54,79,.25);margin-left:8px"></div><span class="seg-lbl">ช่วงน่าจะหมดสต๊อก</span>
+    <div class="seg-dot" style="background:var(--orange);margin-left:8px"></div><span class="seg-lbl">Trend line</span>
+    <div class="seg-dot" style="background:var(--gold);border-radius:50%;margin-left:8px"></div><span class="seg-lbl">Peak</span>`;
+
+  // ── Draw chart ──
+  if(chartInstance){ chartInstance.destroy(); chartInstance=null; }
+  const ctx=document.getElementById('salesChart').getContext('2d');
+
+  // build stockout background plugin
+  const stockoutPlugin = {
+    id:'stockoutBg',
+    beforeDraw(chart){
+      if(!stockoutSegs.length) return;
+      const {ctx:c, chartArea:{left,right,top,bottom}, scales:{x}} = chart;
+      c.save();
+      stockoutSegs.forEach(([s,e])=>{
+        const x1 = x.getPixelForValue(s);
+        const x2 = x.getPixelForValue(e);
+        c.fillStyle='rgba(200,54,79,.12)';
+        c.fillRect(x1,top,x2-x1,bottom-top);
+      });
+      c.restore();
+    }
+  };
+
+  // peak annotation line
+  const peakPlugin = {
+    id:'peakLine',
+    afterDraw(chart){
+      const {ctx:c, chartArea:{top,bottom}, scales:{x,y}} = chart;
+      const px = x.getPixelForValue(peakIdx);
+      const py = y.getPixelForValue(peakVal);
+      c.save();
+      c.setLineDash([4,3]);
+      c.strokeStyle='rgba(184,134,11,.6)';
+      c.lineWidth=1.5;
+      c.beginPath(); c.moveTo(px,top); c.lineTo(px,bottom); c.stroke();
+      // peak dot
+      c.setLineDash([]);
+      c.fillStyle='var(--gold)';
+      c.beginPath(); c.arc(px,py,5,0,Math.PI*2); c.fill();
+      c.fillStyle='#0f2441';
+      c.font='bold 11px Anuphan,sans-serif';
+      c.textAlign='center';
+      c.fillText('▲ PEAK',px,top+13);
+      c.restore();
+    }
+  };
+
+  chartInstance = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'ยอดขาย (ชิ้น)',
+          data:values,
+          backgroundColor: values.map((_,i)=>{
+            const inSO = stockoutSegs.some(([s,e])=>i>=s&&i<=e);
+            return inSO ? 'rgba(200,54,79,.45)' : 'rgba(37,99,214,.55)';
+          }),
+          borderRadius:3,
+          order:2
+        },
+        {
+          label:'Trend',
+          data:trendData,
+          type:'line',
+          borderColor:'rgba(196,112,15,.85)',
+          borderWidth:2,
+          pointRadius:0,
+          tension:.4,
+          fill:false,
+          order:1
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            title:tt=>`วันที่ ${dates[tt[0].dataIndex]||tt[0].label}`,
+            label:tt=>tt.datasetIndex===0?`ขาย ${tt.raw} ชิ้น`:`Trend ${tt.raw} ชิ้น`
+          }
+        }
+      },
+      scales:{
+        x:{ticks:{font:{size:10},maxRotation:45,color:'#4d6f96'},grid:{display:false}},
+        y:{ticks:{font:{size:10},color:'#4d6f96'},grid:{color:'rgba(194,206,223,.4)'}}
+      }
+    },
+    plugins:[stockoutPlugin, peakPlugin]
+  });
+
+  modal.classList.add('on');
+}
+
+function closeModal(e){
+  if(e.target===document.getElementById('chartModal'))
+    document.getElementById('chartModal').classList.remove('on');
+}
 </script>
 </body>
 </html>
