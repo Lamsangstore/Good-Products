@@ -442,7 +442,8 @@ async function syncData(){
       if(!row?.c) return;
       const dc=row.c[0];
       const ds=dc?(dc.f||String(dc.v)):'';
-      const d=ds.split(' ')[0];
+      // ตัดส่วนเวลาออก รองรับทั้ง "01/03/2026 11:48:29" และ "1/3/2026, 11:49:08"
+      const d=ds.split(/[\s,]/)[0].trim();
       if(!d) return;
       for(let c=4;c<=25;c++){
         const sc=row.c[c];
@@ -461,7 +462,11 @@ async function syncData(){
 
     showL('กำลังคำนวณ 7 มิติ…');
     const totalDays=allDates.size||1;
-    const sortedAllDates=[...allDates].sort();
+    const sortedAllDates=[...allDates]
+      .map(s=>({ s, t:parseDate(s) }))
+      .filter(x=>!isNaN(x.t))
+      .sort((a,b)=>a.t-b.t)
+      .map(x=>x.s);
 
     appData=Object.entries(bySkU).map(([sku,d])=>{
       const activeDays=d.days.size;
@@ -470,12 +475,20 @@ async function syncData(){
       const adjVel=Number((rawVel*coverageRate).toFixed(2));
 
       // ── มิติ 2: Gap Analysis ──
-      const sortedDays=[...d.days].sort();
+      // แปลง string วันที่เป็น timestamp ก่อน sort เพื่อป้องกัน alphabetical sort ผิด
+      const sortedDays=[...d.days]
+        .map(s=>({ s, t:parseDate(s) }))
+        .filter(x=>!isNaN(x.t))
+        .sort((a,b)=>a.t-b.t)
+        .map(x=>x.s);
+
       let maxGap=0, gaps=[];
       for(let i=1;i<sortedDays.length;i++){
         const g=daysBetween(sortedDays[i-1],sortedDays[i]);
-        gaps.push(g);
-        if(g>maxGap) maxGap=g;
+        if(g>0 && g<3650){ // กัน outlier ที่ parse วันที่ผิด
+          gaps.push(g);
+          if(g>maxGap) maxGap=g;
+        }
       }
       const avgGap=gaps.length? gaps.reduce((a,b)=>a+b,0)/gaps.length :0;
 
@@ -593,8 +606,40 @@ async function syncData(){
   }finally{ hideL() }
 }
 
+function parseDate(s){
+  if(!s) return NaN;
+  s=String(s).trim();
+
+  // ── ตัดส่วนเวลาออกก่อน ──
+  // รองรับทั้ง "01/03/2026 11:48:29" และ "1/3/2026, 11:49:08"
+  // ตัดทุกอย่างหลัง space หรือ comma ตัวแรก
+  s = s.split(/[\s,]/)[0].trim();
+
+  // รองรับ YYYY-MM-DD (ISO)
+  if(/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)){
+    const [y,m,d]=s.split('-').map(Number);
+    return new Date(y,m-1,d).getTime();
+  }
+
+  // รองรับ D/M/YYYY หรือ DD/MM/YYYY
+  if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)){
+    const parts=s.split('/').map(Number);
+    const [p1,p2,p3]=parts;
+    // ถ้า part แรก > 12 = วัน (DD/MM/YYYY) แน่ๆ
+    if(p1>12) return new Date(p3,p2-1,p1).getTime();
+    // ถ้า part สอง > 12 = M/D/YYYY (US)
+    if(p2>12) return new Date(p3,p1-1,p2).getTime();
+    // ambiguous → Google Sheets ไทยเป็น DD/MM/YYYY
+    return new Date(p3,p2-1,p1).getTime();
+  }
+
+  return Date.parse(s);
+}
+
 function daysBetween(a,b){
-  return Math.round((new Date(b)-new Date(a))/(1000*60*60*24));
+  const ta=parseDate(a), tb=parseDate(b);
+  if(isNaN(ta)||isNaN(tb)) return 0;
+  return Math.round(Math.abs(tb-ta)/(1000*60*60*24));
 }
 
 function calcStock(adjVel,months,mult){
