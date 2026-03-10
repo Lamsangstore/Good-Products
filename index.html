@@ -199,6 +199,8 @@ tbody tr:hover td{background:rgba(255,255,255,.3)}
 /* ─── ANIM ─── */
 @keyframes rf{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 tbody tr{animation:rf .3s ease both}
+tbody tr:hover{background:rgba(37,99,214,.04);transition:background .15s}
+tbody tr:active{background:rgba(37,99,214,.09)}
 @keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .i-card{animation:fi .4s ease both}
 
@@ -248,6 +250,19 @@ canvas{display:block;width:100%!important}
 .seg-legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center}
 .seg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
 .seg-lbl{font-size:11px;color:var(--mid)}
+
+/* ─── BAR SELECTION RESULT ─── */
+.sel-panel{background:var(--bg);box-shadow:var(--si);border-radius:16px;padding:16px 20px;margin-top:16px;display:none}
+.sel-panel.on{display:block}
+.sel-panel-ttl{font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.sel-results{display:flex;flex-wrap:wrap;gap:12px}
+.sel-stat{background:var(--bg);box-shadow:var(--sm);border-radius:12px;padding:10px 18px;min-width:160px}
+.sel-stat-lbl{font-size:10px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.sel-stat-val{font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--blue)}
+.sel-stat-unit{font-size:11px;color:var(--mid);margin-top:2px}
+.sel-hint{font-size:11px;color:var(--faint);margin-top:10px}
+.sel-clear{display:inline-flex;align-items:center;gap:5px;margin-top:8px;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;border:none;background:var(--bg);box-shadow:var(--sm);color:var(--muted);transition:all .15s}
+.sel-clear:hover{box-shadow:var(--so);color:var(--red)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -276,6 +291,29 @@ canvas{display:block;width:100%!important}
       <div class="chart-stats" id="chartStats"></div>
       <div class="seg-legend" id="segLegend"></div>
       <div class="chart-wrap"><canvas id="salesChart"></canvas></div>
+      <!-- Selection Result Panel -->
+      <div class="sel-panel" id="selPanel">
+        <div class="sel-panel-ttl">📌 ผลการคำนวณจากกราฟแท่งที่เลือก</div>
+        <div class="sel-results">
+          <div class="sel-stat">
+            <div class="sel-stat-lbl">ขายได้เฉลี่ย</div>
+            <div class="sel-stat-val" id="selAvgVel">—</div>
+            <div class="sel-stat-unit">ชิ้น / วัน</div>
+          </div>
+          <div class="sel-stat">
+            <div class="sel-stat-lbl">สต๊อคต่อเดือน</div>
+            <div class="sel-stat-val" id="selMonthStock">—</div>
+            <div class="sel-stat-unit">ชิ้น / เดือน</div>
+          </div>
+          <div class="sel-stat" style="min-width:120px">
+            <div class="sel-stat-lbl">ยอดรวมที่เลือก</div>
+            <div class="sel-stat-val" id="selTotalSold" style="color:var(--mid)">—</div>
+            <div class="sel-stat-unit" id="selDaysCount">วัน</div>
+          </div>
+        </div>
+        <div class="sel-hint">กด Shift หรือ Ctrl/Cmd ค้างเพื่อเลือกหลายแท่ง · คลิกแท่งที่เลือกแล้วเพื่อยกเลิก</div>
+        <button class="sel-clear" onclick="clearBarSelection()">✕ ล้างการเลือก</button>
+      </div>
     </div>
   </div>
 </div>
@@ -974,10 +1012,10 @@ function renderAll(data){
         return `<td data-col="${col}" class="${cls}" style="display:${show?'':'none'}">${inner}</td>`;
       }
 
-      return`<tr style="animation-delay:${i*.025}s">
+      return`<tr style="animation-delay:${i*.025}s;cursor:pointer" onclick="openChart('${item.sku}')" title="คลิกดูกราฟ Timeline">
         <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)">${i+1}</span></td>
         <td>
-          <div class="pname" style="cursor:pointer;text-decoration:underline dotted var(--blue-s)" onclick="openChart('${item.sku}')" title="คลิกดูกราฟ Timeline">${item.name} <span style="font-size:10px;color:var(--blue)">📊</span></div>
+          <div class="pname">${item.name} <span style="font-size:10px;color:var(--blue)">📊</span></div>
           ${item.category?`<div style="margin-top:2px"><span style="font-size:10px;background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:1px 6px;color:var(--mid);font-weight:600">${item.category}</span></div>`:''}
         </td>
         ${td('sku',  `<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">${item.sku}${item.parentSku&&item.parentSku!==item.sku?'<br><span style="font-size:10px;color:var(--faint)">'+item.parentSku+'</span>':''}</span>`)}
@@ -1273,6 +1311,8 @@ function openChart(sku){
 
   // ── Draw chart ──
   if(chartInstance){ chartInstance.destroy(); chartInstance=null; }
+  // clear selection panel on new open
+  document.getElementById('selPanel').classList.remove('on');
   const ctx=document.getElementById('salesChart').getContext('2d');
 
   // build stockout background plugin
@@ -1316,6 +1356,42 @@ function openChart(sku){
     }
   };
 
+  // ── Bar selection state ──
+  let selectedBars = new Set();
+  let currentDates = dates;
+  let currentValues = values;
+
+  function getBarColors(){
+    return currentValues.map((_,i)=>{
+      if(selectedBars.has(i)) return 'rgba(37,99,214,.95)';
+      const inSO = stockoutSegs.some(([s,e])=>i>=s&&i<=e);
+      return inSO ? 'rgba(200,54,79,.4)' : 'rgba(37,99,214,.45)';
+    });
+  }
+
+  function updateSelectionResult(){
+    const panel = document.getElementById('selPanel');
+    if(!selectedBars.size){ panel.classList.remove('on'); return; }
+    panel.classList.add('on');
+    const selDays = selectedBars.size;
+    const selTotal = [...selectedBars].reduce((a,i)=>a+(currentValues[i]||0), 0);
+    const avgVel = selTotal / selDays;
+    const monthStock = Math.ceil(avgVel * 30);
+    document.getElementById('selAvgVel').textContent = avgVel.toFixed(2);
+    document.getElementById('selMonthStock').textContent = monthStock.toLocaleString();
+    document.getElementById('selTotalSold').textContent = selTotal.toLocaleString();
+    document.getElementById('selDaysCount').textContent = `จาก ${selDays} วันที่เลือก`;
+  }
+
+  window.clearBarSelection = function(){
+    selectedBars.clear();
+    if(chartInstance){
+      chartInstance.data.datasets[0].backgroundColor = getBarColors();
+      chartInstance.update('none');
+    }
+    updateSelectionResult();
+  };
+
   chartInstance = new Chart(ctx,{
     type:'bar',
     data:{
@@ -1324,10 +1400,7 @@ function openChart(sku){
         {
           label:'ยอดขาย (ชิ้น)',
           data:values,
-          backgroundColor: values.map((_,i)=>{
-            const inSO = stockoutSegs.some(([s,e])=>i>=s&&i<=e);
-            return inSO ? 'rgba(200,54,79,.45)' : 'rgba(37,99,214,.55)';
-          }),
+          backgroundColor: getBarColors(),
           borderRadius:3,
           order:2
         },
@@ -1359,6 +1432,15 @@ function openChart(sku){
     options:{
       responsive:true,
       interaction:{mode:'index',intersect:false},
+      onClick(e, elements){
+        if(!elements.length) return;
+        const idx = elements[0].index;
+        if(selectedBars.has(idx)) selectedBars.delete(idx);
+        else selectedBars.add(idx);
+        chartInstance.data.datasets[0].backgroundColor = getBarColors();
+        chartInstance.update('none');
+        updateSelectionResult();
+      },
       plugins:{
         legend:{display:false},
         tooltip:{
