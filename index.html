@@ -206,6 +206,22 @@ tbody tr{animation:rf .3s ease both}
 ::-webkit-scrollbar-track{background:var(--bg-dark);border-radius:3px}
 ::-webkit-scrollbar-thumb{background:var(--muted);border-radius:3px}
 
+/* ─── COLUMN TOGGLE ─── */
+.col-toggle-bar{display:flex;flex-wrap:wrap;gap:7px;padding:12px 18px;background:var(--bg-dark);border-bottom:1px solid rgba(194,206,223,.5)}
+.col-toggle-lbl{font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:flex;align-items:center;margin-right:4px}
+.ctog{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:8px;font-size:11px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;border:none;background:var(--bg);box-shadow:var(--sm);color:var(--mid);transition:all .15s;user-select:none}
+.ctog.on{box-shadow:var(--si);color:var(--blue)}
+.ctog:active{box-shadow:var(--sp)}
+
+/* ─── SORTABLE HEADERS ─── */
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+th.sortable:hover{color:var(--blue)}
+th.sortable .sort-ico{display:inline-block;margin-left:4px;opacity:.35;font-size:9px}
+th.sortable.asc .sort-ico::after{content:'▲'}
+th.sortable.desc .sort-ico::after{content:'▼'}
+th.sortable:not(.asc):not(.desc) .sort-ico::after{content:'⇅'}
+th.sortable.asc .sort-ico,th.sortable.desc .sort-ico{opacity:1;color:var(--blue)}
+
 /* ─── CHART MODAL ─── */
 .modal-overlay{position:fixed;inset:0;background:rgba(15,36,65,.4);backdrop-filter:blur(8px);z-index:10000;display:none;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.on{display:flex}
@@ -369,27 +385,39 @@ canvas{display:block;width:100%!important}
     <div class="panel-hdr">
       <div>
         <div class="panel-ttl">ตารางวิเคราะห์ 7 มิติ + Stock Recommendation</div>
-        <div class="panel-sub">เรียงตาม True Star Score สูงสุด</div>
+        <div class="panel-sub" id="tbl-sort-label">เรียงตาม True Star Score สูงสุด</div>
       </div>
       <div class="srch-wrap">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" id="srch" class="srch" placeholder="ค้นหา SKU / ชื่อสินค้า…" onkeyup="handleSearch(event)">
       </div>
     </div>
+    <!-- Column Toggle Bar -->
+    <div class="col-toggle-bar">
+      <span class="col-toggle-lbl">แสดงคอลัมน์:</span>
+      <button class="ctog on" data-col="star"     onclick="toggleCol(this)">⭐ True Star</button>
+      <button class="ctog on" data-col="vel"      onclick="toggleCol(this)">🚀 Velocity</button>
+      <button class="ctog on" data-col="trend"    onclick="toggleCol(this)">📈 Trend</button>
+      <button class="ctog on" data-col="gap"      onclick="toggleCol(this)">🕳️ Max Gap</button>
+      <button class="ctog on" data-col="consist"  onclick="toggleCol(this)">📊 Consistency</button>
+      <button class="ctog on" data-col="stock"    onclick="toggleCol(this)">📦 สต๊อก</button>
+      <button class="ctog on" data-col="lastpeak" onclick="toggleCol(this)">📅 ขายล่าสุด</button>
+      <button class="ctog on" data-col="status"   onclick="toggleCol(this)">🔰 สถานะ</button>
+    </div>
     <div class="tbl-wrap">
       <table>
-        <thead>
+        <thead id="tbl-head">
           <tr>
             <th>#</th>
             <th>SKU / ชื่อสินค้า</th>
-            <th>⭐ True Star</th>
-            <th class="tr">Adj. Velocity</th>
-            <th>📈 Trend</th>
-            <th>🕳️ Max Gap</th>
-            <th>📊 Consistency</th>
-            <th>สต๊อกที่แนะนำ</th>
-            <th>📅 ขายล่าสุด / Peak</th>
-            <th class="tc">สถานะ</th>
+            <th class="sortable" data-col="star"     data-key="starScore"    onclick="sortBy(this)">⭐ True Star<span class="sort-ico"></span></th>
+            <th class="sortable tr" data-col="vel"   data-key="adjVel"       onclick="sortBy(this)">🚀 Adj. Vel<span class="sort-ico"></span></th>
+            <th class="sortable" data-col="trend"    data-key="trendPct"     onclick="sortBy(this)">📈 Trend<span class="sort-ico"></span></th>
+            <th class="sortable" data-col="gap"      data-key="maxGap"       onclick="sortBy(this)">🕳️ Max Gap<span class="sort-ico"></span></th>
+            <th class="sortable" data-col="consist"  data-key="cv"           onclick="sortBy(this)">📊 Consistency<span class="sort-ico"></span></th>
+            <th class="sortable" data-col="stock"    data-key="recStock"     onclick="sortBy(this)">📦 สต๊อกแนะนำ<span class="sort-ico"></span></th>
+            <th class="sortable" data-col="lastpeak" data-key="daysLastSale" onclick="sortBy(this)">📅 ขายล่าสุด / Peak<span class="sort-ico"></span></th>
+            <th class="tc"       data-col="status">🔰 สถานะ</th>
           </tr>
         </thead>
         <tbody id="tbl-body">
@@ -427,6 +455,8 @@ canvas{display:block;width:100%!important}
 const SHEET_ID = '1rO8rJbVPfTRiuuZB0WVx3NnIFSYgs2Vh2Nu6bc-rKhk';
 let appData = [];
 let maxAdjVel = 1, maxStock = 1;
+let sortKey = 'starScore', sortDir = 'desc';
+let visibleCols = new Set(['star','vel','trend','gap','consist','stock','lastpeak','status']);
 
 window.onload = () => syncData();
 
@@ -672,6 +702,10 @@ async function syncData(){
 
     maxAdjVel=Math.max(...appData.map(d=>d.adjVel),1);
     $('srch').value='';
+    // mark initial sort header
+    document.querySelectorAll('th.sortable').forEach(t=>t.classList.remove('asc','desc'));
+    const initTh = document.querySelector('th.sortable[data-key="starScore"]');
+    if(initTh) initTh.classList.add('desc');
     renderAll();
 
   }catch(e){
@@ -725,10 +759,68 @@ function handleSearch(e){
   renderAll(appData.filter(i=>i.name.toLowerCase().includes(t)||i.sku.toLowerCase().includes(t)));
 }
 
+// ── Column toggle ──
+function toggleCol(btn){
+  const col = btn.dataset.col;
+  if(visibleCols.has(col)){
+    if(visibleCols.size <= 2) return;
+    visibleCols.delete(col);
+    btn.classList.remove('on');
+  } else {
+    visibleCols.add(col);
+    btn.classList.add('on');
+  }
+  // re-render so newly added td gets correct display state
+  const t = $('srch').value.toLowerCase().trim();
+  const filtered = t ? appData.filter(i=>i.name.toLowerCase().includes(t)||i.sku.toLowerCase().includes(t)) : null;
+  renderAll(filtered);
+}
+function applyColVisibility(){
+  document.querySelectorAll('#tbl-head th[data-col], #tbl-body td[data-col]').forEach(el=>{
+    el.style.display = visibleCols.has(el.dataset.col) ? '' : 'none';
+  });
+  const emptyTd = document.querySelector('#tbl-body td[colspan]');
+  if(emptyTd) emptyTd.colSpan = 2 + visibleCols.size;
+}
+
+// ── Sort ──
+function sortBy(th){
+  const key = th.dataset.key;
+  if(sortKey === key) sortDir = sortDir==='desc' ? 'asc' : 'desc';
+  else { sortKey = key; sortDir = 'desc'; }
+  // update header classes
+  document.querySelectorAll('th.sortable').forEach(t=>{
+    t.classList.remove('asc','desc');
+    if(t.dataset.key===sortKey) t.classList.add(sortDir);
+  });
+  // update subtitle
+  const colLabel = th.textContent.replace(/[⇅▲▼⭐🚀📈🕳️📊📦📅🔰]/gu,'').trim();
+  $('tbl-sort-label').textContent = `เรียงตาม ${colLabel} (${sortDir==='desc'?'มาก→น้อย':'น้อย→มาก'})`;
+  // re-render preserving current search
+  const t = $('srch').value.toLowerCase().trim();
+  const filtered = t ? appData.filter(i=>i.name.toLowerCase().includes(t)||i.sku.toLowerCase().includes(t)) : null;
+  renderAll(filtered);
+}
+
 function renderAll(data){
   if(!data) data=appData;
   const months=parseInt($('monthsAhead').value);
-  const sorted=[...data].sort((a,b)=>b.starScore-a.starScore);
+  const today=new Date();
+
+  // enrich with computed sort fields
+  const enriched = data.map(item=>{
+    const rec = calcStock(item.adjVel, months, item.safetyMult);
+    let daysLastSale = 9999;
+    if(item.lastSaleDate){ const t=parseDate(item.lastSaleDate); if(!isNaN(t)) daysLastSale=Math.round((today.getTime()-t)/(1000*60*60*24)); }
+    let daysSincePeak = 9999;
+    if(item.peakDate){ const t=parseDate(item.peakDate); if(!isNaN(t)) daysSincePeak=Math.round((today.getTime()-t)/(1000*60*60*24)); }
+    return {...item, recStock:rec, daysLastSale, daysSincePeak};
+  });
+
+  const sorted=[...enriched].sort((a,b)=>{
+    const va=a[sortKey]??0, vb=b[sortKey]??0;
+    return sortDir==='desc' ? vb-va : va-vb;
+  });
   const outs=sorted.filter(d=>d.stockoutScore>40);
   const maxVel=sorted.length?Math.max(...sorted.map(d=>d.adjVel)):0;
   const rising=sorted.filter(d=>d.trendPct>=30).length;
@@ -805,6 +897,11 @@ function renderAll(data){
       if(isHigh) badge=`<span class="badge b-danger"><svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>เสี่ยงสูง</span>`;
       else if(isMed) badge=`<span class="badge b-warn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>ติดตาม</span>`;
 
+      const lastColor=item.daysLastSale>=14?'var(--red)':item.daysLastSale>=7?'var(--orange)':'var(--green)';
+      const lastTxt=item.daysLastSale<9999?item.daysLastSale+' วันที่แล้ว':'—';
+      const peakColor=item.daysSincePeak>=30?'var(--red)':item.daysSincePeak>=14?'var(--orange)':'var(--mid)';
+      const peakTxt=item.daysSincePeak<9999?'⚡ Peak '+item.daysSincePeak+'วันที่แล้ว':'—';
+
       return`<tr style="animation-delay:${i*.025}s">
         <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)">${i+1}</span></td>
         <td>
@@ -816,7 +913,7 @@ function renderAll(data){
             ${item.size?`<span style="font-size:10px;background:var(--bg);box-shadow:var(--sx);border-radius:5px;padding:2px 7px;color:var(--blue);font-weight:600">📐 ${item.size}</span>`:''}
           </div>
         </td>
-        <td>
+        <td data-col="star" style="display:${visibleCols.has('star')?'':'none'}">
           <div class="star-wrap">
             <div style="display:flex;align-items:center;gap:8px">
               <span class="star-score" style="color:${starColor}">${item.starScore}</span>
@@ -825,58 +922,36 @@ function renderAll(data){
             <div class="star-bar-o"><div class="star-bar-i" style="width:${sPct}%;background:${starGrad}"></div></div>
           </div>
         </td>
-        <td class="tr">
+        <td data-col="vel" class="tr" style="display:${visibleCols.has('vel')?'':'none'}">
           <div class="vrow" style="justify-content:flex-end">
             <div class="bar-o"><div class="bar-i ${isHigh?'bar-red':'bar-blue'}" style="width:${vPct}%"></div></div>
             <span class="vnum" style="color:${isHigh?'var(--red)':'var(--blue)'}">${item.adjVel.toFixed(1)}</span>
           </div>
           <div style="font-size:10px;color:var(--muted);margin-top:3px;text-align:right">ชิ้น/วัน</div>
         </td>
-        <td>${trendHtml}</td>
-        <td>${gapHtml}</td>
-        <td>${cvHtml}</td>
-        <td>
+        <td data-col="trend"   style="display:${visibleCols.has('trend')?'':'none'}">${trendHtml}</td>
+        <td data-col="gap"     style="display:${visibleCols.has('gap')?'':'none'}">${gapHtml}</td>
+        <td data-col="consist" style="display:${visibleCols.has('consist')?'':'none'}">${cvHtml}</td>
+        <td data-col="stock"   style="display:${visibleCols.has('stock')?'':'none'}">
           <div class="stk-box">
-            <span class="stk-main">${rec.toLocaleString()}</span>
+            <span class="stk-main">${item.recStock.toLocaleString()}</span>
             <span style="font-size:10px;color:var(--mid)"> ชิ้น/${months}เดือน</span>
-            <div class="stk-sub">≈${perMonth.toLocaleString()}/เดือน · ×${item.safetyMult} safety</div>
+            <div class="stk-sub">≈${Math.ceil(item.adjVel*30*item.safetyMult).toLocaleString()}/เดือน · ×${item.safetyMult}</div>
             <div class="stk-mini"><div class="stk-fill" style="width:${stPct}%"></div></div>
           </div>
         </td>
-        <td>
-          ${(()=>{
-            const today=new Date();
-            // วันขายล่าสุด
-            let lastTxt='—', lastColor='var(--muted)', daysLast=null;
-            if(item.lastSaleDate){
-              const t=parseDate(item.lastSaleDate);
-              if(!isNaN(t)){
-                daysLast=Math.round((today.getTime()-t)/(1000*60*60*24));
-                lastTxt=daysLast+' วันที่แล้ว';
-                lastColor=daysLast>=14?'var(--red)':daysLast>=7?'var(--orange)':'var(--green)';
-              }
-            }
-            // วันจาก peak
-            let peakTxt='—', peakColor='var(--muted)';
-            if(item.peakDate){
-              const tp=parseDate(item.peakDate);
-              if(!isNaN(tp)){
-                const dp=Math.round((today.getTime()-tp)/(1000*60*60*24));
-                peakTxt='Peak '+dp+'วันที่แล้ว';
-                peakColor=dp>=30?'var(--red)':dp>=14?'var(--orange)':'var(--mid)';
-              }
-            }
-            return '<div style="display:flex;flex-direction:column;gap:5px;min-width:130px">'
-              +'<span style="font-family:IBM Plex Mono,monospace;font-size:12px;font-weight:700;color:'+lastColor+'">'+lastTxt+'</span>'
-              +'<span style="font-size:10px;color:'+peakColor+'">⚡ '+peakTxt+'</span>'
-              +'</div>';
-          })()}
+        <td data-col="lastpeak" style="display:${visibleCols.has('lastpeak')?'':'none'}">
+          <div style="display:flex;flex-direction:column;gap:5px;min-width:120px">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:${lastColor}">${lastTxt}</span>
+            <span style="font-size:10px;color:${peakColor}">${peakTxt}</span>
+          </div>
         </td>
-        <td class="tc">${badge}</td>
+        <td data-col="status" class="tc" style="display:${visibleCols.has('status')?'':'none'}">${badge}</td>
       </tr>`;
     }).join('');
   }
 
+  applyColVisibility();
   // Insight Tab
   renderInsight(sorted, months);
 }
