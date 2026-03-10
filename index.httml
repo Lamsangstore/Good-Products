@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lamsang Store Analytics</title>
+    <style>
+        /* ================= CSS เขียนเองทั้งหมด ================= */
+        :root {
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-light: #e2e8f0;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --danger: #ef4444;
+            --danger-bg: #fef2f2;
+            --danger-border: #fecaca;
+            --success: #10b981;
+            --success-bg: #ecfdf5;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            padding: 24px;
+            line-height: 1.5;
+        }
+
+        /* Layout & Header */
+        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 32px; }
+        .title-group h1 { font-size: 24px; display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+        .title-group p { color: var(--text-muted); font-size: 14px; }
+
+        /* Buttons */
+        .btn {
+            background-color: var(--primary); color: white; border: none; padding: 10px 16px;
+            border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;
+            display: flex; align-items: center; gap: 8px; transition: background 0.2s;
+        }
+        .btn:hover { background-color: var(--primary-hover); }
+
+        /* KPI Cards */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 32px; }
+        .kpi-card {
+            background: var(--bg-card); padding: 24px; border-radius: 12px;
+            border: 1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex; justify-content: space-between; align-items: flex-start;
+        }
+        .kpi-card h3 { font-size: 32px; margin-top: 4px; }
+        .kpi-card h3 span { font-size: 16px; font-weight: normal; color: var(--text-muted); }
+        .kpi-card p { font-size: 14px; font-weight: 500; color: var(--text-muted); }
+        
+        .icon-box { padding: 12px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .icon-blue { background: #eff6ff; color: #3b82f6; }
+        .icon-red { background: #fef2f2; color: #ef4444; }
+        .icon-green { background: #ecfdf5; color: #10b981; }
+
+        /* Alert Section */
+        .alert-section { background: var(--danger-bg); border: 1px solid var(--danger-border); padding: 20px; border-radius: 12px; margin-bottom: 32px; display: none; }
+        .alert-section.active { display: block; }
+        .alert-title { color: #b91c1c; font-size: 16px; font-weight: bold; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .alert-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+        .alert-item { background: white; padding: 16px; border-radius: 8px; border: 1px solid var(--danger-border); }
+        .alert-item p { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px;}
+        .alert-item .stats { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); }
+
+        /* Table */
+        .table-container { background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-light); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .table-header { padding: 20px; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+        .search-box { padding: 8px 16px; border: 1px solid #cbd5e1; border-radius: 8px; width: 250px; font-size: 14px; outline: none; }
+        .search-box:focus { border-color: var(--primary); }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: #f8fafc; padding: 16px; font-weight: 500; color: var(--text-muted); font-size: 14px; border-bottom: 1px solid var(--border-light); }
+        td { padding: 16px; border-bottom: 1px solid var(--border-light); font-size: 14px; }
+        tr:hover { background-color: #f8fafc; }
+
+        .sku-subtext { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+        .progress-bar { width: 100%; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; margin-top: 4px; }
+        .progress-fill { height: 100%; background: var(--primary); border-radius: 4px; }
+        .progress-fill.danger { background: var(--danger); }
+
+        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .badge.success { background: var(--success-bg); color: var(--success); }
+        .badge.danger { background: var(--danger-bg); color: var(--danger); }
+
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+
+        /* Loading Overlay */
+        .loading {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8); backdrop-filter: blur(4px);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 1000; display: none;
+        }
+        .loading.active { display: flex; }
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid #e2e8f0;
+            border-top-color: var(--primary); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="title-group">
+            <h1>
+                <svg style="color: var(--primary)"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                Lamsang Store Analytics
+            </h1>
+            <p>เชื่อมต่อตรงกับ Google Sheets ข้อมูลอัปเดตแบบเรียลไทม์</p>
+        </div>
+        <button id="syncBtn" class="btn" onclick="syncDataFromGoogleSheets()">
+            <svg><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+            ซิงก์ข้อมูลล่าสุด
+        </button>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p style="font-weight: 500; color: var(--text-muted);" id="loadingText">กำลังวิเคราะห์ข้อมูล...</p>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div>
+                <p>สินค้าที่วิเคราะห์ทั้งหมด</p>
+                <h3><span id="kpi-total">0</span> <span>SKUs</span></h3>
+            </div>
+            <div class="icon-box icon-blue">
+                <svg><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div>
+                <p style="color: #ef4444;">สินค้าเสี่ยงของขาด (Stockout)</p>
+                <h3 style="color: #ef4444;"><span id="kpi-stockout">0</span> <span style="color: #fca5a5;">รายการ</span></h3>
+            </div>
+            <div class="icon-box icon-red">
+                <svg><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div>
+                <p style="color: #10b981;">ความเร็วขายสูงสุด (Best Velocity)</p>
+                <h3 style="color: #10b981;"><span id="kpi-velocity">0</span> <span style="color: #6ee7b7;">ชิ้น/วัน</span></h3>
+            </div>
+            <div class="icon-box icon-green">
+                <svg><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Section -->
+    <div id="alert-section" class="alert-section">
+        <div class="alert-title">
+            <svg><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            รายการที่ต้องตรวจสอบสต๊อคด่วน (ยอดขายต่อวันสูง แต่วันที่ขายได้น้อย)
+        </div>
+        <div id="alert-grid" class="alert-grid"></div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+        <div class="table-header">
+            <h2 style="font-size: 18px;">ตารางวิเคราะห์ความเร็วการขาย (Sales Velocity)</h2>
+            <input type="text" id="search-input" class="search-box" placeholder="ค้นหาชื่อสินค้า, SKU..." onkeyup="handleSearch(event)">
+        </div>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>SKU / ชื่อสินค้า</th>
+                        <th class="text-right">ยอดขายรวม</th>
+                        <th class="text-right">วันที่ขายได้</th>
+                        <th style="width: 30%;">ความเร็วการขาย (Velocity)</th>
+                        <th class="text-center">สถานะ</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <tr>
+                        <td colspan="5" class="text-center" style="padding: 40px; color: var(--text-muted);">
+                            กำลังดึงข้อมูล...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // -------------------------------------------------------------
+        // การเชื่อมต่อ Google Sheets ผ่าน JSON API (แก้ปัญหา CORS & CSV Error)
+        // -------------------------------------------------------------
+        const SHEET_ID = '1rO8rJbVPfTRiuuZB0WVx3NnIFSYgs2Vh2Nu6bc-rKhk';
+        let applicationData = [];
+        let maxVelocity = 0;
+
+        window.onload = () => {
+            syncDataFromGoogleSheets();
+        };
+
+        function showLoading(text) {
+            document.getElementById('loadingText').innerText = text || "กำลังประมวลผล...";
+            document.getElementById('loading').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('active');
+        }
+
+        // ฟังก์ชันดึงข้อมูล JSON จาก Google Sheets
+        async function fetchSheetDataJSON(sheetName) {
+            // ใช้ tqx=out:json เพื่อขอข้อมูลแบบ JSON แทน CSV
+            const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("ไม่สามารถเชื่อมต่อ Google Sheets ได้");
+            const text = await response.text();
+            
+            // ตัดคำสั่งครอบทิ้งเพื่อให้เหลือแต่ JSON บริสุทธิ์
+            const jsonString = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+            return JSON.parse(jsonString);
+        }
+
+        async function syncDataFromGoogleSheets() {
+            showLoading("กำลังเชื่อมต่อข้อมูล...");
+            try {
+                // 1. ดึงข้อมูลชื่อสินค้า (Product name)
+                showLoading("กำลังอัปเดตชื่อสินค้า...");
+                const productData = await fetchSheetDataJSON('Product name');
+                const productDict = {};
+                
+                productData.table.rows.forEach(row => {
+                    if (!row || !row.c) return;
+                    
+                    // Column A (Index 0) คือ SKU, Column D (Index 3) คือ ชื่อสินค้า
+                    const skuCell = row.c[0];
+                    const nameCell = row.c[3];
+                    
+                    const sku = skuCell && skuCell.v ? String(skuCell.v).trim() : '';
+                    const name = nameCell && nameCell.v ? String(nameCell.v).trim() : '';
+                    
+                    if (sku && sku !== 'ต้องกรอกทุกช่อง' && sku !== 'รหัสสินค้าของแต่แต่ละแบบสินค้า') {
+                        productDict[sku] = name || 'ไม่มีชื่อสินค้า';
+                    }
+                });
+
+                // 2. ดึงข้อมูลยอดขาย (Orders)
+                showLoading("กำลังประมวลผลยอดขาย...");
+                const salesData = await fetchSheetDataJSON('Orders');
+                const salesBySku = {};
+                const allDates = new Set();
+
+                salesData.table.rows.forEach(row => {
+                    if (!row || !row.c) return;
+
+                    // Column A (Index 0) คือ วันที่/เวลา
+                    const dateCell = row.c[0];
+                    let dateStr = '';
+                    if (dateCell) {
+                        // ดึงค่าวันที่ (f = formatted value, v = raw value)
+                        dateStr = dateCell.f || String(dateCell.v);
+                    }
+                    if (!dateStr) return;
+
+                    // แยกเอาเฉพาะวันที่ ทิ้งเวลา
+                    const date = dateStr.split(' ')[0];
+                    if (!date) return;
+
+                    // วนลูปเช็ค SKU ตั้งแต่ Column E (Index 4) ถึง Z (Index 25)
+                    for (let col = 4; col <= 25; col++) {
+                        const skuCell = row.c[col];
+                        if (skuCell && skuCell.v) {
+                            const sku = String(skuCell.v).trim();
+                            if (sku) {
+                                allDates.add(date);
+                                if (!salesBySku[sku]) {
+                                    salesBySku[sku] = { totalSold: 0, datesSold: new Set() };
+                                }
+                                salesBySku[sku].totalSold += 1; // นับ 1 ชิ้นต่อ 1 เซลล์
+                                salesBySku[sku].datesSold.add(date);
+                            }
+                        }
+                    }
+                });
+
+                // 3. คำนวณความเร็ว (Velocity)
+                const totalSellingDaysInDataset = allDates.size || 1;
+                const finalData = [];
+
+                for (const sku in salesBySku) {
+                    const itemData = salesBySku[sku];
+                    const activeDays = itemData.datesSold.size;
+                    const totalSold = itemData.totalSold;
+                    const velocity = Number((totalSold / activeDays).toFixed(1));
+                    
+                    // เงื่อนไขแจ้งเตือน: ขายได้ไม่ถึง 70% ของวันเปิดร้าน และมียอดขายเฉลี่ย > 1 ชิ้น/วัน
+                    let status = 'ปกติ';
+                    if (activeDays < (totalSellingDaysInDataset * 0.7) && velocity >= 1) {
+                        status = 'เสี่ยงหมดสต๊อค';
+                    }
+
+                    finalData.push({
+                        sku: sku,
+                        name: productDict[sku] || 'รหัสสินค้าใหม่ (ยังไม่มีในระบบ)',
+                        totalSold: totalSold,
+                        activeDays: activeDays,
+                        velocity: velocity,
+                        status: status
+                    });
+                }
+
+                // 4. นำขึ้นแสดงผลบนหน้าจอ
+                applicationData = finalData;
+                maxVelocity = Math.max(...applicationData.map(d => d.velocity), 1);
+                
+                document.getElementById('search-input').value = ''; 
+                updateDashboard(applicationData);
+                
+            } catch (error) {
+                console.error(error);
+                alert("เกิดข้อผิดพลาดในการดึงข้อมูล!\n\nโปรดตรวจสอบให้แน่ใจว่าไปที่ Google Sheet ของคุณ -> กด 'แชร์' -> เปลี่ยนเป็น 'ทุกคนที่มีลิงก์' (Anyone with the link can view) เรียบร้อยแล้วครับ");
+                
+                // หากดึงไม่ได้จริงๆ แสดงเป็นตารางว่างๆ แจ้งเตือน
+                document.getElementById('table-body').innerHTML = `<tr><td colspan="5" class="text-center" style="padding: 40px; color: var(--danger);">ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบการตั้งค่าการแชร์ Google Sheets</td></tr>`;
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // -------------------------------------------------------------
+        // ระบบจัดการ UI และค้นหา
+        // -------------------------------------------------------------
+        function handleSearch(event) {
+            const searchTerm = event.target.value.toLowerCase();
+            const filteredData = applicationData.filter(item => 
+                item.name.toLowerCase().includes(searchTerm) || 
+                item.sku.toLowerCase().includes(searchTerm)
+            );
+            updateDashboard(filteredData);
+        }
+
+        function updateDashboard(dataToRender) {
+            const sortedData = [...dataToRender].sort((a, b) => b.velocity - a.velocity);
+            
+            const stockouts = sortedData.filter(d => d.status === 'เสี่ยงหมดสต๊อค');
+            const currentMaxVel = sortedData.length > 0 ? Math.max(...sortedData.map(d => d.velocity)) : 0;
+            
+            document.getElementById('kpi-total').textContent = sortedData.length;
+            document.getElementById('kpi-stockout').textContent = stockouts.length;
+            document.getElementById('kpi-velocity').textContent = currentMaxVel.toFixed(1);
+
+            const alertSection = document.getElementById('alert-section');
+            const alertGrid = document.getElementById('alert-grid');
+            if (stockouts.length > 0) {
+                alertSection.classList.add('active');
+                alertGrid.innerHTML = stockouts.map(item => `
+                    <div class="alert-item">
+                        <p title="${item.name}">${item.name}</p>
+                        <div class="stats">
+                            <span>ขายได้: <strong>${item.activeDays} วัน</strong></span>
+                            <span style="color:var(--danger)"><strong>${item.velocity}</strong> ชิ้น/วัน</span>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                alertSection.classList.remove('active');
+            }
+
+            const tbody = document.getElementById('table-body');
+            if (sortedData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center" style="padding: 40px; color: var(--text-muted);">ไม่พบข้อมูล</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = sortedData.map(item => {
+                const isStockout = item.status === 'เสี่ยงหมดสต๊อค';
+                const badge = isStockout 
+                    ? `<span class="badge danger"><svg style="width:12px;height:12px"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> เสี่ยงหมด</span>`
+                    : `<span class="badge success"><svg style="width:12px;height:12px"><polyline points="20 6 9 17 4 12"></polyline></svg> ปกติ</span>`;
+
+                const pct = Math.min((item.velocity / maxVelocity) * 100, 100);
+                const barClass = isStockout ? 'progress-fill danger' : 'progress-fill';
+
+                return `
+                    <tr>
+                        <td>
+                            <div style="font-weight: 500;">${item.name}</div>
+                            <div class="sku-subtext">${item.sku}</div>
+                        </td>
+                        <td class="text-right font-medium">${item.totalSold}</td>
+                        <td class="text-right text-muted">${item.activeDays} วัน</td>
+                        <td>
+                            <div style="display:flex; align-items:center; gap: 12px;">
+                                <span style="font-weight:bold; color:var(--primary); width:40px; text-align:right;">${item.velocity.toFixed(1)}</span>
+                                <div class="progress-bar"><div class="${barClass}" style="width: ${pct}%"></div></div>
+                            </div>
+                        </td>
+                        <td class="text-center">${badge}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
