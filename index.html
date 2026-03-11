@@ -232,6 +232,13 @@ thead th:first-child{width:36px;text-align:center;padding-left:10px;padding-righ
 .order-sum-detail{font-size:11px;color:var(--muted);margin-top:2px}
 .order-sum-qty{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--blue)}
 
+/* ─── LOT VISUALIZATION ─── */
+.lot-vis-roll{background:var(--bg-dark);border-radius:14px;padding:12px 14px;border:1px solid rgba(255,255,255,.06)}
+.lot-vis-roll-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:12px;font-weight:800;color:var(--text)}
+.lot-vis-lots{display:flex;gap:6px;flex-wrap:wrap}
+.lot-vis-lot{background:var(--bg);box-shadow:var(--sm);border-radius:10px;padding:8px 10px;min-width:60px;border-top:3px solid var(--blue)}
+.lot-vis-lot-num{font-size:9px;font-weight:800;color:var(--blue);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;text-align:center}
+
 /* ─── CONVEX / CONCAVE column alternating ─── */
 td.col-convex{background:var(--bg)!important;box-shadow:inset 0 0 0 0 transparent}
 td.col-concave{background:var(--bg-darker)!important}
@@ -868,303 +875,376 @@ function showL(t){ $('loadingText').innerText=t||'กำลังประมว
 function hideL(){ $('loading').classList.remove('on') }
 
 // ════════════════════════════════════════════════
-// ORDER TAB
-// ════════════════════════════════════════════════
+// ORDER TAB  ════════════════════════════════════════════════════
+// Model:
+//   กางเกง : 1 ม้วน = 1 สี = N ล็อค
+//            1 ล็อค = ทุกไซส์ รวม = lotSize ตัว (ตั้งค่าได้, default 12)
+//            ระบบคำนวณ: ต้องสั่งกี่ม้วน + แต่ละม้วนวางล็อคยังไง
+//   เข็มขัด : สั่งจำนวนต่อสีได้เลย (รุ่นเดียวกัน หลายสีพร้อมกัน)
+// ════════════════════════════════════════════════════════════════
+
 let orderCatFilter = 'all';
-// Persistent lot config: { parentSku: { lotsPerRoll, sizes:{ color: { XS,S,M,L,XL,XXL } } } }
-const ORDER_STORE_KEY = 'lamsang_order_v1';
+const ORDER_STORE_KEY = 'lamsang_order_v2';
 let orderConfig = {};
 try { const s=localStorage.getItem(ORDER_STORE_KEY); if(s) orderConfig=JSON.parse(s); } catch(e){}
 function saveOrderConfig(){ try{ localStorage.setItem(ORDER_STORE_KEY, JSON.stringify(orderConfig)); }catch(e){} }
 
-// Classify category
 function classifyCat(cat){
-  const c = (cat||'').toLowerCase();
+  const c=(cat||'').toLowerCase();
   if(c.includes('กางเกง')) return 'pants';
-  if(c.includes('เข็มขัด') || c.includes('belt')) return 'belt';
-  if(c.includes('ไม่เติม') || c.includes('marketplace')) return 'skip';
+  if(c.includes('เข็มขัด')||c.includes('belt')) return 'belt';
+  if(c.includes('ไม่เติม')||c.includes('marketplace')) return 'skip';
   return 'other';
 }
-
-function setOrderCat(btn, cat){
-  orderCatFilter = cat;
+function setOrderCat(btn,cat){
+  orderCatFilter=cat;
   document.querySelectorAll('[data-ocat]').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
   renderOrderTab();
 }
-
-// Group appData by parentSku
 function groupByParent(items){
-  const map = new Map();
+  const map=new Map();
   items.forEach(item=>{
-    const key = item.parentSku || item.sku;
-    if(!map.has(key)) map.set(key, { parentSku:key, name:item.name, category:item.category, skus:[] });
+    const key=item.parentSku||item.sku;
+    if(!map.has(key)) map.set(key,{parentSku:key,name:item.name,category:item.category,skus:[]});
     map.get(key).skus.push(item);
   });
   return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'th'));
 }
+function getAvg(item){ return item.stockAvg||Math.ceil(((item.recStock||0)+(item.stockMaxVel7||0))/2); }
 
-function getAvg(item){ return item.stockAvg || Math.ceil(((item.recStock||0)+(item.stockMaxVel7||0))/2); }
+// ── config helpers ──
+function getPantsCfg(parentSku){
+  if(!orderConfig[parentSku]) orderConfig[parentSku]={};
+  return orderConfig[parentSku];
+}
+// lotsPerRoll = กี่ล็อคต่อม้วน
+function getLotsPerRoll(parentSku){ return getPantsCfg(parentSku).lotsPerRoll||8; }
+// lotSize = กี่ตัวต่อล็อค (รวมทุกไซส์)
+function getLotSize(parentSku){ return getPantsCfg(parentSku).lotSize||12; }
+// sizeRatio for a color: { XS:1, S:2, M:2, L:2, XL:1, ... } (ชิ้นต่อล็อค)
+function getSizeRatio(parentSku, col, sizes, skuBySz){
+  const saved = ((getPantsCfg(parentSku).ratios||{})[col])||{};
+  const lotSize = getLotSize(parentSku);
+  // default: distribute by velocity ratio, sum = lotSize
+  const avgs = sizes.map(sz=> skuBySz[sz] ? getAvg(skuBySz[sz]) : 0);
+  const total = avgs.reduce((a,b)=>a+b,0)||1;
+  const result = {};
+  let remaining = lotSize;
+  sizes.forEach((sz,i)=>{
+    if(saved[sz] !== undefined){ result[sz] = saved[sz]; }
+    else {
+      const share = Math.round((avgs[i]/total)*lotSize);
+      result[sz] = Math.max(0, share);
+    }
+  });
+  // ensure sum = lotSize for unsaved ones (auto-distribute)
+  if(Object.keys(saved).length === 0){
+    const rawSum = Object.values(result).reduce((a,b)=>a+b,0);
+    if(rawSum !== lotSize && rawSum > 0){
+      const diff = lotSize - rawSum;
+      // add remainder to the largest
+      const maxSz = sizes.reduce((a,b)=>result[a]>=result[b]?a:b, sizes[0]);
+      result[maxSz] = Math.max(0, result[maxSz]+diff);
+    }
+  }
+  return result;
+}
+// numRolls for a color = how many rolls to order
+function getNumRolls(parentSku, col){
+  const saved = ((getPantsCfg(parentSku).rolls||{})[col]);
+  return saved !== undefined ? saved : null; // null = auto
+}
+// auto rolls = ceil(colAvg / (lotSize * lotsPerRoll))
+function calcAutoRolls(parentSku, col, colAvg){
+  const lotSize = getLotSize(parentSku);
+  const lotsPerRoll = getLotsPerRoll(parentSku);
+  const capacityPerRoll = lotSize * lotsPerRoll;
+  return Math.max(1, Math.ceil(colAvg / capacityPerRoll));
+}
 
-// ── Render lot config area (กางเกง models) ──
+// ── Lot Config Area (top panel) ──
 function renderLotConfig(){
-  const area = $('lot-config-area'); if(!area) return;
-  const pantsGroups = groupByParent(appData.filter(d=>classifyCat(d.category)==='pants'));
-  if(!pantsGroups.length){ area.innerHTML='<span style="font-size:12px;color:var(--muted)">ไม่พบสินค้าประเภทกางเกงในข้อมูล</span>'; return; }
+  const area=$('lot-config-area'); if(!area) return;
+  const pantsGroups=groupByParent(appData.filter(d=>classifyCat(d.category)==='pants'));
+  if(!pantsGroups.length){ area.innerHTML='<span style="font-size:12px;color:var(--muted)">ไม่พบสินค้าประเภทกางเกง</span>'; return; }
   area.innerHTML = pantsGroups.map(g=>{
-    const cfg = orderConfig[g.parentSku] || {};
-    const lots = cfg.lotsPerRoll || 8;
-    return`<div class="lot-cfg-card">
+    const lotsPerRoll = getLotsPerRoll(g.parentSku);
+    const lotSize     = getLotSize(g.parentSku);
+    const esc = g.parentSku.replace(/'/g,"\\'");
+    return`<div class="lot-cfg-card" style="min-width:220px">
       <div style="font-size:16px">👖</div>
       <div class="lot-cfg-name" title="${g.name}">${g.name}</div>
-      <div style="font-size:10px;color:var(--muted);white-space:nowrap">ล็อค/ม้วน</div>
-      <input class="lot-cfg-input" type="number" min="1" max="20" value="${lots}"
-        onchange="setLotCount('${g.parentSku}',+this.value)"
-        onclick="event.stopPropagation()">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:9px;color:var(--muted);white-space:nowrap">ล็อค/ม้วน</span>
+          <input class="lot-cfg-input" type="number" min="1" max="30" value="${lotsPerRoll}"
+            onchange="setLotCount('${esc}',+this.value)" onclick="event.stopPropagation()" style="width:38px">
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:9px;color:var(--muted);white-space:nowrap">ตัว/ล็อค</span>
+          <input class="lot-cfg-input" type="number" min="1" max="50" value="${lotSize}"
+            onchange="setLotSize('${esc}',+this.value)" onclick="event.stopPropagation()" style="width:38px;color:var(--green)">
+        </div>
+      </div>
     </div>`;
   }).join('');
 }
-function setLotCount(parentSku, n){
-  if(!orderConfig[parentSku]) orderConfig[parentSku]={};
-  orderConfig[parentSku].lotsPerRoll = Math.max(1,n||8);
-  saveOrderConfig();
-  renderOrderTab();
+function setLotCount(parentSku,n){
+  getPantsCfg(parentSku).lotsPerRoll=Math.max(1,n||8);
+  saveOrderConfig(); renderOrderTab();
+}
+function setLotSize(parentSku,n){
+  getPantsCfg(parentSku).lotSize=Math.max(1,n||12);
+  // clear saved ratios so they recalculate
+  delete getPantsCfg(parentSku).ratios;
+  saveOrderConfig(); renderOrderTab();
 }
 
 // ── MAIN RENDER ──
 function renderOrderTab(){
   if(!appData.length) return;
   renderLotConfig();
-
-  const srch = ($('order-srch')||{}).value?.toLowerCase().trim()||'';
-  const groups = groupByParent(appData.filter(d=>{
-    const ct = classifyCat(d.category);
+  const srch=($('order-srch')||{}).value?.toLowerCase().trim()||'';
+  const groups=groupByParent(appData.filter(d=>{
+    const ct=classifyCat(d.category);
     if(ct==='skip') return false;
-    if(orderCatFilter!=='all' && ct!==orderCatFilter) return false;
-    if(srch && !d.name.toLowerCase().includes(srch) && !d.sku.toLowerCase().includes(srch)) return false;
+    if(orderCatFilter!=='all'&&ct!==orderCatFilter) return false;
+    if(srch&&!d.name.toLowerCase().includes(srch)&&!d.sku.toLowerCase().includes(srch)) return false;
     return true;
   }));
+  const pantsGroups=groups.filter(g=>classifyCat(g.category)==='pants');
+  const beltGroups =groups.filter(g=>classifyCat(g.category)==='belt');
+  const otherGroups=groups.filter(g=>classifyCat(g.category)==='other');
+  let html='';
 
-  const pantsGroups  = groups.filter(g=>classifyCat(g.category)==='pants');
-  const beltGroups   = groups.filter(g=>classifyCat(g.category)==='belt');
-  const otherGroups  = groups.filter(g=>classifyCat(g.category)==='other');
-
-  let html = '';
-
-  // ── PANTS ──
-  if(pantsGroups.length && (orderCatFilter==='all'||orderCatFilter==='pants')){
-    html += `<div class="order-group">
+  if(pantsGroups.length&&(orderCatFilter==='all'||orderCatFilter==='pants')){
+    html+=`<div class="order-group">
       <div class="order-group-hdr">
         <span style="font-size:18px">👖</span>
-        <span class="order-group-ttl">กางเกง (สั่งเป็นล็อค)</span>
-        <span class="order-group-sub">1 ม้วนผ้า = N ล็อค · แต่ละล็อคมีทุกไซส์</span>
+        <span class="order-group-ttl">กางเกง — สั่งเป็นม้วน (1 ม้วน = 1 สี)</span>
+        <span class="order-group-sub">คำนวณจากค่าเฉลี่ย ÷ (ตัว/ล็อค × ล็อค/ม้วน)</span>
         <span class="order-group-badge">${pantsGroups.length} รุ่น</span>
       </div>`;
-    pantsGroups.forEach(g=>{
-      html += renderPantsCard(g);
-    });
-    html += '</div>';
+    pantsGroups.forEach(g=>{ html+=renderPantsCard(g); });
+    html+='</div>';
   }
-
-  // ── BELT ──
-  if(beltGroups.length && (orderCatFilter==='all'||orderCatFilter==='belt')){
-    html += `<div class="order-group">
+  if(beltGroups.length&&(orderCatFilter==='all'||orderCatFilter==='belt')){
+    html+=`<div class="order-group">
       <div class="order-group-hdr">
         <span style="font-size:18px">🎗️</span>
-        <span class="order-group-ttl">เข็มขัด (สั่งเป็นจำนวน รุ่นเดียว หลายสี)</span>
-        <span class="order-group-sub">สั่งพร้อมกันหลายสีเพื่อประหยัดค่าขนส่ง</span>
+        <span class="order-group-ttl">เข็มขัด — สั่งรุ่นเดียว หลายสีพร้อมกัน</span>
         <span class="order-group-badge">${beltGroups.length} รุ่น</span>
       </div>`;
-    beltGroups.forEach(g=>{ html += renderBeltCard(g); });
-    html += '</div>';
+    beltGroups.forEach(g=>{ html+=renderBeltCard(g); });
+    html+='</div>';
   }
-
-  // ── OTHER ──
-  if(otherGroups.length && (orderCatFilter==='all'||orderCatFilter==='other')){
-    html += `<div class="order-group">
+  if(otherGroups.length&&(orderCatFilter==='all'||orderCatFilter==='other')){
+    html+=`<div class="order-group">
       <div class="order-group-hdr">
         <span style="font-size:18px">📦</span>
         <span class="order-group-ttl">สินค้าอื่นๆ</span>
         <span class="order-group-badge">${otherGroups.length} รุ่น</span>
       </div>`;
-    otherGroups.forEach(g=>{ html += renderBeltCard(g); }); // same card style
-    html += '</div>';
+    otherGroups.forEach(g=>{ html+=renderBeltCard(g); });
+    html+='</div>';
   }
-
-  if(!html) html = `<div class="empty" style="padding:80px">ไม่พบสินค้าที่ตรงเงื่อนไข</div>`;
-  $('order-content').innerHTML = html;
+  if(!html) html=`<div class="empty" style="padding:80px">ไม่พบสินค้าที่ตรงเงื่อนไข</div>`;
+  $('order-content').innerHTML=html;
 }
 
-// ── PANTS CARD ──
+// ── PANTS CARD (new model) ──
 function renderPantsCard(g){
-  const cfg = orderConfig[g.parentSku] || {};
-  const lotsPerRoll = cfg.lotsPerRoll || 8;
-  // group skus by color
+  const lotsPerRoll = getLotsPerRoll(g.parentSku);
+  const lotSize     = getLotSize(g.parentSku);
+  const capPerRoll  = lotSize * lotsPerRoll; // ตัว/ม้วน
+  const sizeOrder   = ['XS','S','M','L','XL','XXL','XXXL','FREE SIZE'];
+
   const byColor = new Map();
   g.skus.forEach(item=>{
-    const col = item.color||'ไม่ระบุสี';
-    if(!byColor.has(col)) byColor.set(col,[]);
-    byColor.get(col).push(item);
+    const c=item.color||'ไม่ระบุสี';
+    if(!byColor.has(c)) byColor.set(c,[]);
+    byColor.get(c).push(item);
   });
-  const colors = [...byColor.keys()];
-  // calc total avg demand → recommended lots per color
+
   const totalAvg = g.skus.reduce((s,d)=>s+getAvg(d),0);
-  const months = +($('monthsAhead')?.value||1);
+  let colorsHtml='', grandTotal=0, grandRolls=0;
 
-  let colorsHtml = '';
-  colors.forEach(col=>{
-    const skus = byColor.get(col);
+  byColor.forEach((skus,col)=>{
     const colAvg = skus.reduce((s,d)=>s+getAvg(d),0);
-    // sizes for this color
-    const sizeOrder = ['XS','S','M','L','XL','XXL','XXXL','FREE SIZE'];
     const skuBySz = Object.fromEntries(skus.map(d=>[d.size||'?',d]));
-    const sizes = [...new Set([...sizeOrder.filter(sz=>skuBySz[sz]), ...skus.map(d=>d.size||'?')])];
-    // recommended qty per size from avg
-    const cfgSizes = (cfg.colors||{})[col] || {};
-    // default distribution based on velocity ratio
-    const totalColAmt = skus.reduce((s,d)=>s+getAvg(d),0)||1;
+    const sizes   = [...new Set([...sizeOrder.filter(sz=>skuBySz[sz]),...skus.map(d=>d.size||'?')])];
 
-    // how many lots to order this color
-    const cfgLots = cfgSizes._lots !== undefined ? cfgSizes._lots
-      : Math.max(1, Math.round((colAvg / (totalAvg||1)) * lotsPerRoll));
+    // number of rolls
+    const autoRolls = calcAutoRolls(g.parentSku, col, colAvg);
+    const savedRolls = getNumRolls(g.parentSku, col);
+    const numRolls   = savedRolls !== null ? savedRolls : autoRolls;
 
-    const sizesHtml = sizes.map(sz=>{
-      const item = skuBySz[sz];
-      const avgQty = item ? getAvg(item) : 0;
-      // default per lot = round ratio
-      const perLotDefault = item ? Math.max(1, Math.round((avgQty/(totalColAmt||1))*lotsPerRoll)) : 0;
-      const saved = cfgSizes[sz] !== undefined ? cfgSizes[sz] : perLotDefault;
-      return`<div class="lot-size-box">
+    // size ratio (ชิ้นต่อล็อค)
+    const ratio = getSizeRatio(g.parentSku, col, sizes, skuBySz);
+    const ratioSum = Object.values(ratio).reduce((a,b)=>a+b,0);
+    const ratioOk  = ratioSum === lotSize;
+
+    // total pieces this color
+    const totalPieces = numRolls * lotsPerRoll * ratioSum; // = numRolls * lotsPerRoll * lotSize if ok
+    grandTotal += totalPieces;
+    grandRolls += numRolls;
+
+    // demand coverage
+    const coverageMonths = colAvg > 0 ? (totalPieces / colAvg).toFixed(1) : '—';
+    const coverageColor  = colAvg > 0 ? (totalPieces >= colAvg ? 'var(--green)' : 'var(--orange)') : 'var(--muted)';
+
+    const esc = g.parentSku.replace(/'/g,"\\'");
+    const colEsc = col.replace(/'/g,"\\'");
+
+    // size input cells
+    const sizeCells = sizes.map(sz=>{
+      const v = ratio[sz]||0;
+      const perColor = v * numRolls * lotsPerRoll; // total ตัวของ size นี้
+      return`<div class="lot-size-box" style="min-width:62px">
         <div class="lot-size-lbl">${sz}</div>
-        <input class="lot-size-input" type="number" min="0" max="99" value="${saved}"
-          onchange="setSizeQty('${g.parentSku}','${col}','${sz}',+this.value)"
-          onclick="event.stopPropagation()">
+        <input class="lot-size-input" type="number" min="0" max="50" value="${v}"
+          onchange="setSizeRatio('${esc}','${colEsc}','${sz}',+this.value)"
+          onclick="event.stopPropagation()" title="${sz}: ${v} ตัว/ล็อค = ${perColor} ตัวรวม">
+        <div style="font-size:9px;color:var(--faint);text-align:center;margin-top:2px">${perColor} ตัว</div>
       </div>`;
     }).join('');
 
-    const totalThisColor = sizes.reduce((s,sz)=>{
-      const item = skuBySz[sz];
-      const avgQty = item ? getAvg(item) : 0;
-      const totalColAmt2 = skus.reduce((s2,d)=>s2+getAvg(d),0)||1;
-      const perLotDefault = item ? Math.max(1, Math.round((avgQty/totalColAmt2)*lotsPerRoll)) : 0;
-      const saved = (cfgSizes[sz] !== undefined) ? cfgSizes[sz] : perLotDefault;
-      return s + saved*cfgLots;
-    },0);
+    // roll breakdown: N ม้วน × L ล็อค × ratioSum ตัว
+    const rollBreakdown = `${numRolls} ม้วน × ${lotsPerRoll} ล็อค × ${ratioSum} ตัว/ล็อค`;
 
-    colorsHtml += `<div style="margin-bottom:14px;padding:12px 16px;background:var(--bg-dark);border-radius:14px">
-      <div class="lot-color-hdr">
-        <div class="lot-color-name">🎨 ${col}</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
-          <span style="font-size:10px;color:var(--muted)">จำนวนล็อค:</span>
-          <input class="lot-cfg-input" type="number" min="0" max="50" value="${cfgLots}" style="width:40px"
-            onchange="setColorLots('${g.parentSku}','${col}',+this.value)"
-            onclick="event.stopPropagation()">
-          <span class="lot-color-total">รวม ${totalThisColor} ชิ้น</span>
+    colorsHtml += `<div style="margin-bottom:14px;padding:14px 16px;background:var(--bg-dark);border-radius:14px">
+      <!-- color header row -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="font-size:13px;font-weight:800;color:var(--text)">🎨 ${col}</div>
+        <div style="background:rgba(77,143,255,.12);border:1px solid rgba(77,143,255,.2);border-radius:8px;padding:3px 10px;font-size:11px;font-weight:700;color:var(--blue)">${colAvg.toFixed(0)} ตัว/เดือน</div>
+        <!-- num rolls -->
+        <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+          <span style="font-size:10px;color:var(--muted)">จำนวนม้วน:</span>
+          <input class="lot-cfg-input" type="number" min="0" max="99" value="${numRolls}" style="width:42px;color:var(--purple)"
+            onchange="setNumRolls('${esc}','${colEsc}',+this.value)" onclick="event.stopPropagation()">
+          <span style="font-size:10px;color:var(--muted)">(แนะนำ ${autoRolls})</span>
         </div>
       </div>
-      <div class="lot-sizes">${sizesHtml}
-        <span style="font-size:10px;color:var(--muted);margin-left:4px">ชิ้น/ล็อค</span>
+
+      <!-- size ratios: ชิ้นต่อล็อค -->
+      <div style="margin-bottom:10px">
+        <div style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px">
+          ชิ้น/ล็อค ${ratioOk?'<span style="color:var(--green)">✓ รวม='+lotSize+'</span>':'<span style="color:var(--orange)">⚠ รวม='+ratioSum+' (ควรเป็น '+lotSize+')</span>'}
+        </div>
+        <div class="lot-sizes">${sizeCells}</div>
       </div>
+
+      <!-- breakdown summary -->
+      <div style="background:rgba(46,204,138,.08);border:1px solid rgba(46,204,138,.15);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="font-size:11px;color:var(--muted)">${rollBreakdown}</div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-size:18px;font-weight:800;color:var(--green);font-family:'IBM Plex Mono',monospace">${totalPieces} <span style="font-size:11px;font-weight:400">ตัว</span></div>
+          <div style="font-size:10px;color:${coverageColor}">ครอบคลุม ~${coverageMonths} เดือน</div>
+        </div>
+      </div>
+
+      <!-- lot layout visualization -->
+      ${renderLotLayout(numRolls, lotsPerRoll, ratio, sizes, lotSize, colEsc)}
     </div>`;
   });
-
-  const totalOrder = calcPantsTotalOrder(g);
-  const recLots = Math.ceil(totalAvg / Math.max(1, g.skus.length));
 
   return`<div class="lot-card">
     <div class="lot-card-hdr">
       <div>
         <div class="lot-card-name">👖 ${g.name}</div>
-        <div class="lot-card-sku">${g.parentSku} · ${lotsPerRoll} ล็อค/ม้วน · ${colors.length} สี</div>
+        <div class="lot-card-sku">${g.parentSku} · ${lotsPerRoll} ล็อค/ม้วน · ${lotSize} ตัว/ล็อค · ${[...byColor.keys()].length} สี</div>
       </div>
       <div class="lot-card-avg">
-        <div class="lot-card-avg-lbl">ค่าเฉลี่ยรวม</div>
-        <div><span class="lot-card-avg-val">${Math.ceil(totalAvg)}</span><span class="lot-card-avg-unit"> ชิ้น/เดือน</span></div>
-        <div style="font-size:10px;color:var(--green);margin-top:2px;opacity:.7">สั่งรวม ${totalOrder} ชิ้น</div>
+        <div class="lot-card-avg-lbl">รวมสั่ง</div>
+        <div><span class="lot-card-avg-val">${grandTotal}</span><span class="lot-card-avg-unit"> ตัว</span></div>
+        <div style="font-size:10px;color:var(--green);margin-top:2px;opacity:.8">${grandRolls} ม้วน · เฉลี่ย ${Math.ceil(totalAvg)} ตัว/เดือน</div>
       </div>
     </div>
     ${colorsHtml}
-    <div class="lot-info-bar">
-      <div class="lot-info-item">📦 ยอดรวมทั้งหมด: <b class="lot-ok">${totalOrder} ชิ้น</b></div>
-      <div class="lot-info-item">🎨 จำนวนสี: <b>${colors.length} สี</b></div>
-      <div class="lot-info-item">📐 จำนวนไซส์: <b>${[...new Set(g.skus.map(d=>d.size))].filter(Boolean).length} ไซส์</b></div>
-    </div>
   </div>`;
 }
 
-function calcPantsTotalOrder(g){
-  const cfg = orderConfig[g.parentSku]||{};
-  const lotsPerRoll = cfg.lotsPerRoll||8;
-  const byColor = new Map();
-  g.skus.forEach(item=>{ const c=item.color||'ไม่ระบุสี'; if(!byColor.has(c)) byColor.set(c,[]); byColor.get(c).push(item); });
-  let total = 0;
-  byColor.forEach((skus,col)=>{
-    const cfgSizes=(cfg.colors||{})[col]||{};
-    const totalColAmt=skus.reduce((s,d)=>s+getAvg(d),0)||1;
-    const cfgLots=cfgSizes._lots!==undefined?cfgSizes._lots:Math.max(1,Math.round((skus.reduce((s,d)=>s+getAvg(d),0)/(g.skus.reduce((s,d)=>s+getAvg(d),0)||1))*lotsPerRoll));
-    const sizeOrder=['XS','S','M','L','XL','XXL','XXXL','FREE SIZE'];
-    const allSizes=[...new Set([...sizeOrder.filter(sz=>skus.find(d=>d.size===sz)),...skus.map(d=>d.size||'?')])];
-    allSizes.forEach(sz=>{
-      const item=skus.find(d=>d.size===sz);
-      const avgQty=item?getAvg(item):0;
-      const perLotDefault=item?Math.max(1,Math.round((avgQty/totalColAmt)*lotsPerRoll)):0;
-      const saved=cfgSizes[sz]!==undefined?cfgSizes[sz]:perLotDefault;
-      total+=saved*cfgLots;
-    });
-  });
-  return total;
+// ── Lot Layout Visualization ──
+function renderLotLayout(numRolls, lotsPerRoll, ratio, sizes, lotSize, colorLabel){
+  if(numRolls === 0) return '';
+  // show max 3 rolls
+  const showRolls = Math.min(numRolls, 3);
+  let rollsHtml = '';
+  for(let r=0; r<showRolls; r++){
+    let lotsHtml = '';
+    for(let l=0; l<lotsPerRoll; l++){
+      const sizeBoxes = sizes.map(sz=>{
+        const qty = ratio[sz]||0;
+        if(qty===0) return '';
+        return`<div style="display:flex;align-items:center;gap:3px">
+          <span style="font-size:9px;font-weight:800;color:var(--muted);min-width:22px">${sz}</span>
+          <span style="font-size:11px;font-weight:700;color:var(--blue);font-family:'IBM Plex Mono',monospace">×${qty}</span>
+        </div>`;
+      }).join('');
+      lotsHtml += `<div class="lot-vis-lot">
+        <div class="lot-vis-lot-num">ล${l+1}</div>
+        <div style="display:flex;flex-direction:column;gap:2px">${sizeBoxes}</div>
+        <div style="font-size:9px;color:var(--faint);margin-top:4px;text-align:center">${lotSize} ตัว</div>
+      </div>`;
+    }
+    rollsHtml += `<div class="lot-vis-roll">
+      <div class="lot-vis-roll-hdr">
+        <span>🧵 ม้วน ${r+1}${r===0&&numRolls>showRolls?' (ตัวอย่าง)':''}</span>
+        <span style="font-size:10px;color:var(--muted)">${lotsPerRoll} ล็อค · ${lotsPerRoll*lotSize} ตัว</span>
+      </div>
+      <div class="lot-vis-lots">${lotsHtml}</div>
+    </div>`;
+  }
+  if(numRolls > showRolls){
+    rollsHtml += `<div style="padding:14px;text-align:center;font-size:11px;color:var(--muted)">+ อีก ${numRolls-showRolls} ม้วน (โครงสร้างเดียวกัน)</div>`;
+  }
+  return`<div style="margin-top:12px">
+    <div style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px">📋 โครงสร้างล็อค</div>
+    <div style="display:flex;flex-direction:column;gap:10px">${rollsHtml}</div>
+  </div>`;
 }
 
-function setSizeQty(parentSku, col, sz, val){
+function setSizeRatio(parentSku,col,sz,val){
   if(!orderConfig[parentSku]) orderConfig[parentSku]={};
-  if(!orderConfig[parentSku].colors) orderConfig[parentSku].colors={};
-  if(!orderConfig[parentSku].colors[col]) orderConfig[parentSku].colors[col]={};
-  orderConfig[parentSku].colors[col][sz] = Math.max(0,val||0);
-  saveOrderConfig();
-  // update total display without full re-render
-  renderOrderTab();
+  if(!orderConfig[parentSku].ratios) orderConfig[parentSku].ratios={};
+  if(!orderConfig[parentSku].ratios[col]) orderConfig[parentSku].ratios[col]={};
+  orderConfig[parentSku].ratios[col][sz]=Math.max(0,val||0);
+  saveOrderConfig(); renderOrderTab();
 }
-
-function setColorLots(parentSku, col, val){
+function setNumRolls(parentSku,col,val){
   if(!orderConfig[parentSku]) orderConfig[parentSku]={};
-  if(!orderConfig[parentSku].colors) orderConfig[parentSku].colors={};
-  if(!orderConfig[parentSku].colors[col]) orderConfig[parentSku].colors[col]={};
-  orderConfig[parentSku].colors[col]._lots = Math.max(0,val||0);
-  saveOrderConfig();
-  renderOrderTab();
+  if(!orderConfig[parentSku].rolls) orderConfig[parentSku].rolls={};
+  orderConfig[parentSku].rolls[col]=Math.max(0,val||0);
+  saveOrderConfig(); renderOrderTab();
 }
 
 // ── BELT CARD ──
 function renderBeltCard(g){
-  // group by parentSku — all colors shown together
-  const colors = [...new Set(g.skus.map(d=>d.color).filter(Boolean))];
-  const totalAvg = g.skus.reduce((s,d)=>s+getAvg(d),0);
-  const cfg = orderConfig[g.parentSku]||{};
-
-  const colorItems = g.skus.map(item=>{
-    const saved = (cfg.qtys||{})[item.sku] !== undefined ? (cfg.qtys||{})[item.sku] : Math.ceil(getAvg(item));
-    const colLabel = [item.color, item.size].filter(Boolean).join(' / ') || item.sku;
+  const totalAvg=g.skus.reduce((s,d)=>s+getAvg(d),0);
+  const cfg=orderConfig[g.parentSku]||{};
+  const colorItems=g.skus.map(item=>{
+    const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(getAvg(item));
+    const colLabel=[item.color,item.size].filter(Boolean).join(' / ')||item.sku;
+    const esc=g.parentSku.replace(/'/g,"\\'");
     return`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-dark);border-radius:10px;min-width:180px">
       <div style="flex:1">
         <div style="font-size:12px;font-weight:700;color:var(--text)">${colLabel}</div>
         <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">${item.sku}</div>
-        <div style="font-size:10px;color:var(--green);margin-top:2px">เฉลี่ย ${Math.ceil(getAvg(item))} ชิ้น/เดือน</div>
+        <div style="font-size:10px;color:var(--green);margin-top:2px">เฉลี่ย ${Math.ceil(getAvg(item))} ตัว/เดือน</div>
       </div>
       <div style="text-align:center">
         <div style="font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px">สั่ง</div>
         <input class="lot-cfg-input" type="number" min="0" value="${saved}" style="width:52px;font-size:17px"
-          onchange="setBeltQty('${g.parentSku}','${item.sku}',+this.value)"
-          onclick="event.stopPropagation()">
+          onchange="setBeltQty('${esc}','${item.sku}',+this.value)" onclick="event.stopPropagation()">
         <div style="font-size:10px;color:var(--muted)">ชิ้น</div>
       </div>
     </div>`;
   }).join('');
-
-  const totalOrder = g.skus.reduce((s,item)=>{
+  const totalOrder=g.skus.reduce((s,item)=>{
     const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(getAvg(item));
     return s+saved;
   },0);
-
   return`<div class="belt-card">
     <div class="belt-info">
       <div class="belt-name">🎗️ ${g.name}</div>
@@ -1175,105 +1255,97 @@ function renderBeltCard(g){
       <div class="belt-qty-lbl">รวมสั่ง</div>
       <div class="belt-qty-val">${totalOrder}</div>
       <div class="belt-qty-unit">ชิ้น / ออเดอร์</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:6px">เฉลี่ย ${Math.ceil(totalAvg)} ชิ้น/เดือน</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">เฉลี่ย ${Math.ceil(totalAvg)} ตัว/เดือน</div>
     </div>
   </div>`;
 }
-
-function setBeltQty(parentSku, sku, val){
+function setBeltQty(parentSku,sku,val){
   if(!orderConfig[parentSku]) orderConfig[parentSku]={};
   if(!orderConfig[parentSku].qtys) orderConfig[parentSku].qtys={};
-  orderConfig[parentSku].qtys[sku] = Math.max(0,val||0);
-  saveOrderConfig();
-  renderOrderTab();
+  orderConfig[parentSku].qtys[sku]=Math.max(0,val||0);
+  saveOrderConfig(); renderOrderTab();
 }
 
 // ── GENERATE ORDER SUMMARY ──
 function generateOrder(){
   if(!appData.length) return;
-  const months = +($('monthsAhead')?.value||1);
-  let html = '';
-
-  // Pants
-  const pantsGroups = groupByParent(appData.filter(d=>classifyCat(d.category)==='pants'));
+  let html='';
+  const pantsGroups=groupByParent(appData.filter(d=>classifyCat(d.category)==='pants'));
   if(pantsGroups.length){
-    html += `<div class="order-sum-section">
-      <div class="order-sum-ttl">👖 กางเกง</div>`;
+    html+=`<div class="order-sum-section"><div class="order-sum-ttl">👖 กางเกง</div>`;
     pantsGroups.forEach(g=>{
-      const total = calcPantsTotalOrder(g);
-      const cfg = orderConfig[g.parentSku]||{};
-      const byColor = new Map();
-      g.skus.forEach(item=>{ const c=item.color||'ไม่ระบุสี'; if(!byColor.has(c)) byColor.set(c,[]); byColor.get(c).push(item); });
-      let detail = [];
+      const lotsPerRoll=getLotsPerRoll(g.parentSku);
+      const lotSize=getLotSize(g.parentSku);
+      const sizeOrder=['XS','S','M','L','XL','XXL','XXXL','FREE SIZE'];
+      const byColor=new Map();
+      g.skus.forEach(item=>{const c=item.color||'ไม่ระบุสี';if(!byColor.has(c))byColor.set(c,[]);byColor.get(c).push(item);});
+      let grand=0, rollList=[];
       byColor.forEach((skus,col)=>{
-        const cfgSizes=(cfg.colors||{})[col]||{};
-        const totalColAmt=skus.reduce((s,d)=>s+getAvg(d),0)||1;
-        const lotsPerRoll=cfg.lotsPerRoll||8;
-        const cfgLots=cfgSizes._lots!==undefined?cfgSizes._lots:Math.max(1,Math.round((skus.reduce((s,d)=>s+getAvg(d),0)/(g.skus.reduce((s,d)=>s+getAvg(d),0)||1))*lotsPerRoll));
-        detail.push(`${col} × ${cfgLots} ล็อค`);
+        const colAvg=skus.reduce((s,d)=>s+getAvg(d),0);
+        const skuBySz=Object.fromEntries(skus.map(d=>[d.size||'?',d]));
+        const sizes=[...new Set([...sizeOrder.filter(sz=>skuBySz[sz]),...skus.map(d=>d.size||'?')])];
+        const autoRolls=calcAutoRolls(g.parentSku,col,colAvg);
+        const savedRolls=getNumRolls(g.parentSku,col);
+        const numRolls=savedRolls!==null?savedRolls:autoRolls;
+        const ratio=getSizeRatio(g.parentSku,col,sizes,skuBySz);
+        const ratioSum=Object.values(ratio).reduce((a,b)=>a+b,0);
+        const total=numRolls*lotsPerRoll*ratioSum;
+        grand+=total;
+        const sizeStr=sizes.map(sz=>`${sz}×${ratio[sz]||0}`).join(' ');
+        rollList.push(`${col}: ${numRolls} ม้วน (${sizeStr})`);
       });
-      html += `<div class="order-sum-row">
-        <div><div class="order-sum-name">${g.name}</div><div class="order-sum-detail">${detail.join(' · ')}</div></div>
-        <div class="order-sum-qty">${total} ชิ้น</div>
+      html+=`<div class="order-sum-row">
+        <div><div class="order-sum-name">${g.name}</div><div class="order-sum-detail">${rollList.join(' · ')}</div></div>
+        <div class="order-sum-qty">${grand} ตัว</div>
       </div>`;
     });
-    html += '</div>';
+    html+='</div>';
   }
-
-  // Belt + Other
-  const restGroups = groupByParent(appData.filter(d=>{ const ct=classifyCat(d.category); return ct==='belt'||ct==='other'; }));
+  const restGroups=groupByParent(appData.filter(d=>{const ct=classifyCat(d.category);return ct==='belt'||ct==='other';}));
   if(restGroups.length){
-    html += `<div class="order-sum-section">
-      <div class="order-sum-ttl">🎗️ เข็มขัด / อื่นๆ</div>`;
+    html+=`<div class="order-sum-section"><div class="order-sum-ttl">🎗️ เข็มขัด / อื่นๆ</div>`;
     restGroups.forEach(g=>{
-      const cfg = orderConfig[g.parentSku]||{};
-      const total = g.skus.reduce((s,item)=>{
-        const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(getAvg(item));
-        return s+saved;
-      },0);
-      const details = g.skus.map(item=>{
-        const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(getAvg(item));
-        const colLabel=[item.color,item.size].filter(Boolean).join('/');
-        return `${colLabel||item.sku}:${saved}`;
-      }).join(' · ');
-      html += `<div class="order-sum-row">
-        <div><div class="order-sum-name">${g.name}</div><div class="order-sum-detail">${details}</div></div>
-        <div class="order-sum-qty">${total} ชิ้น</div>
-      </div>`;
+      const cfg=orderConfig[g.parentSku]||{};
+      const total=g.skus.reduce((s,item)=>{const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(getAvg(item));return s+saved;},0);
+      const details=g.skus.map(item=>{const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(getAvg(item));const colLabel=[item.color,item.size].filter(Boolean).join('/');return`${colLabel||item.sku}:${saved}`;}).join(' · ');
+      html+=`<div class="order-sum-row"><div><div class="order-sum-name">${g.name}</div><div class="order-sum-detail">${details}</div></div><div class="order-sum-qty">${total} ชิ้น</div></div>`;
     });
-    html += '</div>';
+    html+='</div>';
   }
-
-  const sumPanel = $('order-summary');
-  $('order-summary-body').innerHTML = html || '<div class="empty" style="padding:40px">ยังไม่มีข้อมูลสินค้า</div>';
-  sumPanel.style.display = 'block';
-  sumPanel.scrollIntoView({behavior:'smooth', block:'start'});
+  const sp=$('order-summary');
+  $('order-summary-body').innerHTML=html||'<div class="empty" style="padding:40px">ยังไม่มีข้อมูล</div>';
+  sp.style.display='block';
+  sp.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 // ── EXPORT CSV ──
 function exportOrderCSV(){
-  const rows = [['ประเภท','รุ่น','สี','ไซส์','SKU','จำนวนสั่ง','หน่วย','ค่าเฉลี่ย/เดือน']];
+  const rows=[['ประเภท','รุ่น','สี','ไซส์','SKU','ชิ้น/ล็อค','ล็อค/ม้วน','จำนวนม้วน','รวมตัว','เฉลี่ย/เดือน']];
+  const sizeOrder=['XS','S','M','L','XL','XXL','XXXL','FREE SIZE'];
   appData.filter(d=>classifyCat(d.category)!=='skip').forEach(item=>{
-    const ct = classifyCat(item.category);
-    const cfg = orderConfig[item.parentSku||item.sku]||{};
-    let qty = 0, unit = 'ชิ้น';
+    const ct=classifyCat(item.category);
+    const cfg=orderConfig[item.parentSku||item.sku]||{};
     if(ct==='pants'){
-      const cfgSizes=(cfg.colors||{})[item.color||'ไม่ระบุสี']||{};
-      const totalColAmt=(appData.filter(d=>d.parentSku===item.parentSku&&d.color===item.color).reduce((s,d)=>s+getAvg(d),0))||1;
-      const totalGroupAmt=appData.filter(d=>d.parentSku===item.parentSku).reduce((s,d)=>s+getAvg(d),0)||1;
-      const lotsPerRoll=cfg.lotsPerRoll||8;
-      const cfgLots=cfgSizes._lots!==undefined?cfgSizes._lots:Math.max(1,Math.round((appData.filter(d=>d.parentSku===item.parentSku&&d.color===item.color).reduce((s,d)=>s+getAvg(d),0)/totalGroupAmt)*lotsPerRoll));
-      const perLotDefault=Math.max(1,Math.round((getAvg(item)/totalColAmt)*lotsPerRoll));
-      const perLot=cfgSizes[item.size||'?']!==undefined?cfgSizes[item.size||'?']:perLotDefault;
-      qty=perLot*cfgLots; unit='ชิ้น';
+      const col=item.color||'ไม่ระบุสี';
+      const colSkus=appData.filter(d=>d.parentSku===item.parentSku&&(d.color||'ไม่ระบุสี')===col);
+      const skuBySz=Object.fromEntries(colSkus.map(d=>[d.size||'?',d]));
+      const sizes=[...new Set([...sizeOrder.filter(sz=>skuBySz[sz]),...colSkus.map(d=>d.size||'?')])];
+      const ratio=getSizeRatio(item.parentSku,col,sizes,skuBySz);
+      const colAvg=colSkus.reduce((s,d)=>s+getAvg(d),0);
+      const autoRolls=calcAutoRolls(item.parentSku,col,colAvg);
+      const savedRolls=getNumRolls(item.parentSku,col);
+      const numRolls=savedRolls!==null?savedRolls:autoRolls;
+      const lotsPerRoll=getLotsPerRoll(item.parentSku);
+      const qty=(ratio[item.size||'?']||0)*numRolls*lotsPerRoll;
+      rows.push([item.category,item.name,col,item.size||'',item.sku,ratio[item.size||'?']||0,lotsPerRoll,numRolls,qty,Math.ceil(getAvg(item))]);
     } else {
-      qty=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(getAvg(item));
+      const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(getAvg(item));
+      rows.push([item.category,item.name,item.color||'',item.size||'',item.sku,'','','',saved,Math.ceil(getAvg(item))]);
     }
-    rows.push([item.category,item.name,item.color||'',item.size||'',item.sku,qty,unit,Math.ceil(getAvg(item))]);
   });
-  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
-  a.download='lamsang_order.csv'; a.click();
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='lamsang_order.csv';a.click();
 }
 
 function switchTab(name, btn){
