@@ -77,6 +77,12 @@ body{font-family:'Anuphan',sans-serif;background:var(--bg);color:var(--text);min
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:28px}
 .kpi{background:var(--bg);border-radius:22px;box-shadow:var(--so);padding:24px 22px 20px;position:relative;overflow:hidden;transition:box-shadow .22s,transform .18s;cursor:default}
 .kpi:hover{box-shadow:8px 8px 20px #0a0e14,-6px -6px 16px #252c36;transform:translateY(-2px)}
+.kpi-clickable{cursor:pointer}
+.kpi-clickable::before{content:"↕";position:absolute;top:12px;right:14px;font-size:10px;opacity:0;color:var(--muted);transition:opacity .2s;font-style:normal;line-height:1}
+.kpi-clickable:hover::before{opacity:1}
+.kpi-clickable.kpi-active{box-shadow:var(--si);transform:none!important}
+.kpi-clickable.kpi-active .kpi-accent{opacity:1;width:5px}
+.kpi-clickable.kpi-active::before{content:"✓ เรียงอยู่";opacity:1;font-size:9px;color:var(--blue)}
 .kpi-accent{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:0 3px 3px 0}
 .kpi.c-blue  .kpi-accent{background:var(--blue)}
 .kpi.c-red   .kpi-accent{background:var(--red)}
@@ -396,42 +402,42 @@ canvas{display:block;width:100%!important}
 
 <!-- KPI -->
 <div class="kpi-grid">
-  <div class="kpi c-blue">
+  <div class="kpi c-blue kpi-clickable" onclick="kpiSort('name','asc','สินค้าทั้งหมด (เรียงชื่อ)')" title="คลิกเพื่อเรียงชื่อสินค้า">
     <div class="kpi-accent"></div>
     <div class="kpi-ico"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
     <div class="kpi-lbl">สินค้าทั้งหมด</div>
     <div class="kpi-val"><span id="k-total">—</span><span class="kpi-unit">SKUs</span></div>
     <div class="kpi-note">ที่วิเคราะห์ได้จากข้อมูล</div>
   </div>
-  <div class="kpi c-gold">
+  <div class="kpi c-gold kpi-clickable" onclick="kpiSort('starScore','desc','True Star Score (สูงสุด)')" title="คลิกเพื่อเรียง True Star Score">
     <div class="kpi-accent"></div>
     <div class="kpi-ico"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
     <div class="kpi-lbl">True Star สูงสุด</div>
     <div class="kpi-val"><span id="k-starscore">—</span><span class="kpi-unit">/ 100</span></div>
     <div class="kpi-note" id="k-starname">สินค้าขายดีที่สุดแบบรวม</div>
   </div>
-  <div class="kpi c-red">
+  <div class="kpi c-red kpi-clickable" onclick="kpiSort('stockoutScore','desc','Stockout Score (เสี่ยงสูงสุด)')" title="คลิกเพื่อเรียงความเสี่ยงหมดสต๊อก">
     <div class="kpi-accent"></div>
     <div class="kpi-ico"><svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
     <div class="kpi-lbl">เสี่ยงหมดสต๊อก</div>
     <div class="kpi-val"><span id="k-stockout">—</span><span class="kpi-unit">รายการ</span></div>
     <div class="kpi-note">ตรวจพบจาก Gap Analysis</div>
   </div>
-  <div class="kpi c-green">
+  <div class="kpi c-green kpi-clickable" onclick="kpiSort('adjVel','desc','Adj. Velocity (สูงสุด)')" title="คลิกเพื่อเรียง Velocity">
     <div class="kpi-accent"></div>
     <div class="kpi-ico"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
     <div class="kpi-lbl">Adj. Velocity สูงสุด</div>
     <div class="kpi-val"><span id="k-vel">—</span><span class="kpi-unit">ชิ้น/วัน</span></div>
     <div class="kpi-note">ปรับแก้ Stockout แล้ว</div>
   </div>
-  <div class="kpi c-orange">
+  <div class="kpi c-orange kpi-clickable" onclick="kpiSort('trendPct','desc','Trend (มาแรงสูงสุด)')" title="คลิกเพื่อเรียง Trend">
     <div class="kpi-accent"></div>
     <div class="kpi-ico"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
     <div class="kpi-lbl">กำลังมาแรง 🚀</div>
     <div class="kpi-val"><span id="k-rising">—</span><span class="kpi-unit">SKUs</span></div>
     <div class="kpi-note">Trend ขาขึ้น &gt;30%</div>
   </div>
-  <div class="kpi c-purple">
+  <div class="kpi c-purple kpi-clickable" onclick="kpiSort('recStock','desc','สต๊อกแนะนำ (มากสุด)')" title="คลิกเพื่อเรียงสต๊อกที่แนะนำ">
     <div class="kpi-accent"></div>
     <div class="kpi-ico"><svg viewBox="0 0 24 24"><path d="M5 8h14M5 8a2 2 0 1 0 0-4h14a2 2 0 1 0 0 4M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/></svg></div>
     <div class="kpi-lbl">สต๊อกรวมที่แนะนำ</div>
@@ -692,8 +698,8 @@ const SHEET_ID = '1rO8rJbVPfTRiuuZB0WVx3NnIFSYgs2Vh2Nu6bc-rKhk';
 let appData = [];
 let maxAdjVel = 1, maxStock = 1;
 let sortKey = 'starScore', sortDir = 'desc';
-const COL_DEFAULTS = ['sku','color','size','star','vel','vel7','maxvel7','trend','gap','consist','totalsold','activevel','peakval','lastsale','peakday','stock','stockmaxvel7','status'];
-const COL_STORAGE_KEY = 'lamsang_visibleCols_v1';
+const COL_DEFAULTS = ['color','size','vel','maxvel7','totalsold','peakval','lastsale','peakday','stock','stockmaxvel7'];
+const COL_STORAGE_KEY = 'lamsang_visibleCols_v2';
 function loadVisibleCols(){
   try {
     const saved = localStorage.getItem(COL_STORAGE_KEY);
@@ -1057,6 +1063,33 @@ function calcStock(adjVel,months,mult){
 }
 
 function handleSearch(e){ rerender(); }
+
+// ── KPI click-to-sort ──
+function kpiSort(key, dir, label){
+  // switch to dashboard tab if not there
+  const dashTab = document.querySelector('.tab-btn');
+  if(dashTab && !document.getElementById('tab-dashboard').classList.contains('active')){
+    switchTab('dashboard', dashTab);
+  }
+  // update sort state
+  sortKey = key; sortDir = dir;
+  // highlight active KPI card
+  document.querySelectorAll('.kpi-clickable').forEach(el => el.classList.remove('kpi-active'));
+  event.currentTarget.classList.add('kpi-active');
+  // update sort label
+  const sl = $('tbl-sort-label');
+  if(sl) sl.textContent = `เรียงตาม ${label}`;
+  // re-render
+  renderAll(getFilteredData());
+  // update thead sort indicators
+  document.querySelectorAll('#tbl-head th.sortable').forEach(th => {
+    th.classList.remove('asc','desc');
+    if(th.dataset.key === key) th.classList.add(dir);
+  });
+  // smooth scroll to table
+  const panel = document.querySelector('#tab-dashboard .panel');
+  if(panel) panel.scrollIntoView({behavior:'smooth', block:'start'});
+}
 
 // ── Filter state ──
 let activeFilters = { names: new Set(), colors: new Set(), sizes: new Set() };
