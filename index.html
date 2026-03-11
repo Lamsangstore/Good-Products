@@ -166,6 +166,72 @@ thead th:first-child{width:36px;text-align:center;padding-left:10px;padding-righ
 .bar-red{background:linear-gradient(90deg,#f08090,var(--red))}
 .bar-green{background:linear-gradient(90deg,#26c47c,var(--green))}
 
+/* ─── ORDER TAB ─── */
+.order-group{margin-bottom:28px}
+.order-group-hdr{display:flex;align-items:center;gap:10px;padding:14px 24px;background:var(--bg-dark);border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;z-index:3}
+.order-group-ttl{font-size:14px;font-weight:800;color:var(--text);flex:1}
+.order-group-sub{font-size:11px;color:var(--muted)}
+.order-group-badge{background:rgba(77,143,255,.15);color:var(--blue);font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;border:1px solid rgba(77,143,255,.2)}
+
+/* Lot card (กางเกง) */
+.lot-card{background:var(--bg);box-shadow:var(--so);border-radius:20px;padding:20px;margin:16px 24px;transition:box-shadow .2s}
+.lot-card:hover{box-shadow:8px 8px 20px #0a0e14,-6px -6px 16px #252c36}
+.lot-card-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.lot-card-name{font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.2px}
+.lot-card-sku{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint);margin-top:3px}
+.lot-card-avg{background:rgba(46,204,138,.1);border:1px solid rgba(46,204,138,.2);border-radius:10px;padding:6px 14px;text-align:right}
+.lot-card-avg-lbl{font-size:9px;font-weight:800;color:var(--green);opacity:.7;letter-spacing:.6px;text-transform:uppercase}
+.lot-card-avg-val{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;color:var(--green);letter-spacing:-.5px}
+.lot-card-avg-unit{font-size:10px;color:var(--green);opacity:.7}
+
+.lot-row{display:grid;gap:10px;margin-bottom:12px}
+.lot-color-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.lot-color-dot{width:12px;height:12px;border-radius:50%;background:var(--muted)}
+.lot-color-name{font-size:12px;font-weight:700;color:var(--mid)}
+.lot-color-total{font-size:11px;color:var(--muted);margin-left:auto;font-family:'IBM Plex Mono',monospace}
+
+.lot-sizes{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.lot-size-box{background:var(--bg);box-shadow:var(--si);border-radius:10px;padding:6px 0;min-width:56px;text-align:center}
+.lot-size-lbl{font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
+.lot-size-input{width:44px;font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;color:var(--blue);background:none;border:none;outline:none;text-align:center;cursor:text;font-family:'Anuphan',sans-serif}
+.lot-size-input:focus{color:var(--text)}
+.lot-add-btn{background:var(--bg);box-shadow:var(--sm);border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;font-family:'Anuphan',sans-serif;transition:all .15s}
+.lot-add-btn:hover{color:var(--blue);box-shadow:var(--so)}
+
+.lot-info-bar{background:var(--bg-dark);border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:10px}
+.lot-info-item{font-size:11px;color:var(--muted)}
+.lot-info-item b{color:var(--text);font-weight:700}
+.lot-warn{color:var(--orange)}
+.lot-ok{color:var(--green)}
+.lot-low{color:var(--red)}
+
+/* Config card (per model lot count) */
+.lot-cfg-card{background:var(--bg);box-shadow:var(--sm);border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px;min-width:180px}
+.lot-cfg-name{font-size:12px;font-weight:700;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lot-cfg-input{width:44px;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--purple);background:var(--bg);box-shadow:var(--si);border:none;border-radius:8px;padding:5px 0;text-align:center;outline:none;cursor:pointer}
+
+/* Belt card */
+.belt-card{background:var(--bg);box-shadow:var(--so);border-radius:20px;padding:18px 20px;margin:12px 24px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;transition:box-shadow .2s}
+.belt-card:hover{box-shadow:8px 8px 20px #0a0e14,-6px -6px 16px #252c36}
+.belt-info{flex:1;min-width:0}
+.belt-name{font-size:14px;font-weight:700;color:var(--text)}
+.belt-sku{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint);margin-top:2px}
+.belt-colors{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.belt-color-pill{background:var(--bg);box-shadow:var(--sx);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;color:var(--purple)}
+.belt-qty-box{text-align:center;background:var(--bg-dark);border-radius:14px;padding:12px 18px;min-width:130px}
+.belt-qty-lbl{font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:4px}
+.belt-qty-val{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--orange)}
+.belt-qty-unit{font-size:10px;color:var(--muted)}
+
+/* Order summary */
+.order-sum-section{margin-bottom:20px}
+.order-sum-ttl{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.08)}
+.order-sum-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.order-sum-row:last-child{border-bottom:none}
+.order-sum-name{font-size:13px;font-weight:600;color:var(--text)}
+.order-sum-detail{font-size:11px;color:var(--muted);margin-top:2px}
+.order-sum-qty{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--blue)}
+
 /* ─── CONVEX / CONCAVE column alternating ─── */
 td.col-convex{background:var(--bg)!important;box-shadow:inset 0 0 0 0 transparent}
 td.col-concave{background:var(--bg-darker)!important}
@@ -464,6 +530,7 @@ canvas{display:block;width:100%!important}
   <button class="tab-btn active" onclick="switchTab('dashboard',this)">📊 Dashboard & Stock</button>
   <button class="tab-btn" onclick="switchTab('risk',this)">⚠️ เสี่ยงหมดสต๊อก <span id="risk-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:10px;padding:1px 7px;margin-left:4px"></span></button>
   <button class="tab-btn" onclick="switchTab('insight',this)">🔬 Deep Insight</button>
+  <button class="tab-btn" onclick="switchTab('order',this)">🛒 แบบสั่งสินค้า</button>
 </div>
 
 <!-- TAB: DASHBOARD -->
@@ -706,6 +773,64 @@ canvas{display:block;width:100%!important}
   </div>
 </div>
 
+<!-- TAB: ORDER -->
+<div id="tab-order" class="tab-content">
+  <!-- Order Config Panel -->
+  <div class="panel" style="margin-top:0">
+    <div class="panel-hdr">
+      <div>
+        <div class="panel-ttl">🛒 แบบฟอร์มสั่งสินค้า</div>
+        <div class="panel-sub">วิเคราะห์จากค่าเฉลี่ย (สต๊อกแนะนำ + MaxVel7×30) ÷ 2</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn" onclick="generateOrder()" style="color:var(--green)">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          สร้างใบสั่งซื้อ
+        </button>
+        <button class="btn" onclick="exportOrderCSV()" style="color:var(--blue)">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- Category Config: กางเกง lot settings -->
+    <div style="padding:18px 24px;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px">⚙️ ตั้งค่าล็อคกางเกง (จำนวนไซส์ต่อล็อค)</div>
+      <div id="lot-config-area" style="display:flex;flex-wrap:wrap;gap:10px">
+        <div class="empty" style="padding:20px">กำลังโหลดข้อมูลสินค้า…</div>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div style="padding:14px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase">ประเภท:</span>
+      <button class="ctog on" data-ocat="all"       onclick="setOrderCat(this,'all')">ทั้งหมด</button>
+      <button class="ctog"    data-ocat="pants"     onclick="setOrderCat(this,'pants')">👖 กางเกง (ล็อค)</button>
+      <button class="ctog"    data-ocat="belt"      onclick="setOrderCat(this,'belt')">🎗️ เข็มขัด (จำนวน)</button>
+      <button class="ctog"    data-ocat="other"     onclick="setOrderCat(this,'other')">📦 อื่นๆ</button>
+      <div style="flex:1"></div>
+      <div class="srch-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="order-srch" class="srch" placeholder="ค้นหาสินค้า…" oninput="renderOrderTab()">
+      </div>
+    </div>
+
+    <!-- Order table -->
+    <div id="order-content" style="padding:0">
+      <div class="empty" style="padding:60px">กำลังโหลด…</div>
+    </div>
+  </div>
+
+  <!-- Order Summary -->
+  <div class="panel" id="order-summary" style="display:none">
+    <div class="panel-hdr">
+      <div class="panel-ttl">📋 สรุปใบสั่งซื้อ</div>
+    </div>
+    <div id="order-summary-body" style="padding:20px 24px"></div>
+  </div>
+</div>
+
 </div><!-- /page -->
 
 <script>
@@ -742,9 +867,419 @@ const $= id => document.getElementById(id);
 function showL(t){ $('loadingText').innerText=t||'กำลังประมวลผล…'; $('loading').classList.add('on') }
 function hideL(){ $('loading').classList.remove('on') }
 
+// ════════════════════════════════════════════════
+// ORDER TAB
+// ════════════════════════════════════════════════
+let orderCatFilter = 'all';
+// Persistent lot config: { parentSku: { lotsPerRoll, sizes:{ color: { XS,S,M,L,XL,XXL } } } }
+const ORDER_STORE_KEY = 'lamsang_order_v1';
+let orderConfig = {};
+try { const s=localStorage.getItem(ORDER_STORE_KEY); if(s) orderConfig=JSON.parse(s); } catch(e){}
+function saveOrderConfig(){ try{ localStorage.setItem(ORDER_STORE_KEY, JSON.stringify(orderConfig)); }catch(e){} }
+
+// Classify category
+function classifyCat(cat){
+  const c = (cat||'').toLowerCase();
+  if(c.includes('กางเกง')) return 'pants';
+  if(c.includes('เข็มขัด') || c.includes('belt')) return 'belt';
+  if(c.includes('ไม่เติม') || c.includes('marketplace')) return 'skip';
+  return 'other';
+}
+
+function setOrderCat(btn, cat){
+  orderCatFilter = cat;
+  document.querySelectorAll('[data-ocat]').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderOrderTab();
+}
+
+// Group appData by parentSku
+function groupByParent(items){
+  const map = new Map();
+  items.forEach(item=>{
+    const key = item.parentSku || item.sku;
+    if(!map.has(key)) map.set(key, { parentSku:key, name:item.name, category:item.category, skus:[] });
+    map.get(key).skus.push(item);
+  });
+  return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'th'));
+}
+
+function getAvg(item){ return item.stockAvg || Math.ceil(((item.recStock||0)+(item.stockMaxVel7||0))/2); }
+
+// ── Render lot config area (กางเกง models) ──
+function renderLotConfig(){
+  const area = $('lot-config-area'); if(!area) return;
+  const pantsGroups = groupByParent(appData.filter(d=>classifyCat(d.category)==='pants'));
+  if(!pantsGroups.length){ area.innerHTML='<span style="font-size:12px;color:var(--muted)">ไม่พบสินค้าประเภทกางเกงในข้อมูล</span>'; return; }
+  area.innerHTML = pantsGroups.map(g=>{
+    const cfg = orderConfig[g.parentSku] || {};
+    const lots = cfg.lotsPerRoll || 8;
+    return`<div class="lot-cfg-card">
+      <div style="font-size:16px">👖</div>
+      <div class="lot-cfg-name" title="${g.name}">${g.name}</div>
+      <div style="font-size:10px;color:var(--muted);white-space:nowrap">ล็อค/ม้วน</div>
+      <input class="lot-cfg-input" type="number" min="1" max="20" value="${lots}"
+        onchange="setLotCount('${g.parentSku}',+this.value)"
+        onclick="event.stopPropagation()">
+    </div>`;
+  }).join('');
+}
+function setLotCount(parentSku, n){
+  if(!orderConfig[parentSku]) orderConfig[parentSku]={};
+  orderConfig[parentSku].lotsPerRoll = Math.max(1,n||8);
+  saveOrderConfig();
+  renderOrderTab();
+}
+
+// ── MAIN RENDER ──
+function renderOrderTab(){
+  if(!appData.length) return;
+  renderLotConfig();
+
+  const srch = ($('order-srch')||{}).value?.toLowerCase().trim()||'';
+  const groups = groupByParent(appData.filter(d=>{
+    const ct = classifyCat(d.category);
+    if(ct==='skip') return false;
+    if(orderCatFilter!=='all' && ct!==orderCatFilter) return false;
+    if(srch && !d.name.toLowerCase().includes(srch) && !d.sku.toLowerCase().includes(srch)) return false;
+    return true;
+  }));
+
+  const pantsGroups  = groups.filter(g=>classifyCat(g.category)==='pants');
+  const beltGroups   = groups.filter(g=>classifyCat(g.category)==='belt');
+  const otherGroups  = groups.filter(g=>classifyCat(g.category)==='other');
+
+  let html = '';
+
+  // ── PANTS ──
+  if(pantsGroups.length && (orderCatFilter==='all'||orderCatFilter==='pants')){
+    html += `<div class="order-group">
+      <div class="order-group-hdr">
+        <span style="font-size:18px">👖</span>
+        <span class="order-group-ttl">กางเกง (สั่งเป็นล็อค)</span>
+        <span class="order-group-sub">1 ม้วนผ้า = N ล็อค · แต่ละล็อคมีทุกไซส์</span>
+        <span class="order-group-badge">${pantsGroups.length} รุ่น</span>
+      </div>`;
+    pantsGroups.forEach(g=>{
+      html += renderPantsCard(g);
+    });
+    html += '</div>';
+  }
+
+  // ── BELT ──
+  if(beltGroups.length && (orderCatFilter==='all'||orderCatFilter==='belt')){
+    html += `<div class="order-group">
+      <div class="order-group-hdr">
+        <span style="font-size:18px">🎗️</span>
+        <span class="order-group-ttl">เข็มขัด (สั่งเป็นจำนวน รุ่นเดียว หลายสี)</span>
+        <span class="order-group-sub">สั่งพร้อมกันหลายสีเพื่อประหยัดค่าขนส่ง</span>
+        <span class="order-group-badge">${beltGroups.length} รุ่น</span>
+      </div>`;
+    beltGroups.forEach(g=>{ html += renderBeltCard(g); });
+    html += '</div>';
+  }
+
+  // ── OTHER ──
+  if(otherGroups.length && (orderCatFilter==='all'||orderCatFilter==='other')){
+    html += `<div class="order-group">
+      <div class="order-group-hdr">
+        <span style="font-size:18px">📦</span>
+        <span class="order-group-ttl">สินค้าอื่นๆ</span>
+        <span class="order-group-badge">${otherGroups.length} รุ่น</span>
+      </div>`;
+    otherGroups.forEach(g=>{ html += renderBeltCard(g); }); // same card style
+    html += '</div>';
+  }
+
+  if(!html) html = `<div class="empty" style="padding:80px">ไม่พบสินค้าที่ตรงเงื่อนไข</div>`;
+  $('order-content').innerHTML = html;
+}
+
+// ── PANTS CARD ──
+function renderPantsCard(g){
+  const cfg = orderConfig[g.parentSku] || {};
+  const lotsPerRoll = cfg.lotsPerRoll || 8;
+  // group skus by color
+  const byColor = new Map();
+  g.skus.forEach(item=>{
+    const col = item.color||'ไม่ระบุสี';
+    if(!byColor.has(col)) byColor.set(col,[]);
+    byColor.get(col).push(item);
+  });
+  const colors = [...byColor.keys()];
+  // calc total avg demand → recommended lots per color
+  const totalAvg = g.skus.reduce((s,d)=>s+getAvg(d),0);
+  const months = +($('monthsAhead')?.value||1);
+
+  let colorsHtml = '';
+  colors.forEach(col=>{
+    const skus = byColor.get(col);
+    const colAvg = skus.reduce((s,d)=>s+getAvg(d),0);
+    // sizes for this color
+    const sizeOrder = ['XS','S','M','L','XL','XXL','XXXL','FREE SIZE'];
+    const skuBySz = Object.fromEntries(skus.map(d=>[d.size||'?',d]));
+    const sizes = [...new Set([...sizeOrder.filter(sz=>skuBySz[sz]), ...skus.map(d=>d.size||'?')])];
+    // recommended qty per size from avg
+    const cfgSizes = (cfg.colors||{})[col] || {};
+    // default distribution based on velocity ratio
+    const totalColAmt = skus.reduce((s,d)=>s+getAvg(d),0)||1;
+
+    // how many lots to order this color
+    const cfgLots = cfgSizes._lots !== undefined ? cfgSizes._lots
+      : Math.max(1, Math.round((colAvg / (totalAvg||1)) * lotsPerRoll));
+
+    const sizesHtml = sizes.map(sz=>{
+      const item = skuBySz[sz];
+      const avgQty = item ? getAvg(item) : 0;
+      // default per lot = round ratio
+      const perLotDefault = item ? Math.max(1, Math.round((avgQty/(totalColAmt||1))*lotsPerRoll)) : 0;
+      const saved = cfgSizes[sz] !== undefined ? cfgSizes[sz] : perLotDefault;
+      return`<div class="lot-size-box">
+        <div class="lot-size-lbl">${sz}</div>
+        <input class="lot-size-input" type="number" min="0" max="99" value="${saved}"
+          onchange="setSizeQty('${g.parentSku}','${col}','${sz}',+this.value)"
+          onclick="event.stopPropagation()">
+      </div>`;
+    }).join('');
+
+    const totalThisColor = sizes.reduce((s,sz)=>{
+      const item = skuBySz[sz];
+      const avgQty = item ? getAvg(item) : 0;
+      const totalColAmt2 = skus.reduce((s2,d)=>s2+getAvg(d),0)||1;
+      const perLotDefault = item ? Math.max(1, Math.round((avgQty/totalColAmt2)*lotsPerRoll)) : 0;
+      const saved = (cfgSizes[sz] !== undefined) ? cfgSizes[sz] : perLotDefault;
+      return s + saved*cfgLots;
+    },0);
+
+    colorsHtml += `<div style="margin-bottom:14px;padding:12px 16px;background:var(--bg-dark);border-radius:14px">
+      <div class="lot-color-hdr">
+        <div class="lot-color-name">🎨 ${col}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+          <span style="font-size:10px;color:var(--muted)">จำนวนล็อค:</span>
+          <input class="lot-cfg-input" type="number" min="0" max="50" value="${cfgLots}" style="width:40px"
+            onchange="setColorLots('${g.parentSku}','${col}',+this.value)"
+            onclick="event.stopPropagation()">
+          <span class="lot-color-total">รวม ${totalThisColor} ชิ้น</span>
+        </div>
+      </div>
+      <div class="lot-sizes">${sizesHtml}
+        <span style="font-size:10px;color:var(--muted);margin-left:4px">ชิ้น/ล็อค</span>
+      </div>
+    </div>`;
+  });
+
+  const totalOrder = calcPantsTotalOrder(g);
+  const recLots = Math.ceil(totalAvg / Math.max(1, g.skus.length));
+
+  return`<div class="lot-card">
+    <div class="lot-card-hdr">
+      <div>
+        <div class="lot-card-name">👖 ${g.name}</div>
+        <div class="lot-card-sku">${g.parentSku} · ${lotsPerRoll} ล็อค/ม้วน · ${colors.length} สี</div>
+      </div>
+      <div class="lot-card-avg">
+        <div class="lot-card-avg-lbl">ค่าเฉลี่ยรวม</div>
+        <div><span class="lot-card-avg-val">${Math.ceil(totalAvg)}</span><span class="lot-card-avg-unit"> ชิ้น/เดือน</span></div>
+        <div style="font-size:10px;color:var(--green);margin-top:2px;opacity:.7">สั่งรวม ${totalOrder} ชิ้น</div>
+      </div>
+    </div>
+    ${colorsHtml}
+    <div class="lot-info-bar">
+      <div class="lot-info-item">📦 ยอดรวมทั้งหมด: <b class="lot-ok">${totalOrder} ชิ้น</b></div>
+      <div class="lot-info-item">🎨 จำนวนสี: <b>${colors.length} สี</b></div>
+      <div class="lot-info-item">📐 จำนวนไซส์: <b>${[...new Set(g.skus.map(d=>d.size))].filter(Boolean).length} ไซส์</b></div>
+    </div>
+  </div>`;
+}
+
+function calcPantsTotalOrder(g){
+  const cfg = orderConfig[g.parentSku]||{};
+  const lotsPerRoll = cfg.lotsPerRoll||8;
+  const byColor = new Map();
+  g.skus.forEach(item=>{ const c=item.color||'ไม่ระบุสี'; if(!byColor.has(c)) byColor.set(c,[]); byColor.get(c).push(item); });
+  let total = 0;
+  byColor.forEach((skus,col)=>{
+    const cfgSizes=(cfg.colors||{})[col]||{};
+    const totalColAmt=skus.reduce((s,d)=>s+getAvg(d),0)||1;
+    const cfgLots=cfgSizes._lots!==undefined?cfgSizes._lots:Math.max(1,Math.round((skus.reduce((s,d)=>s+getAvg(d),0)/(g.skus.reduce((s,d)=>s+getAvg(d),0)||1))*lotsPerRoll));
+    const sizeOrder=['XS','S','M','L','XL','XXL','XXXL','FREE SIZE'];
+    const allSizes=[...new Set([...sizeOrder.filter(sz=>skus.find(d=>d.size===sz)),...skus.map(d=>d.size||'?')])];
+    allSizes.forEach(sz=>{
+      const item=skus.find(d=>d.size===sz);
+      const avgQty=item?getAvg(item):0;
+      const perLotDefault=item?Math.max(1,Math.round((avgQty/totalColAmt)*lotsPerRoll)):0;
+      const saved=cfgSizes[sz]!==undefined?cfgSizes[sz]:perLotDefault;
+      total+=saved*cfgLots;
+    });
+  });
+  return total;
+}
+
+function setSizeQty(parentSku, col, sz, val){
+  if(!orderConfig[parentSku]) orderConfig[parentSku]={};
+  if(!orderConfig[parentSku].colors) orderConfig[parentSku].colors={};
+  if(!orderConfig[parentSku].colors[col]) orderConfig[parentSku].colors[col]={};
+  orderConfig[parentSku].colors[col][sz] = Math.max(0,val||0);
+  saveOrderConfig();
+  // update total display without full re-render
+  renderOrderTab();
+}
+
+function setColorLots(parentSku, col, val){
+  if(!orderConfig[parentSku]) orderConfig[parentSku]={};
+  if(!orderConfig[parentSku].colors) orderConfig[parentSku].colors={};
+  if(!orderConfig[parentSku].colors[col]) orderConfig[parentSku].colors[col]={};
+  orderConfig[parentSku].colors[col]._lots = Math.max(0,val||0);
+  saveOrderConfig();
+  renderOrderTab();
+}
+
+// ── BELT CARD ──
+function renderBeltCard(g){
+  // group by parentSku — all colors shown together
+  const colors = [...new Set(g.skus.map(d=>d.color).filter(Boolean))];
+  const totalAvg = g.skus.reduce((s,d)=>s+getAvg(d),0);
+  const cfg = orderConfig[g.parentSku]||{};
+
+  const colorItems = g.skus.map(item=>{
+    const saved = (cfg.qtys||{})[item.sku] !== undefined ? (cfg.qtys||{})[item.sku] : Math.ceil(getAvg(item));
+    const colLabel = [item.color, item.size].filter(Boolean).join(' / ') || item.sku;
+    return`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-dark);border-radius:10px;min-width:180px">
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700;color:var(--text)">${colLabel}</div>
+        <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">${item.sku}</div>
+        <div style="font-size:10px;color:var(--green);margin-top:2px">เฉลี่ย ${Math.ceil(getAvg(item))} ชิ้น/เดือน</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px">สั่ง</div>
+        <input class="lot-cfg-input" type="number" min="0" value="${saved}" style="width:52px;font-size:17px"
+          onchange="setBeltQty('${g.parentSku}','${item.sku}',+this.value)"
+          onclick="event.stopPropagation()">
+        <div style="font-size:10px;color:var(--muted)">ชิ้น</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const totalOrder = g.skus.reduce((s,item)=>{
+    const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(getAvg(item));
+    return s+saved;
+  },0);
+
+  return`<div class="belt-card">
+    <div class="belt-info">
+      <div class="belt-name">🎗️ ${g.name}</div>
+      <div class="belt-sku">${g.parentSku}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${colorItems}</div>
+    </div>
+    <div class="belt-qty-box">
+      <div class="belt-qty-lbl">รวมสั่ง</div>
+      <div class="belt-qty-val">${totalOrder}</div>
+      <div class="belt-qty-unit">ชิ้น / ออเดอร์</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">เฉลี่ย ${Math.ceil(totalAvg)} ชิ้น/เดือน</div>
+    </div>
+  </div>`;
+}
+
+function setBeltQty(parentSku, sku, val){
+  if(!orderConfig[parentSku]) orderConfig[parentSku]={};
+  if(!orderConfig[parentSku].qtys) orderConfig[parentSku].qtys={};
+  orderConfig[parentSku].qtys[sku] = Math.max(0,val||0);
+  saveOrderConfig();
+  renderOrderTab();
+}
+
+// ── GENERATE ORDER SUMMARY ──
+function generateOrder(){
+  if(!appData.length) return;
+  const months = +($('monthsAhead')?.value||1);
+  let html = '';
+
+  // Pants
+  const pantsGroups = groupByParent(appData.filter(d=>classifyCat(d.category)==='pants'));
+  if(pantsGroups.length){
+    html += `<div class="order-sum-section">
+      <div class="order-sum-ttl">👖 กางเกง</div>`;
+    pantsGroups.forEach(g=>{
+      const total = calcPantsTotalOrder(g);
+      const cfg = orderConfig[g.parentSku]||{};
+      const byColor = new Map();
+      g.skus.forEach(item=>{ const c=item.color||'ไม่ระบุสี'; if(!byColor.has(c)) byColor.set(c,[]); byColor.get(c).push(item); });
+      let detail = [];
+      byColor.forEach((skus,col)=>{
+        const cfgSizes=(cfg.colors||{})[col]||{};
+        const totalColAmt=skus.reduce((s,d)=>s+getAvg(d),0)||1;
+        const lotsPerRoll=cfg.lotsPerRoll||8;
+        const cfgLots=cfgSizes._lots!==undefined?cfgSizes._lots:Math.max(1,Math.round((skus.reduce((s,d)=>s+getAvg(d),0)/(g.skus.reduce((s,d)=>s+getAvg(d),0)||1))*lotsPerRoll));
+        detail.push(`${col} × ${cfgLots} ล็อค`);
+      });
+      html += `<div class="order-sum-row">
+        <div><div class="order-sum-name">${g.name}</div><div class="order-sum-detail">${detail.join(' · ')}</div></div>
+        <div class="order-sum-qty">${total} ชิ้น</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  // Belt + Other
+  const restGroups = groupByParent(appData.filter(d=>{ const ct=classifyCat(d.category); return ct==='belt'||ct==='other'; }));
+  if(restGroups.length){
+    html += `<div class="order-sum-section">
+      <div class="order-sum-ttl">🎗️ เข็มขัด / อื่นๆ</div>`;
+    restGroups.forEach(g=>{
+      const cfg = orderConfig[g.parentSku]||{};
+      const total = g.skus.reduce((s,item)=>{
+        const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(getAvg(item));
+        return s+saved;
+      },0);
+      const details = g.skus.map(item=>{
+        const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(getAvg(item));
+        const colLabel=[item.color,item.size].filter(Boolean).join('/');
+        return `${colLabel||item.sku}:${saved}`;
+      }).join(' · ');
+      html += `<div class="order-sum-row">
+        <div><div class="order-sum-name">${g.name}</div><div class="order-sum-detail">${details}</div></div>
+        <div class="order-sum-qty">${total} ชิ้น</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  const sumPanel = $('order-summary');
+  $('order-summary-body').innerHTML = html || '<div class="empty" style="padding:40px">ยังไม่มีข้อมูลสินค้า</div>';
+  sumPanel.style.display = 'block';
+  sumPanel.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ── EXPORT CSV ──
+function exportOrderCSV(){
+  const rows = [['ประเภท','รุ่น','สี','ไซส์','SKU','จำนวนสั่ง','หน่วย','ค่าเฉลี่ย/เดือน']];
+  appData.filter(d=>classifyCat(d.category)!=='skip').forEach(item=>{
+    const ct = classifyCat(item.category);
+    const cfg = orderConfig[item.parentSku||item.sku]||{};
+    let qty = 0, unit = 'ชิ้น';
+    if(ct==='pants'){
+      const cfgSizes=(cfg.colors||{})[item.color||'ไม่ระบุสี']||{};
+      const totalColAmt=(appData.filter(d=>d.parentSku===item.parentSku&&d.color===item.color).reduce((s,d)=>s+getAvg(d),0))||1;
+      const totalGroupAmt=appData.filter(d=>d.parentSku===item.parentSku).reduce((s,d)=>s+getAvg(d),0)||1;
+      const lotsPerRoll=cfg.lotsPerRoll||8;
+      const cfgLots=cfgSizes._lots!==undefined?cfgSizes._lots:Math.max(1,Math.round((appData.filter(d=>d.parentSku===item.parentSku&&d.color===item.color).reduce((s,d)=>s+getAvg(d),0)/totalGroupAmt)*lotsPerRoll));
+      const perLotDefault=Math.max(1,Math.round((getAvg(item)/totalColAmt)*lotsPerRoll));
+      const perLot=cfgSizes[item.size||'?']!==undefined?cfgSizes[item.size||'?']:perLotDefault;
+      qty=perLot*cfgLots; unit='ชิ้น';
+    } else {
+      qty=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(getAvg(item));
+    }
+    rows.push([item.category,item.name,item.color||'',item.size||'',item.sku,qty,unit,Math.ceil(getAvg(item))]);
+  });
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='lamsang_order.csv'; a.click();
+}
+
 function switchTab(name, btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  if(name==='order') setTimeout(renderOrderTab, 50);
   btn.classList.add('active');
   $('tab-'+name).classList.add('active');
 }
@@ -1030,6 +1565,7 @@ async function syncData(){
     syncToggleButtons();
     buildFilterOptions();
     renderAll();
+    renderOrderTab();
 
   }catch(e){
     console.error(e);
