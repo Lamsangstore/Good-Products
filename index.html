@@ -166,6 +166,19 @@ thead th:first-child{width:36px;text-align:center;padding-left:10px;padding-righ
 .bar-red{background:linear-gradient(90deg,#f08090,var(--red))}
 .bar-green{background:linear-gradient(90deg,#26c47c,var(--green))}
 
+/* ─── CONVEX / CONCAVE column alternating ─── */
+td.col-convex{background:var(--bg)!important;box-shadow:inset 0 0 0 0 transparent}
+td.col-concave{background:var(--bg-darker)!important}
+tbody tr:hover td.col-convex,
+tbody tr:hover td.col-concave{background:rgba(77,143,255,.07)!important}
+
+/* ─── STOCK AVG (middle green) ─── */
+.stk-avg-box{border-radius:12px;padding:8px 12px;min-width:130px;background:rgba(46,204,138,.07);border:1px solid rgba(46,204,138,.18)}
+.stk-avg-main{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;color:var(--green);letter-spacing:-.5px}
+.stk-avg-sub{font-size:10px;color:var(--green);opacity:.7;margin-top:3px}
+.stk-avg-mini{height:4px;border-radius:2px;background:rgba(46,204,138,.12);margin-top:8px;overflow:hidden}
+.stk-avg-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#26c47c,var(--green));transition:width .5s ease}
+
 /* ─── STOCK BOX ─── */
 .stk-box{border-radius:12px;padding:8px 12px;min-width:140px}
 .stk-main{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;color:var(--purple);letter-spacing:-.5px}
@@ -537,6 +550,7 @@ canvas{display:block;width:100%!important}
               <label class="col-chk-row" data-col="lastsale"> <input type="checkbox" onchange="toggleColByKey('lastsale')" > 🕐 ขายล่าสุด</label>
               <label class="col-chk-row" data-col="peakday">  <input type="checkbox" onchange="toggleColByKey('peakday')"  > ⚡ Peak วัน</label>
               <label class="col-chk-row" data-col="stock">    <input type="checkbox" onchange="toggleColByKey('stock')"    > 📦 สต๊อก</label>
+              <label class="col-chk-row" data-col="stockavg">   <input type="checkbox" onchange="toggleColByKey('stockavg')">   > 🟢 ค่าเฉลี่ยสต๊อก</label>
               <label class="col-chk-row" data-col="stockmaxvel7"><input type="checkbox" onchange="toggleColByKey('stockmaxvel7')"> 📦 สต๊อก(MaxVel7)</label>
               <label class="col-chk-row" data-col="status">   <input type="checkbox" onchange="toggleColByKey('status')"   > 🔰 สถานะ</label>
             </div>
@@ -573,6 +587,7 @@ canvas{display:block;width:100%!important}
             <th class="sortable" data-col="lastsale" data-key="daysLastSale" onclick="sortBy(this)">🕐 ขายล่าสุด<span class="sort-ico"></span></th>
             <th class="sortable" data-col="peakday"  data-key="daysSincePeak" onclick="sortBy(this)">⚡ Peak วัน<span class="sort-ico"></span></th>
             <th class="sortable" data-col="stock"    data-key="recStock"     onclick="sortBy(this)">📦 สต๊อกแนะนำ<span class="sort-ico"></span></th>
+            <th class="sortable" data-col="stockavg"     data-key="stockAvg"      onclick="sortBy(this)">🟢 ค่าเฉลี่ย<span class="sort-ico"></span></th>
             <th class="sortable" data-col="stockmaxvel7" data-key="stockMaxVel7" onclick="sortBy(this)">📦 สต๊อก(MaxVel7)<span class="sort-ico"></span></th>
             <th class="tc"       data-col="status">🔰 สถานะ</th>
           </tr>
@@ -698,7 +713,7 @@ const SHEET_ID = '1rO8rJbVPfTRiuuZB0WVx3NnIFSYgs2Vh2Nu6bc-rKhk';
 let appData = [];
 let maxAdjVel = 1, maxStock = 1;
 let sortKey = 'starScore', sortDir = 'desc';
-const COL_DEFAULTS = ['color','size','vel','maxvel7','totalsold','peakval','lastsale','peakday','stock','stockmaxvel7'];
+const COL_DEFAULTS = ['color','size','vel','maxvel7','totalsold','peakval','lastsale','peakday','stock','stockavg','stockmaxvel7'];
 const COL_STORAGE_KEY = 'lamsang_visibleCols_v2';
 function loadVisibleCols(){
   try {
@@ -1263,7 +1278,9 @@ function renderAll(data){
     if(item.lastSaleDate){ const t=parseDate(item.lastSaleDate); if(!isNaN(t)) daysLastSale=Math.round((today.getTime()-t)/(1000*60*60*24)); }
     let daysSincePeak = 9999;
     if(item.peakDate){ const t=parseDate(item.peakDate); if(!isNaN(t)) daysSincePeak=Math.round((today.getTime()-t)/(1000*60*60*24)); }
-    return {...item, recStock:rec, daysLastSale, daysSincePeak, stockMaxVel7: Math.ceil((item.maxVel7||0)*30)};
+    const stockMaxVel7val = Math.ceil((item.maxVel7||0)*30);
+    const stockAvgVal = Math.ceil((rec + stockMaxVel7val) / 2);
+    return {...item, recStock:rec, daysLastSale, daysSincePeak, stockMaxVel7: stockMaxVel7val, stockAvg: stockAvgVal};
   });
 
   const sorted=[...enriched].sort((a,b)=>{
@@ -1344,11 +1361,14 @@ function renderAll(data){
       const peakDayColor=item.daysSincePeak>=30?'var(--red)':item.daysSincePeak>=14?'var(--orange)':'var(--mid)';
       const peakDayTxt=item.daysSincePeak<9999?item.daysSincePeak+' วันที่แล้ว':'—';
 
+      let _colIdx = 0;
       function td(col,inner,cls=''){
         const show=visibleCols.has(col);
-        return `<td data-col="${col}" class="${cls}" style="display:${show?'':'none'}">${inner}</td>`;
+        const alt = show ? (_colIdx++ % 2 === 0 ? ' col-convex' : ' col-concave') : '';
+        return `<td data-col="${col}" class="${cls}${alt}" style="display:${show?'':'none'}">${inner}</td>`;
       }
 
+      _colIdx = 0;
       return`<tr style="animation-delay:${i*.025}s;cursor:pointer" onclick="openChart('${item.sku}')" title="คลิกดูกราฟ Timeline">
         <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)">${i+1}</span></td>
         <td>
@@ -1385,6 +1405,12 @@ function renderAll(data){
             <span style="font-size:10px;color:var(--mid)"> ชิ้น/${months}เดือน</span>
             <div class="stk-sub">≈${Math.ceil(item.adjVel*30*item.safetyMult).toLocaleString()}/เดือน · ×${item.safetyMult}</div>
             <div class="stk-mini"><div class="stk-fill" style="width:${stPct}%"></div></div>
+          </div>`)}
+        ${td('stockavg', `<div class="stk-avg-box">
+            <span class="stk-avg-main">${item.stockAvg.toLocaleString()}</span>
+            <span style="font-size:10px;color:var(--green);opacity:.8"> ชิ้น/เดือน</span>
+            <div class="stk-avg-sub">ค่าเฉลี่ย (สต๊อก + MaxVel7) ÷ 2</div>
+            <div class="stk-avg-mini"><div class="stk-avg-fill" style="width:${Math.min((item.stockAvg/(maxStock||1))*100,100)}%"></div></div>
           </div>`)}
         ${td('stockmaxvel7', `<div class="stk-box">
             <span class="stk-main" style="color:var(--red)">${item.stockMaxVel7.toLocaleString()}</span>
@@ -1504,8 +1530,11 @@ function renderRiskTab(sorted, months){
     applyRiskColVisibility(); return;
   }
 
+  let _rColIdx = 0;
   function rtd(col,inner,cls=''){
-    return `<td data-rcol="${col}" class="${cls}" style="display:${riskVisibleCols.has(col)?'':'none'}">${inner}</td>`;
+    const show=riskVisibleCols.has(col);
+    const alt = show ? (_rColIdx++ % 2 === 0 ? ' col-convex' : ' col-concave') : '';
+    return `<td data-rcol="${col}" class="${cls}${alt}" style="display:${show?'':'none'}">${inner}</td>`;
   }
 
   tbody.innerHTML = items.map((item,i)=>{
@@ -1522,6 +1551,7 @@ function renderRiskTab(sorted, months){
     const cvHtml=`<span class="cv-pill" style="color:${item.consistColor}">${item.consistLabel}</span>`;
     const stPct=Math.min((rec/(Math.max(...(window._lastSorted||[items[0]]).map(d=>calcStock(d.adjVel,months,d.safetyMult)),1)))*100,100);
 
+    _rColIdx = 0;
     return`<tr style="animation-delay:${i*.02}s;cursor:pointer" onclick="openChart('${item.sku}')">
       <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)">${i+1}</span></td>
       <td>
