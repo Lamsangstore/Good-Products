@@ -2315,7 +2315,7 @@ const RTDB_CONFIG = 'config';   // /config/visibleCols /config/orderConfig /conf
 
 // ── FIREBASE CONFIG STORE (replaces localStorage) ──────────────
 // Write to RTDB async (fire-and-forget); read on init
-let _configCache = {};  // in-memory cache
+// _configCache declared at top of script
 
 async function fbSave(key, value){
   _configCache[key] = value;
