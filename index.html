@@ -2,6 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lamsang Store Analytics</title>
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -232,6 +233,20 @@ thead th:first-child{width:36px;text-align:center;padding-left:10px;padding-righ
 .order-sum-detail{font-size:11px;color:var(--muted);margin-top:2px}
 .order-sum-qty{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--blue)}
 
+/* ─── STOCK UPLOAD ─── */
+#stock-upload-input{display:none}
+.stock-upload-btn{position:relative;overflow:hidden}
+.stock-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:800}
+.stock-badge.oos {background:rgba(255,85,114,.18);color:var(--red);border:1px solid rgba(255,85,114,.3)}
+.stock-badge.instock{background:rgba(46,204,138,.18);color:var(--green);border:1px solid rgba(46,204,138,.3)}
+.stock-badge.unknown{background:rgba(100,120,140,.15);color:var(--muted);border:1px solid rgba(100,120,140,.2)}
+/* pill in table cell */
+td .stock-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;margin-top:3px;white-space:nowrap}
+td .stock-pill.oos{background:rgba(255,85,114,.15);color:var(--red)}
+td .stock-pill.instock{background:rgba(46,204,138,.13);color:var(--green)}
+/* stock file info bar */
+#stock-file-bar{display:none;align-items:center;gap:10px;padding:8px 20px;background:rgba(46,204,138,.08);border-bottom:1px solid rgba(46,204,138,.15);font-size:11px;color:var(--muted)}
+#stock-file-bar b{color:var(--green)}
 /* ─── LOT VISUALIZATION ─── */
 .lot-vis-roll{background:var(--bg-dark);border-radius:14px;padding:12px 14px;border:1px solid rgba(255,255,255,.06)}
 .lot-vis-roll-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:12px;font-weight:800;color:var(--text)}
@@ -483,8 +498,19 @@ canvas{display:block;width:100%!important}
       <svg viewBox="0 0 24 24"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
       ซิงก์ข้อมูล
     </button>
+    <!-- Stock file upload -->
+    <input type="file" id="stock-upload-input" accept=".xlsx,.xls,.csv" onchange="handleStockUpload(this)">
+    <button class="btn stock-upload-btn" onclick="$('stock-upload-input').click()" id="stock-hdr-btn"
+      title="อัพโหลดไฟล์สต๊อกสินค้า (.xlsx) เพื่อตรวจสถานะจริง" style="color:var(--blue)">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <span id="stock-btn-label">อัพโหลดไฟล์สต๊อก</span>
+    </button>
   </div>
 </div>
+
 
 <!-- KPI -->
 <div class="kpi-grid">
@@ -565,6 +591,12 @@ canvas{display:block;width:100%!important}
         <div class="panel-sub" id="tbl-sort-label">เรียงตาม True Star Score สูงสุด</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <!-- Stock file upload -->
+        <label id="stock-upload-btn" class="btn" style="cursor:pointer;color:var(--muted);gap:6px" title="อัพโหลดไฟล์สต๊อก (.xlsx/.csv)">
+          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span id="stock-upload-lbl">อัพโหลดสต๊อก</span>
+          <input type="file" id="stock-file-input" accept=".xlsx,.csv" style="display:none" onchange="loadStockFile(this)">
+        </label>
         <!-- Filter popup trigger -->
         <div style="position:relative">
           <button class="btn" id="filterBtn" onclick="toggleFilterPopup()" style="gap:6px;position:relative">
@@ -639,6 +671,24 @@ canvas{display:block;width:100%!important}
     </div>
     <!-- Active filter chips row -->
     <div id="active-filters" style="display:none;padding:8px 18px;background:var(--bg-dark);border-bottom:1px solid rgba(255,255,255,.06);display:flex;flex-wrap:wrap;gap:6px;align-items:center"></div>
+    <!-- Stock file status bar -->
+    <div id="stock-status-bar" style="display:none;padding:10px 24px;background:rgba(46,204,138,.06);border-bottom:1px solid rgba(46,204,138,.12);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:800;color:var(--green)">📦 สต๊อกจริง:</span>
+      <span id="stk-loaded-name" style="font-size:11px;color:var(--muted)"></span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span id="stk-stat-total" class="f-chip" style="font-size:10px"></span>
+        <span id="stk-stat-out"   class="f-chip red" style="font-size:10px"></span>
+        <span id="stk-stat-low"   class="f-chip orange" style="font-size:10px"></span>
+        <span id="stk-stat-ok"    class="f-chip" style="font-size:10px;color:var(--green)"></span>
+      </div>
+      <div style="display:flex;gap:6px;margin-left:auto;align-items:center">
+        <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px;cursor:pointer">
+          <input type="checkbox" id="stk-filter-out" onchange="renderAll(getFilteredData())" style="accent-color:var(--red)">
+          แสดงเฉพาะสินค้าหมด
+        </label>
+        <button onclick="clearStockFile()" style="font-size:10px;color:var(--red);background:none;border:none;cursor:pointer;font-family:Anuphan,sans-serif;font-weight:700">✕ ล้างสต๊อก</button>
+      </div>
+    </div>
     <div class="tbl-wrap">
       <table>
         <thead id="tbl-head">
@@ -852,6 +902,10 @@ canvas{display:block;width:100%!important}
 </div><!-- /page -->
 
 <script>
+// ── STOCK FILE (xlsx upload) — see loadStockFile / applyStockMap below ──
+// Alias so header button works with existing system
+function handleStockUpload(input){ loadStockFile(input); }
+
 const SHEET_ID = '1rO8rJbVPfTRiuuZB0WVx3NnIFSYgs2Vh2Nu6bc-rKhk';
 let appData = [];
 let maxAdjVel = 1, maxStock = 1;
@@ -1737,16 +1791,158 @@ function kpiSort(key, dir, label){
   if(panel) panel.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
+// ════════════════════════════════════════════════
+// STOCK FILE  (xlsx / csv upload)
+// ════════════════════════════════════════════════
+let stockMap = {};  // sku → stock_amount (number)
+let stockFileName = '';
+
+function loadStockFile(input){
+  const file = input.files[0]; if(!file) return;
+  stockFileName = file.name;
+  const ext = file.name.split('.').pop().toLowerCase();
+  const reader = new FileReader();
+
+  if(ext === 'csv'){
+    reader.onload = e => { parseStockCSV(e.target.result); input.value=''; };
+    reader.readAsText(file, 'UTF-8');
+  } else {
+    // xlsx — use SheetJS from CDN (already available) or manual binary parse
+    reader.onload = e => { parseStockXLSX(e.target.result); input.value=''; };
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+function parseStockCSV(text){
+  const lines = text.split(/\r?\n/).filter(l=>l.trim());
+  if(!lines.length) return;
+  const sep = lines[0].includes('\t') ? '\t' : ',';
+  const headers = lines[0].split(sep).map(h=>h.replace(/^"|"$/g,'').trim().toLowerCase());
+  const skuIdx   = headers.indexOf('sku');
+  const stockIdx = headers.indexOf('stock_amount');
+  if(skuIdx<0||stockIdx<0){ alert('ไม่พบคอลัมน์ sku หรือ stock_amount'); return; }
+  const map = {};
+  for(let i=1;i<lines.length;i++){
+    const cols = lines[i].split(sep).map(c=>c.replace(/^"|"$/g,'').trim());
+    const sku = cols[skuIdx]; if(!sku) continue;
+    const v = parseFloat(cols[stockIdx]);
+    map[sku] = isNaN(v) ? null : v;
+  }
+  applyStockMap(map);
+}
+
+function parseStockXLSX(buf){
+  // Use SheetJS if loaded, otherwise manual xlsx binary parse
+  try {
+    // Try SheetJS (XLSX global)
+    if(typeof XLSX !== 'undefined'){
+      const wb = XLSX.read(buf, {type:'arraybuffer'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+      extractStockFromRows(rows);
+    } else {
+      // Fallback: load SheetJS dynamically
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload = () => {
+        const wb = XLSX.read(buf, {type:'arraybuffer'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+        extractStockFromRows(rows);
+      };
+      s.onerror = () => alert('โหลด XLSX library ไม่สำเร็จ กรุณาใช้ไฟล์ .csv แทน');
+      document.head.appendChild(s);
+    }
+  } catch(err) { alert('อ่านไฟล์ไม่สำเร็จ: '+err.message); }
+}
+
+function extractStockFromRows(rows){
+  // Find header row (contains 'sku' and 'stock_amount')
+  let headerIdx = -1, skuCol = -1, stockCol = -1;
+  for(let i=0;i<Math.min(rows.length,10);i++){
+    const row = (rows[i]||[]).map(v=>String(v||'').trim().toLowerCase());
+    const si = row.indexOf('sku');
+    const ti = row.indexOf('stock_amount');
+    if(si>=0 && ti>=0){ headerIdx=i; skuCol=si; stockCol=ti; break; }
+  }
+  if(headerIdx<0){ alert('ไม่พบคอลัมน์ sku หรือ stock_amount ในไฟล์'); return; }
+  const map={};
+  for(let i=headerIdx+1;i<rows.length;i++){
+    const row=rows[i]||[];
+    const sku=String(row[skuCol]||'').trim(); if(!sku) continue;
+    const v=parseFloat(row[stockCol]);
+    map[sku] = isNaN(v) ? null : v;
+  }
+  applyStockMap(map);
+}
+
+function applyStockMap(map){
+  stockMap = map;
+  const total  = Object.keys(map).length;
+  const out    = Object.values(map).filter(v=>v!==null&&v<=0).length;
+  const low    = Object.values(map).filter(v=>v!==null&&v>0&&v<=5).length;
+  const ok     = Object.values(map).filter(v=>v!==null&&v>5).length;
+
+  // Update status bar
+  const bar = $('stock-status-bar');
+  bar.style.display = 'flex';
+  $('stk-loaded-name').textContent = stockFileName;
+  $('stk-stat-total').textContent  = `${total.toLocaleString()} SKUs`;
+  $('stk-stat-out').textContent    = `🔴 หมด ${out.toLocaleString()}`;
+  $('stk-stat-low').textContent    = `🟡 เหลือน้อย ${low.toLocaleString()}`;
+  $('stk-stat-ok').textContent     = `🟢 มีสต๊อก ${ok.toLocaleString()}`;
+
+  // Update upload button labels (both header btn and panel btn)
+  const shortName = stockFileName.replace(/^.+[/\\]/,'');
+  if($('stock-upload-lbl')) $('stock-upload-lbl').textContent = '✓ ' + shortName;
+  if($('stock-btn-label'))  $('stock-btn-label').textContent  = '✓ ' + shortName;
+  if($('stock-upload-btn')) $('stock-upload-btn').style.color = 'var(--green)';
+  if($('stock-hdr-btn'))    $('stock-hdr-btn').style.color    = 'var(--green)';
+
+  // Re-render all tables
+  renderAll(getFilteredData());
+  if(typeof renderRiskTab === 'function') renderRiskTab();
+}
+
+function clearStockFile(){
+  stockMap = {}; stockFileName = '';
+  $('stock-status-bar').style.display = 'none';
+  if($('stock-upload-lbl')) $('stock-upload-lbl').textContent = 'อัพโหลดสต๊อก';
+  if($('stock-btn-label'))  $('stock-btn-label').textContent  = 'อัพโหลดไฟล์สต๊อก';
+  if($('stock-upload-btn')) $('stock-upload-btn').style.color = 'var(--muted)';
+  if($('stock-hdr-btn'))    $('stock-hdr-btn').style.color    = 'var(--blue)';
+  const cb = $('stk-filter-out'); if(cb) cb.checked = false;
+  renderAll(getFilteredData());
+}
+
+function getStockStatus(sku){
+  if(!Object.keys(stockMap).length) return null;
+  const v = stockMap[sku];
+  if(v === undefined) return 'unknown';  // ไม่มีใน file
+  if(v === null) return 'unknown';
+  if(v <= 0) return 'out';
+  if(v <= 5) return 'low';
+  return 'ok';
+}
+
+function getStockAmount(sku){
+  if(!Object.keys(stockMap).length) return null;
+  const v = stockMap[sku];
+  return (v===undefined||v===null) ? null : v;
+}
+
 // ── Filter state ──
 let activeFilters = { names: new Set(), colors: new Set(), sizes: new Set() };
 
 function getFilteredData(){
   const srch = $('srch').value.toLowerCase().trim();
+  const filterOut = $('stk-filter-out')?.checked;
   return appData.filter(item=>{
     if(srch && !item.name.toLowerCase().includes(srch) && !item.sku.toLowerCase().includes(srch)) return false;
     if(activeFilters.names.size  && !activeFilters.names.has(item.name))  return false;
     if(activeFilters.colors.size && !activeFilters.colors.has(item.color||'')) return false;
     if(activeFilters.sizes.size  && !activeFilters.sizes.has(item.size||''))   return false;
+    if(filterOut && getStockStatus(item.sku) !== 'out') return false;
     return true;
   });
 }
@@ -2000,10 +2196,19 @@ function renderAll(data){
       }
 
       _colIdx = 0;
-      return`<tr style="animation-delay:${i*.025}s;cursor:pointer" onclick="openChart('${item.sku}')" title="คลิกดูกราฟ Timeline">
+      // stock status
+      const stkStatus = getStockStatus(item.sku);
+      const stkAmt    = getStockAmount(item.sku);
+      const stkBadge  = stkStatus==='out'  ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,85,114,.18);color:var(--red);font-size:9px;font-weight:800;border-radius:4px;padding:1px 6px;margin-left:4px">🔴 หมดสต๊อก${stkAmt!==null?' ('+stkAmt+')':''}</span>`
+                      : stkStatus==='low'  ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,170,68,.18);color:var(--orange);font-size:9px;font-weight:800;border-radius:4px;padding:1px 6px;margin-left:4px">🟡 เหลือน้อย (${stkAmt})</span>`
+                      : stkStatus==='ok'   ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(46,204,138,.12);color:var(--green);font-size:9px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:4px">🟢 ${stkAmt}</span>`
+                      : stkStatus==='unknown' ? `<span style="font-size:9px;color:var(--faint);margin-left:4px">—</span>`
+                      : '';
+      const rowBg = stkStatus==='out' ? 'background:rgba(255,85,114,.06)!important;' : stkStatus==='low' ? 'background:rgba(255,170,68,.05)!important;' : '';
+      return`<tr style="animation-delay:${i*.025}s;cursor:pointer;${rowBg}" onclick="openChart('${item.sku}')" title="คลิกดูกราฟ Timeline">
         <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)">${i+1}</span></td>
         <td>
-          <div class="pname">${item.name} <span style="font-size:10px;color:var(--blue)">📊</span></div>
+          <div class="pname">${item.name} <span style="font-size:10px;color:var(--blue)">📊</span>${stkBadge}</div>
           ${item.category?`<div style="margin-top:2px"><span style="font-size:10px;background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:1px 6px;color:var(--mid);font-weight:600">${item.category}</span></div>`:''}
         </td>
         ${td('sku',  `<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">${item.sku}${item.parentSku&&item.parentSku!==item.sku?'<br><span style="font-size:10px;color:var(--faint)">'+item.parentSku+'</span>':''}</span>`)}
@@ -2183,10 +2388,17 @@ function renderRiskTab(sorted, months){
     const stPct=Math.min((rec/(Math.max(...(window._lastSorted||[items[0]]).map(d=>calcStock(d.adjVel,months,d.safetyMult)),1)))*100,100);
 
     _rColIdx = 0;
-    return`<tr style="animation-delay:${i*.02}s;cursor:pointer" onclick="openChart('${item.sku}')">
+    const rStkStatus = getStockStatus(item.sku);
+    const rStkAmt    = getStockAmount(item.sku);
+    const rStkBadge  = rStkStatus==='out'  ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,85,114,.18);color:var(--red);font-size:9px;font-weight:800;border-radius:4px;padding:1px 6px;margin-left:4px">🔴 หมดสต๊อก${rStkAmt!==null?' ('+rStkAmt+')':''}</span>`
+                     : rStkStatus==='low'  ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,170,68,.18);color:var(--orange);font-size:9px;font-weight:800;border-radius:4px;padding:1px 6px;margin-left:4px">🟡 เหลือน้อย (${rStkAmt})</span>`
+                     : rStkStatus==='ok'   ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(46,204,138,.12);color:var(--green);font-size:9px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:4px">🟢 ${rStkAmt}</span>`
+                     : '';
+    const rRowBg = rStkStatus==='out' ? 'background:rgba(255,85,114,.06)!important;' : rStkStatus==='low' ? 'background:rgba(255,170,68,.05)!important;' : '';
+    return`<tr style="animation-delay:${i*.02}s;cursor:pointer;${rRowBg}" onclick="openChart('${item.sku}')">
       <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)">${i+1}</span></td>
       <td>
-        <div class="pname">${item.name} <span style="font-size:10px;color:var(--blue)">📊</span></div>
+        <div class="pname">${item.name} <span style="font-size:10px;color:var(--blue)">📊</span>${rStkBadge}</div>
         ${item.category?`<div style="margin-top:2px"><span style="font-size:10px;background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:1px 6px;color:var(--mid);font-weight:600">${item.category}</span></div>`:''}
       </td>
       ${rtd('rscore',`<div style="text-align:center"><span style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:700;color:${scoreColor}">${item.stockoutScore}</span><div style="font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">${isHigh?'เสี่ยงสูง':'ติดตาม'}</div></div>`,'tc')}
