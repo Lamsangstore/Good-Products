@@ -2261,7 +2261,10 @@ function renderHistDetail(order){
       const counts = item.counts||{};
       const extraCounts = item.extraCounts||{};
       catGroups[cat].rows.push({
-        name:item.name, color:item.color, rollLabel:item.rollLabel,
+        name:item.name,
+        factoryName: item.factoryName || getFactoryName(item.parentSku) || item.name,
+        parentSku: item.parentSku,
+        color:item.color, rollLabel:item.rollLabel,
         counts, extraCounts, pieces:item.pieces, lots:item.lots
       });
     } else {
@@ -2298,17 +2301,20 @@ function renderHistDetail(order){
     const isPants = cg.rows.some(r=>!r.type);
 
     if(isPants && hasSizes){
+      // Get factory name(s) for this section — unique names per parentSku
+      const factoryNames = [...new Set(cg.rows.map(r=>r.factoryName||r.name))];
+      const sectionLabel = factoryNames.join(' / ') || label;
       // Header row with sizes
       html+=`<tr>
-        <td colspan="2" style="background:${st.hdr};color:#fff;font-weight:800;text-align:center;padding:6px 10px;border-radius:6px 0 0 6px;font-size:12px">${label}</td>
+        <td colspan="2" style="background:${st.hdr};color:#fff;font-weight:800;text-align:center;padding:6px 10px;border-radius:6px 0 0 6px;font-size:13px">${sectionLabel}</td>
         ${sortedSizes.map(sz=>`<td style="background:${st.hdr};color:#fff;font-weight:800;text-align:center;padding:6px 10px;min-width:40px;font-size:13px">${sz}</td>`).join('')}
         <td style="background:${st.hdr};border-radius:0 6px 6px 0"></td>
       </tr>`;
       // Data rows
       cg.rows.forEach(row=>{
         html+=`<tr style="background:${st.bg}">
-          <td style="padding:5px 10px;font-weight:700;color:var(--text);white-space:nowrap;font-size:12px">${row.factoryName||row.name}</td>
-          <td style="padding:5px 8px;color:var(--text);font-weight:600;white-space:nowrap;font-size:12px">${row.color}<br><span style="font-size:10px;color:var(--muted)">${row.rollLabel}</span></td>
+          ${factoryNames.length>1?`<td style="padding:5px 10px;font-weight:700;color:var(--text);white-space:nowrap;font-size:11px;color:var(--muted)">${row.factoryName||row.name}</td>`:`<td style="padding:2px"></td>`}
+          <td style="padding:5px 10px;color:var(--text);font-weight:700;white-space:nowrap;font-size:13px">${row.color}<br><span style="font-size:10px;color:var(--muted)">${row.rollLabel}</span></td>
           ${sortedSizes.map(sz=>{
             const n=(row.counts[sz]||0);
             const ex=(row.extraCounts?.[sz]||0);
