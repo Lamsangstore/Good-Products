@@ -572,16 +572,9 @@ canvas{display:block;width:100%!important}
     <div class="kpi-val"><span id="k-starscore">—</span><span class="kpi-unit">/ 100</span></div>
     <div class="kpi-note" id="k-starname">สินค้าขายดีที่สุดแบบรวม</div>
   </div>
-  <div class="kpi c-red kpi-clickable" onclick="kpiSort('stockoutScore','desc','Stockout Score (เสี่ยงสูงสุด)')" title="คลิกเพื่อเรียงความเสี่ยงหมดสต๊อก">
-    <div class="kpi-accent"></div>
-    <div class="kpi-ico"><svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-    <div class="kpi-lbl">เสี่ยงหมดสต๊อก</div>
-    <div class="kpi-val"><span id="k-stockout">—</span><span class="kpi-unit">รายการ</span></div>
-    <div class="kpi-note">ตรวจพบจาก Gap Analysis</div>
   </div>
   <div class="kpi c-green kpi-clickable" onclick="kpiSort('adjVel','desc','Adj. Velocity (สูงสุด)')" title="คลิกเพื่อเรียง Velocity">
     <div class="kpi-accent"></div>
-    <div class="kpi-ico"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
     <div class="kpi-lbl">Adj. Velocity สูงสุด</div>
     <div class="kpi-val"><span id="k-vel">—</span><span class="kpi-unit">ชิ้น/วัน</span></div>
     <div class="kpi-note">ปรับแก้ Stockout แล้ว</div>
@@ -605,8 +598,6 @@ canvas{display:block;width:100%!important}
 <!-- TABS -->
 <div class="tab-bar">
   <button class="tab-btn active" onclick="switchTab('dashboard',this)">📊 Dashboard & Stock</button>
-  <button class="tab-btn" onclick="switchTab('risk',this)">⚠️ เสี่ยงหมดสต๊อก <span id="risk-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:10px;padding:1px 7px;margin-left:4px"></span></button>
-  <button class="tab-btn" onclick="switchTab('insight',this)">🔬 Deep Insight</button>
   <button class="tab-btn" onclick="switchTab('order',this)">🛒 แบบสั่งสินค้า</button>
 </div>
 
@@ -617,13 +608,6 @@ canvas{display:block;width:100%!important}
   <div class="f-strip">
     <span class="f-lbl">📐 Adj.Velocity</span>
     <span class="f-chip">Raw Vel × Coverage Rate</span>
-    <div class="f-div"></div>
-    <span class="f-lbl">สต๊อกแนะนำ</span>
-    <span class="f-chip">Adj.Vel × 30 × เดือน × Safety Mult</span>
-    <div class="f-div"></div>
-    <span class="f-lbl">Safety</span>
-    <span class="f-chip green">Score&lt;40 → ×1.2</span>
-    <span class="f-chip orange">40–60 → ×1.5</span>
     <span class="f-chip red">&gt;60 → ×2.0</span>
   </div>
 
@@ -882,7 +866,6 @@ canvas{display:block;width:100%!important}
     <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>Consistency 25%</div>
     <div class="leg-item"><div class="leg-dot" style="background:var(--orange)"></div>Trend 25%</div>
     <div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>Stockout Penalty -20%</div>
-    <div class="f-div"></div>
     <span class="f-chip" style="font-size:10px">≥70 🌟 ดาวแท้</span>
     <span class="f-chip orange" style="font-size:10px">50–69 ⚡ มาแรง</span>
     <span class="f-chip red" style="font-size:10px">&lt;50 ⚠️ ต้องติดตาม</span>
@@ -989,7 +972,7 @@ const SHEET_ID = '1rO8rJbVPfTRiuuZB0WVx3NnIFSYgs2Vh2Nu6bc-rKhk';
 let appData = [];
 let maxAdjVel = 1, maxStock = 1;
 let sortKey = 'starScore', sortDir = 'desc';
-const COL_DEFAULTS = ['color','size','vel','maxvel7','totalsold','peakval','lastsale','peakday','stock','stockavg','stockmaxvel7','daysleft'];
+const COL_DEFAULTS = ['color','size','vel','maxvel7','totalsold','lastsale','stock','stockavg','daysleft','status'];
 const COL_STORAGE_KEY = 'visibleCols';
 function loadVisibleCols(){
   // Try Firebase cache first
@@ -3006,7 +2989,6 @@ function renderAll(data){
   $('k-total').textContent=sorted.length;
   $('k-starscore').textContent=topStar?topStar.starScore:'—';
   $('k-starname').textContent=topStar?truncate(topStar.name,18):'—';
-  $('k-stockout').textContent=outs.length;
   $('k-vel').textContent=maxVel.toFixed(1);
   $('k-rising').textContent=rising;
   $('k-totalstock').textContent=totalStock.toLocaleString();
