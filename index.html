@@ -2185,12 +2185,18 @@ async function syncData(){
     if(initTh) initTh.classList.add('desc');
     // sync toggle buttons to saved state
     syncToggleButtons();
-    buildFilterOptions();
-    renderAll();
+    try { buildFilterOptions(); } catch(ex){ console.warn('buildFilterOptions:', ex); }
+    try { renderAll(); } catch(ex){ console.warn('renderAll in sync:', ex); }
 
   }catch(e){
-    console.error(e);
-    alert('ดึงข้อมูลไม่ได้ โปรดตรวจสอบการแชร์ Google Sheets');
+    console.error('syncData error:', e);
+    // แสดง error จริงใน console แต่ alert เฉพาะ network error
+    const isNetworkErr = e.message?.includes('fetch') || e.message?.includes('network') || e instanceof TypeError;
+    if(isNetworkErr){
+      alert('ดึงข้อมูลไม่ได้ โปรดตรวจสอบการแชร์ Google Sheets\n\n' + e.message);
+    } else {
+      console.warn('Non-network error in syncData:', e.message);
+    }
   }finally{ hideL() }
 
   // แยก try-catch เพื่อไม่ให้ error ที่นี่ขึ้น alert Google Sheets
