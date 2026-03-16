@@ -1123,11 +1123,17 @@ function setOrderCat(cat, label){
   renderOrderTab();
 }
 
+function setOrderCatFromEl(el){
+  const cat = el.getAttribute('data-cat')||'all';
+  const label = el.textContent.trim();
+  setOrderCat(cat, label);
+}
 function toggleOrderCatDropdown(){
   const dd=$('order-cat-dropdown'); if(!dd) return;
   const isOpen = dd.style.display!=='none';
   dd.style.display = isOpen?'none':'block';
   if(!isOpen){
+    buildOrderCatButtons(); // rebuild each time to ensure fresh list
     // Close on outside click
     setTimeout(()=>{
       const handler = (e)=>{
@@ -1186,7 +1192,7 @@ function buildOrderCatButtons(){
     if(!items.length) return;
     html+=`<div class="dd-group-hdr">${label}</div>`;
     items.forEach(({cat,emoji:e})=>{
-      html+=`<div class="dd-item${orderCatFilter===cat?' dd-active':''}" onclick="setOrderCat('${cat.replace(/'/g,"\'")}','${cat.replace(/'/g,"\'")}')">${e} ${cat}</div>`;
+      html+=`<div class="dd-item${orderCatFilter===cat?' dd-active':''}" data-cat="${cat.replace(/"/g,'')}" onclick="setOrderCatFromEl(this)">${e} ${cat}</div>`;
     });
   });
   list.innerHTML=html;
