@@ -2730,7 +2730,7 @@ function applyStockMap(map){
 
   // Re-render
   renderAll(getFilteredData());
-  if(typeof renderRiskTab === 'function' && window._lastSorted) renderRiskTab(window._lastSorted, window._lastMonths);
+  if(typeof renderRiskTab==='function'&&window._lastSorted) try{renderRiskTab(window._lastSorted,window._lastMonths);}catch(e){}
 }
 
 function clearFirebaseStock(){
@@ -2740,7 +2740,7 @@ function clearFirebaseStock(){
   const lbl=$('stock-upload-lbl'); if(lbl) lbl.textContent='อัพโหลดสต๊อก';
   const lbl2=$('stock-btn-label'); if(lbl2) lbl2.textContent='อัพโหลดไฟล์สต๊อก';
   renderAll(getFilteredData());
-  if(typeof renderRiskTab === 'function') renderRiskTab();
+  if(typeof renderRiskTab==='function'&&window._lastSorted) try{renderRiskTab(window._lastSorted,window._lastMonths);}catch(e){}
 }
 
 function clearStockFile(){
@@ -3002,9 +3002,7 @@ function renderAll(data){
 
   // Risk tab — update badge count + render
   const highRisk = sorted.filter(d=>d.stockoutScore > (window.riskThreshold??60));
-  const badge = $('risk-badge');
-  if(highRisk.length){ badge.style.display=''; badge.textContent=highRisk.length; }
-  else { badge.style.display='none'; }
+  // risk-badge removed — skip
   renderRiskTab(sorted, months);
 
   // Main Table
@@ -3132,7 +3130,7 @@ function renderAll(data){
   // keep appData enriched for order tab
   try{ enrichAppData(); }catch(ex){ console.warn('enrich:', ex); }
   // Insight Tab
-  renderInsight(sorted, months);
+  if(typeof renderInsight==='function') try{ renderInsight(sorted, months); }catch(e){}
 }
 
 window.riskThreshold = 60;
@@ -3154,7 +3152,7 @@ function setRiskThreshold(btn, val){
   window.riskThreshold = val;
   document.querySelectorAll('[data-risk]').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
-  if(window._lastSorted) renderRiskTab(window._lastSorted, window._lastMonths);
+  if(window._lastSorted) try{renderRiskTab(window._lastSorted,window._lastMonths);}catch(e){}
 }
 
 function sortRiskBy(th){
@@ -3167,7 +3165,7 @@ function sortRiskBy(th){
   });
   const lbl = th.textContent.replace(/[⇅▲▼⭐🚀📈🕳️📊📦📅🔰⚠️🔖🎨📐📆🕐⚡]/gu,'').trim();
   const sl=$('risk-sort-label'); if(sl) sl.textContent=`เรียงตาม ${lbl} (${riskSortDir==='desc'?'มาก→น้อย':'น้อย→มาก'})`;
-  if(window._lastSorted) renderRiskTab(window._lastSorted, window._lastMonths);
+  if(window._lastSorted) try{renderRiskTab(window._lastSorted,window._lastMonths);}catch(e){}
 }
 
 function toggleRiskColPopup(){
@@ -3186,13 +3184,13 @@ function toggleRiskCol(col){
   else riskVisibleCols.add(col);
   saveRiskCols();
   applyRiskColVisibility();
-  if(window._lastSorted) renderRiskTab(window._lastSorted, window._lastMonths);
+  if(window._lastSorted) try{renderRiskTab(window._lastSorted,window._lastMonths);}catch(e){}
 }
 function setAllRiskCols(on){
   if(on) RISK_COL_DEFAULTS.forEach(c=>riskVisibleCols.add(c));
   else { riskVisibleCols.clear(); RISK_COL_DEFAULTS.slice(0,1).forEach(c=>riskVisibleCols.add(c)); }
   saveRiskCols(); syncRiskColCheckboxes();
-  if(window._lastSorted) renderRiskTab(window._lastSorted, window._lastMonths);
+  if(window._lastSorted) try{renderRiskTab(window._lastSorted,window._lastMonths);}catch(e){}
 }
 function applyRiskColVisibility(){
   document.querySelectorAll('#risk-tbl-head th[data-rcol], #risk-tbl-body td[data-rcol]').forEach(el=>{
@@ -3216,7 +3214,7 @@ function renderRiskTab(sorted, months){
   const srch = ($('risk-srch')||{}).value?.toLowerCase().trim()||'';
 
   // update badge
-  const badge=$('risk-badge');
+  const badge=$('risk-badge'); if(!badge) return; // tab removed
   const highCount=sorted.filter(d=>d.stockoutScore>60).length;
   if(highCount){ badge.style.display=''; badge.textContent=highCount; } else badge.style.display='none';
 
