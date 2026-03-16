@@ -941,9 +941,9 @@ canvas{display:block;width:100%!important}
             <option value="90">3 เดือน</option>
           </select>
         </div>
-        <button class="btn" onclick="generateOrder()" style="color:var(--green)">
-          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          สร้างใบสั่งซื้อ
+        <button class="btn" onclick="toggleCartModal()" style="color:var(--green);gap:6px">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          ดูตะกร้า (<span id="cart-count-order">0</span>)
         </button>
         <button class="btn" onclick="exportOrderCSV()" style="color:var(--blue)">
           <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -1927,8 +1927,10 @@ function updateCartFab(){
   const n = cartCount();
   const fab = $('cart-fab');
   const badge = $('cart-count');
+  const badge2 = $('cart-count-order');
   if(fab) fab.style.display = n>0 ? 'flex' : 'none';
   if(badge) badge.textContent = n;
+  if(badge2) badge2.textContent = n;
 }
 
 // ── Add pants roll to cart ──
@@ -1939,14 +1941,17 @@ function rollCartToggle(btn){
   const ri   = parseInt(btn.getAttribute('data-ri'));
   const ppl  = parseInt(btn.getAttribute('data-ppl'));
   const inCart = btn.getAttribute('data-incart')==='1';
+  console.log('[Cart] rollCartToggle', {psku,name,col,ri,ppl,inCart});
   if(inCart){
     cartRemoveRoll(psku, col, ri);
   } else {
     try {
       const rdRaw = btn.getAttribute('data-rd');
+      if(!rdRaw){ console.error('[Cart] no data-rd'); return; }
       const rd = JSON.parse(decodeURIComponent(escape(atob(rdRaw))));
+      console.log('[Cart] rollData:', rd);
       cartAddRoll(psku, name, col, ri, rd, ppl);
-    } catch(e){ console.error('rollCartToggle error:', e); }
+    } catch(e){ console.error('[Cart] rollCartToggle error:', e); }
   }
 }
 function cartAddRoll(parentSku, name, color, rollIndex, rollData, piecesPerLot){
@@ -2065,7 +2070,9 @@ function renderCartModal(){
 
 // ── Submit Order → save to Firebase history ──
 async function submitCartOrder(){
-  if(!cartCount()){ alert('ยังไม่มีรายการในตะกร้า'); return; }
+  const n = cartCount();
+  console.log('[Cart] submitCartOrder called, items:', n, cart);
+  if(!n){ alert('ยังไม่มีรายการในตะกร้า'); return; }
   const days = getOrderDays();
   const items = Object.values(cart);
   const order = {
@@ -2147,7 +2154,7 @@ async function loadOrderHistory(){
   if(!db){ area.innerHTML='<div class="empty" style="padding:40px">Firebase ไม่พร้อม</div>'; return; }
   area.innerHTML='<div class="empty" style="padding:40px">⏳ กำลังโหลด…</div>';
   try {
-    const snap = await db.ref('order_history').orderByChild('createdAt').get();
+    const snap = await db.ref('order_history').get();
     if(!snap.exists()){ area.innerHTML='<div class="empty" style="padding:40px">ยังไม่มีประวัติคำสั่งซื้อ</div>'; return; }
     const raw = snap.val();
     orderHistory = Object.entries(raw)
