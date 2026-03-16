@@ -277,6 +277,13 @@ td .stock-pill.instock{background:rgba(46,204,138,.13);color:var(--green)}
 /* stock file info bar */
 #stock-file-bar{display:none;align-items:center;gap:10px;padding:8px 20px;background:rgba(46,204,138,.08);border-bottom:1px solid rgba(46,204,138,.15);font-size:11px;color:var(--muted)}
 #stock-file-bar b{color:var(--green)}
+/* ─── DISCONTINUE TOGGLE ─── */
+.disc-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;border:none;font-family:'Anuphan',sans-serif;transition:all .15s}
+.disc-btn.active{background:rgba(100,116,139,.2);color:var(--muted);border:1px solid rgba(100,116,139,.25)}
+.disc-btn.active:hover{background:rgba(255,85,114,.15);color:var(--red)}
+.disc-btn.inactive{background:rgba(255,85,114,.0);color:var(--faint);border:1px solid rgba(255,255,255,.08)}
+.disc-btn.inactive:hover{background:rgba(255,85,114,.1);color:var(--red);border-color:rgba(255,85,114,.2)}
+.disc-collapsed{opacity:.45;pointer-events:none}
 /* ─── DROPDOWN ─── */
 .dd-item{padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:background .1s}
 .dd-item:hover{background:rgba(77,143,255,.1);color:var(--text)}
@@ -974,24 +981,22 @@ let appData = [];
 let maxAdjVel = 1, maxStock = 1;
 let sortKey = 'starScore', sortDir = 'desc';
 const COL_DEFAULTS = ['color','size','vel','maxvel7','totalsold','peakval','lastsale','peakday','stock','stockavg','stockmaxvel7'];
-const COL_STORAGE_KEY = 'lamsang_visibleCols_v2';
+const COL_STORAGE_KEY = 'visibleCols';
 function loadVisibleCols(){
+  // Try Firebase cache first
+  const cached = _configCache[COL_STORAGE_KEY];
+  if(cached && Array.isArray(cached) && cached.length>=2){
+    const merged=new Set(cached); COL_DEFAULTS.forEach(c=>merged.add(c)); return merged;
+  }
+  // Fallback localStorage (old key or new fb_ prefix)
   try {
-    const saved = localStorage.getItem(COL_STORAGE_KEY);
-    if(saved){
-      const arr = JSON.parse(saved);
-      if(Array.isArray(arr) && arr.length >= 2){
-        // merge: เพิ่ม column ใหม่ที่ยังไม่เคยบันทึก เข้าไปใน saved list อัตโนมัติ
-        const merged = new Set(arr);
-        COL_DEFAULTS.forEach(col => merged.add(col));
-        return merged;
-      }
-    }
+    const s=localStorage.getItem('fb_visibleCols')||localStorage.getItem('lamsang_visibleCols_v2');
+    if(s){ const a=JSON.parse(s); if(Array.isArray(a)&&a.length>=2){ const m=new Set(a); COL_DEFAULTS.forEach(c=>m.add(c)); return m; } }
   } catch(e){}
   return new Set(COL_DEFAULTS);
 }
 function saveVisibleCols(){
-  try { localStorage.setItem(COL_STORAGE_KEY, JSON.stringify([...visibleCols])); } catch(e){}
+  fbSave(COL_STORAGE_KEY, [...visibleCols]);
 }
 let visibleCols = loadVisibleCols();
 
@@ -1014,10 +1019,35 @@ function hideL(){ $('loading').classList.remove('on') }
 
 let orderCatFilter = 'all';
 let orderCatType   = 'all'; // 'all' | 'pants' | 'belt' | 'other' | specific category string
-const ORDER_STORE_KEY = 'lamsang_order_v4';
+const ORDER_STORE_KEY = 'orderConfig';
 let orderConfig = {};
-try { const s=localStorage.getItem(ORDER_STORE_KEY); if(s) orderConfig=JSON.parse(s); } catch(e){}
-function saveOrderConfig(){ try{ localStorage.setItem(ORDER_STORE_KEY, JSON.stringify(orderConfig)); }catch(e){} }
+// load from localStorage fallback on init (Firebase loaded later via loadAllConfigs)
+try { const s=localStorage.getItem('fb_orderConfig')||localStorage.getItem('lamsang_order_v4'); if(s) orderConfig=JSON.parse(s); } catch(e){}
+function saveOrderConfig(){ fbSave(ORDER_STORE_KEY, orderConfig); }
+
+// ── DISCONTINUE (ไม่เติมแล้ว) ──
+// stored in orderConfig[parentSku].discontinued = true (ทั้งรุ่น)
+// or orderConfig[parentSku].discColors = { 'ดำ': true, ... } (รายสี)
+function isDiscontinued(parentSku, col){
+  const cfg = orderConfig[parentSku]||{};
+  if(cfg.discontinued) return true;
+  if(col && (cfg.discColors||{})[col]) return true;
+  return false;
+}
+function toggleDiscontinue(parentSku, col){
+  if(!orderConfig[parentSku]) orderConfig[parentSku]={};
+  const cfg = orderConfig[parentSku];
+  if(col){
+    if(!cfg.discColors) cfg.discColors={};
+    cfg.discColors[col] = !cfg.discColors[col];
+    if(!cfg.discColors[col]) delete cfg.discColors[col];
+  } else {
+    cfg.discontinued = !cfg.discontinued;
+    if(!cfg.discontinued) delete cfg.discontinued;
+  }
+  saveOrderConfig();
+  renderOrderTab();
+}
 
 function classifyCat(cat){
   const c=(cat||'').toLowerCase();
@@ -1454,6 +1484,10 @@ function renderPantsCard(g, days){
     if(sb.low !== sa.low) return sb.low - sa.low;  // low มากก่อน
     return sa.total - sb.total;                    // stock รวมน้อยก่อน
   });
+  // ถ้าทั้งรุ่น discontinued → ซ่อนทุกสี
+  if(isDiscontinued(g.parentSku)){
+    colorsHtml = `<div style="padding:10px 14px;color:var(--muted);font-size:12px;opacity:.5">🚫 ไม่เติมสต๊อกแล้ว — ซ่อนรายละเอียดทั้งหมด</div>`;
+  } else {
   colorsSorted.forEach(([col,skus])=>{
     const r=calcColorOrder(g.parentSku,skus,days);
     const colAvg=skus.reduce((s,d)=>s+getAvg(d,days),0);
@@ -1553,16 +1587,24 @@ function renderPantsCard(g, days){
     const coverMonths=colAvg>0?(r.totalPieces/colAvg*days/30).toFixed(1):'—';
     const coverColor=colAvg>0?(r.totalPieces>=colAvg?'var(--green)':'var(--orange)'):'var(--muted)';
 
-    colorsHtml+=`<div style="margin-bottom:16px;padding:14px 16px;background:var(--bg-dark);border-radius:16px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    const colDisc = isDiscontinued(g.parentSku, col);
+    const colEscQ = col.replace(/'/g,"\'");
+    colorsHtml+=`<div style="margin-bottom:16px;padding:${colDisc?'10px':'14px'} 16px;background:var(--bg-dark);border-radius:16px;${colDisc?'opacity:.55':''}">
+      <div style="display:flex;align-items:center;gap:10px;${colDisc?'':'margin-bottom:14px;'}flex-wrap:wrap">
         <div style="font-size:14px;font-weight:800;color:var(--text)">🎨 ${col}</div>
-        <div style="background:rgba(77,143,255,.12);border:1px solid rgba(77,143,255,.2);border-radius:8px;padding:3px 10px;font-size:11px;font-weight:700;color:var(--blue)">${colAvg} ตัว/${days}วัน</div>
-        ${r.extraSlots>0?`<div style="background:rgba(255,170,68,.1);border:1px solid rgba(255,170,68,.2);border-radius:8px;padding:3px 8px;font-size:10px;color:var(--orange)">สั่งเกิน +${r.extraSlots} ล็อค (${r.extraPieces} ตัว) เพื่อครบม้วน</div>`:''}
-        <div style="margin-left:auto;background:rgba(46,204,138,.1);border:1px solid rgba(46,204,138,.2);border-radius:8px;padding:4px 14px;text-align:right">
+        ${!colDisc?`<div style="background:rgba(77,143,255,.12);border:1px solid rgba(77,143,255,.2);border-radius:8px;padding:3px 10px;font-size:11px;font-weight:700;color:var(--blue)">${colAvg} ตัว/${days}วัน</div>`:''}
+        ${!colDisc&&r.extraSlots>0?`<div style="background:rgba(255,170,68,.1);border:1px solid rgba(255,170,68,.2);border-radius:8px;padding:3px 8px;font-size:10px;color:var(--orange)">สั่งเกิน +${r.extraSlots} ล็อค</div>`:''}
+        ${!colDisc?`<div style="margin-left:auto;background:rgba(46,204,138,.1);border:1px solid rgba(46,204,138,.2);border-radius:8px;padding:4px 14px;text-align:right">
           <div style="font-size:20px;font-weight:800;color:var(--green);font-family:'IBM Plex Mono',monospace">${r.totalRolls}<span style="font-size:11px;font-weight:400"> ม้วน</span></div>
           <div style="font-size:10px;color:${coverColor}">ครอบคลุม ~${coverMonths} เดือน</div>
-        </div>
+        </div>`:'<div style="margin-left:auto"></div>'}
+        <button class="disc-btn ${colDisc?'active':'inactive'}"
+          onclick="event.stopPropagation();toggleDiscontinue('${esc}','${colEscQ}')"
+          title="${colDisc?'คลิกเพื่อเปิดเติมสต๊อกอีกครั้ง':'ไม่เติมสีนี้แล้ว'}">
+          ${colDisc?'🚫 ไม่เติมแล้ว':'ยังเติมอยู่'}
+        </button>
       </div>
+      ${colDisc?'':`
 
       <div style="margin-bottom:14px">
         <div style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px">ล็อคต่อไซส์ = ceil(เฉลี่ย ÷ ${piecesPerLot})</div>
@@ -1581,14 +1623,24 @@ function renderPantsCard(g, days){
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">${rollCards}</div>
       </div>
+    `}
     </div>`;
   });
 
-  return`<div class="lot-card">
+  } // end else (not discontinued model)
+
+  return`<div class="lot-card" style="${isDiscontinued(g.parentSku)?'opacity:.6':''}">
     <div class="lot-card-hdr">
-      <div>
-        <div class="lot-card-name">👖 ${g.name}</div>
-        <div class="lot-card-sku">${g.parentSku} · ${lotsPerRoll} ล็อค/ม้วน · ${piecesPerLot} ตัว/ล็อค · ${byColor.size} สี</div>
+      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div>
+          <div class="lot-card-name">👖 ${g.name}</div>
+          <div class="lot-card-sku">${g.parentSku} · ${lotsPerRoll} ล็อค/ม้วน · ${piecesPerLot} ตัว/ล็อค · ${byColor.size} สี</div>
+        </div>
+        <button class="disc-btn ${isDiscontinued(g.parentSku)?'active':'inactive'}"
+          onclick="event.stopPropagation();toggleDiscontinue('${esc}')"
+          title="${isDiscontinued(g.parentSku)?'คลิกเพื่อเปิดเติมสต๊อกอีกครั้ง':'คลิกถ้าไม่เติมสต๊อกรุ่นนี้แล้ว'}">
+          ${isDiscontinued(g.parentSku)?'🚫 ไม่เติมแล้ว':'ยังเติมอยู่'}
+        </button>
       </div>
       <div class="lot-card-avg">
         <div class="lot-card-avg-lbl">รวมสั่งทั้งหมด</div>
@@ -1634,9 +1686,21 @@ function renderBeltCard(g, days){
                      isLow?`<span style="font-size:9px;color:var(--orange);font-weight:800">🟡 เหลือ ${onHand} (ต้องการ ${demand15d}/15วัน)</span>`:
                      isOk ?`<span style="font-size:9px;color:var(--green)">✓ พอ (${onHand})</span>`:
                      onHand!==null?`<span style="font-size:9px;color:var(--muted)">มี ${onHand}</span>`:``;
+    const itemDisc = isDiscontinued(g.parentSku, item.color||'');
+    if(itemDisc) return`<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--bg-dark);border:1px solid rgba(255,255,255,.06);border-radius:10px;min-width:190px;opacity:.55">
+      <div style="font-size:12px;font-weight:700;color:var(--muted)">${colLabel}</div>
+      <button class="disc-btn active" style="margin-left:auto;font-size:9px"
+        onclick="event.stopPropagation();toggleDiscontinue('${esc}','${(item.color||'').replace(/'/g,\"\'\")}')"
+        title="คลิกเพื่อเปิดเติมอีกครั้ง">🚫 ไม่เติมแล้ว</button>
+    </div>`;
     return`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:${cardBg};border:${cardBdr};border-radius:10px;min-width:190px">
       <div style="flex:1">
-        <div style="font-size:12px;font-weight:700;color:var(--text)">${colLabel}</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="font-size:12px;font-weight:700;color:var(--text)">${colLabel}</div>
+          <button class="disc-btn inactive" style="font-size:9px;padding:2px 7px"
+            onclick="event.stopPropagation();toggleDiscontinue('${esc}','${(item.color||'').replace(/'/g,\"\'\")}')"
+            title="ไม่เติมสีนี้แล้ว">ยังเติมอยู่</button>
+        </div>
         <div style="font-size:9px;color:var(--faint);font-family:'IBM Plex Mono',monospace;margin-top:1px">${(item.sku||'').slice(-8)}</div>
         <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
           <span style="font-size:10px;color:var(--blue)">เฉลี่ย ${Math.ceil(rawAvg)} /${days}วัน</span>
@@ -1656,11 +1720,20 @@ function renderBeltCard(g, days){
     const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(Math.max(0,getAvg(item,days)-(isStockLoaded()&&(item.sku||'').toLowerCase() in stockMap?Math.max(0,Number(stockMap[(item.sku||'').toLowerCase()])||0):0))/10)*10;
     return s+saved;
   },0);
-  return`<div class="belt-card">
-    <div class="belt-info">
-      <div class="belt-name">🎗️ ${g.name}</div>
-      <div class="belt-sku">${g.parentSku}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${colorItems}</div>
+  const beltDisc = isDiscontinued(g.parentSku);
+  return`<div class="belt-card" style="${beltDisc?'opacity:.6':''}">
+    <div class="belt-info" style="flex:1">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div class="belt-name">🎗️ ${g.name}</div>
+        <div class="belt-sku" style="margin:0">${g.parentSku}</div>
+        <button class="disc-btn ${beltDisc?'active':'inactive'}"
+          onclick="event.stopPropagation();toggleDiscontinue('${esc}')"
+          style="margin-left:auto"
+          title="${beltDisc?'คลิกเพื่อเปิดเติมสต๊อกอีกครั้ง':'ไม่เติมรุ่นนี้แล้ว'}">
+          ${beltDisc?'🚫 ไม่เติมแล้ว':'ยังเติมอยู่'}
+        </button>
+      </div>
+      ${beltDisc?'':`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${colorItems}</div>`}
     </div>
     <div class="belt-qty-box">
       <div class="belt-qty-lbl">รวมสั่ง</div>
@@ -2088,10 +2161,17 @@ async function syncData(){
   try { enrichAppData(); } catch(ex){ console.warn('enrichAppData:', ex); }
   try { renderOrderTab(); } catch(ex){ console.warn('renderOrderTab:', ex); }
 
-  // Auto-load stock from Firebase (if not already loaded from file)
-  if(!isStockLoaded()){
-    loadStockFromFirebase().catch(e=>console.warn('Firebase auto-load:', e));
-  }
+  // Load all configs + stock from Firebase
+  (async()=>{
+    await loadAllConfigs();
+    // re-render after configs applied
+    try { renderAll(getFilteredData()); } catch(e){}
+    try { renderOrderTab(); } catch(e){}
+    // Auto-load stock from Firebase (if not already loaded from file)
+    if(!isStockLoaded()){
+      loadStockFromFirebase().catch(e=>console.warn('Firebase stock auto-load:', e));
+    }
+  })();
 }
 
 function parseDate(s){
@@ -2179,7 +2259,67 @@ const FIREBASE_CONFIG = {
   appId:             "1:674845061970:web:f53fbf40eb24e34224008b",
   databaseURL:       "https://lamsang-analytics-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
-const RTDB_PATH = 'stock';  // /stock/meta  /stock/skus
+const RTDB_PATH   = 'stock';    // /stock/meta /stock/skus
+const RTDB_CONFIG = 'config';   // /config/visibleCols /config/orderConfig /config/riskCols
+
+// ── FIREBASE CONFIG STORE (replaces localStorage) ──────────────
+// Write to RTDB async (fire-and-forget); read on init
+let _configCache = {};  // in-memory cache
+
+async function fbSave(key, value){
+  _configCache[key] = value;
+  // also keep localStorage as instant fallback
+  try { localStorage.setItem('fb_'+key, JSON.stringify(value)); } catch(e){}
+  const db = getRtdb(); if(!db) return;
+  try { await db.ref(RTDB_CONFIG+'/'+key).set(value); }
+  catch(e){ console.warn('[Firebase config save]', key, e.message); }
+}
+
+async function fbLoad(key, defaultVal){
+  // 1. Try Firebase first
+  const db = getRtdb();
+  if(db){
+    try {
+      const snap = await db.ref(RTDB_CONFIG+'/'+key).get();
+      if(snap.exists()){
+        const v = snap.val();
+        _configCache[key] = v;
+        try { localStorage.setItem('fb_'+key, JSON.stringify(v)); } catch(e){}
+        return v;
+      }
+    } catch(e){ console.warn('[Firebase config load]', key, e.message); }
+  }
+  // 2. Fallback: localStorage (old key or new fb_ prefix)
+  try {
+    const s = localStorage.getItem('fb_'+key) || localStorage.getItem(key);
+    if(s) return JSON.parse(s);
+  } catch(e){}
+  return defaultVal;
+}
+
+// Load all configs from Firebase on startup
+async function loadAllConfigs(){
+  try {
+    const db = getRtdb(); if(!db) return;
+    const snap = await db.ref(RTDB_CONFIG).get();
+    if(!snap.exists()) return;
+    const data = snap.val()||{};
+    _configCache = data;
+    // apply each config
+    if(data.visibleCols && Array.isArray(data.visibleCols)){
+      visibleCols = new Set(data.visibleCols);
+      applyColVisibility(); syncToggleButtons();
+    }
+    if(data.riskCols && Array.isArray(data.riskCols)){
+      riskVisibleCols = new Set(data.riskCols);
+      applyRiskColVisibility?.();
+    }
+    if(data.orderConfig && typeof data.orderConfig==='object'){
+      Object.assign(orderConfig, data.orderConfig);
+    }
+    console.log('[Firebase] configs loaded:', Object.keys(data));
+  } catch(e){ console.warn('[Firebase loadAllConfigs]', e.message); }
+}
 
 let _fbApp = null, _rtdb = null;
 function getRtdb(){
@@ -2257,6 +2397,7 @@ function updateFbStatus(state, fileName='', count=0, date=null){
   } else if(state==='loaded'){
     bar.style.display='flex';
     if(icon) icon.textContent='✅';
+    if($('fb-config-status')) $('fb-config-status').textContent='configs synced';
     if(txt)  txt.textContent='สต๊อกจาก Firebase: '+fileName;
     const d = date ? date.toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
     if(sub)  sub.textContent=count.toLocaleString()+' SKUs · อัพเดท '+d;
@@ -2847,16 +2988,18 @@ function renderAll(data){
 
 window.riskThreshold = 60;
 let riskSortKey = 'stockoutScore', riskSortDir = 'desc';
-const RISK_COL_KEY = 'lamsang_riskCols_v1';
+const RISK_COL_KEY = 'riskCols';
 const RISK_COL_DEFAULTS = ['rscore','rsku','rcolor','rsize','rvel','rvel7','rmaxvel7','rtrend','rgap','rconsist','rlastsale','rpeakday','rstock','rstockmaxvel7'];
 let riskVisibleCols = (()=>{
   try {
-    const s = localStorage.getItem(RISK_COL_KEY);
+    const cached=_configCache[RISK_COL_KEY];
+    if(cached&&Array.isArray(cached)&&cached.length>=1){ const m=new Set(cached); RISK_COL_DEFAULTS.forEach(c=>m.add(c)); return m; }
+    const s=localStorage.getItem('fb_riskCols')||localStorage.getItem('lamsang_riskCols_v1');
     if(s){ const a=JSON.parse(s); if(Array.isArray(a)&&a.length>=1){ const m=new Set(a); RISK_COL_DEFAULTS.forEach(c=>m.add(c)); return m; } }
   } catch(e){}
   return new Set(RISK_COL_DEFAULTS);
 })();
-function saveRiskCols(){ try{ localStorage.setItem(RISK_COL_KEY,JSON.stringify([...riskVisibleCols])); }catch(e){} }
+function saveRiskCols(){ fbSave(RISK_COL_KEY, [...riskVisibleCols]); }
 
 function setRiskThreshold(btn, val){
   window.riskThreshold = val;
