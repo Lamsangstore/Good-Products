@@ -1156,6 +1156,13 @@ function isDiscontinued(parentSku, col){
   if(col && (cfg.discColors||{})[col]) return true;
   return false;
 }
+function promptFactoryName(parentSku, currentName){
+  const cur = getFactoryName(parentSku)||'';
+  const input = prompt(`ชื่อที่โรงงานใช้สำหรับ "${currentName}":\n(เว้นว่างเพื่อใช้ชื่อเดิม)`, cur);
+  if(input===null) return; // cancelled
+  setFactoryName(parentSku, input);
+  renderOrderTab(); // refresh button label
+}
 function toggleDiscontinue(parentSku, col){
   if(!orderConfig[parentSku]) orderConfig[parentSku]={};
   const cfg = orderConfig[parentSku];
@@ -1311,6 +1318,13 @@ function getAvg(item,days=15){
 
 // ── config ──
 function getPantsCfg(p){ if(!orderConfig[p]) orderConfig[p]={}; return orderConfig[p]; }
+function getFactoryName(parentSku){ return (orderConfig[parentSku]||{}).factoryName||''; }
+function setFactoryName(parentSku, name){
+  getPantsCfg(parentSku).factoryName = name.trim();
+  saveOrderConfig();
+  // re-render history if visible
+  if(document.getElementById('tab-history')?.classList.contains('active')) renderOrderHistory();
+}
 function getLotsPerRoll(p){ return getPantsCfg(p).lotsPerRoll||8; }
 function getPiecesPerLot(p){ return getPantsCfg(p).piecesPerLot||10; }
 function getOrderDays(){ return +($('orderDays')?.value||15); }
@@ -1780,6 +1794,12 @@ function renderPantsCard(g, days){
           title="${isDiscontinued(g.parentSku)?'คลิกเพื่อเปิดเติมสต๊อกอีกครั้ง':'คลิกถ้าไม่เติมสต๊อกรุ่นนี้แล้ว'}">
           ${isDiscontinued(g.parentSku)?'🚫 ไม่เติมแล้ว':'ยังเติมอยู่'}
         </button>
+        <button class="btn" style="font-size:10px;padding:3px 9px;color:var(--muted);gap:4px"
+          data-psku="${g.parentSku}" data-pname="${g.name.replace(/"/g,'&quot;')}"
+          onclick="event.stopPropagation();promptFactoryName(this.getAttribute('data-psku'),this.getAttribute('data-pname'))"
+          title="ชื่อที่โรงงานใช้">
+          🏭 ${getFactoryName(g.parentSku)||'ตั้งชื่อโรงงาน'}
+        </button>
       </div>
       <div class="lot-card-avg">
         <div class="lot-card-avg-lbl">รวมสั่งทั้งหมด</div>
@@ -1963,6 +1983,7 @@ function cartAddRoll(parentSku, name, color, rollIndex, rollData, piecesPerLot){
   const pieces = rollData.totalLots * piecesPerLot;
   cart[id] = {
     type:'pants', parentSku, name, color,
+    factoryName: getFactoryName(parentSku)||name,
     rollIndex, rollLabel:`ม้วน ${rollIndex+1}`,
     szSummary, extraSummary, pieces,
     lots: rollData.totalLots,
@@ -2262,7 +2283,14 @@ function renderHistDetail(order){
   // Date header
   const d=new Date(order.createdAt);
   const dateStr=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
-  html+=`<tr><td colspan="20" style="text-align:center;font-size:18px;font-weight:800;color:var(--text);padding:8px 0 12px">${dateStr}</td></tr>`;
+  const deliveryDate = new Date(order.createdAt + 15*24*60*60*1000);
+  const deliveryStr = `${deliveryDate.getDate()}/${deliveryDate.getMonth()+1}/${deliveryDate.getFullYear()}`;
+  html+=`<tr>
+    <td colspan="20" style="text-align:center;padding:8px 0 4px">
+      <div style="font-size:20px;font-weight:800;color:var(--text)">📅 ${dateStr}</div>
+      <div style="font-size:12px;color:var(--green);margin-top:3px">🚚 คาดว่าได้รับ: ${deliveryStr} (~15 วัน)</div>
+    </td>
+  </tr><tr><td colspan="20" style="padding:6px"></td></tr>`;
 
   Object.entries(catGroups).forEach(([cat, cg])=>{
     const st = cg.style;
@@ -2273,20 +2301,20 @@ function renderHistDetail(order){
       // Header row with sizes
       html+=`<tr>
         <td colspan="2" style="background:${st.hdr};color:#fff;font-weight:800;text-align:center;padding:6px 10px;border-radius:6px 0 0 6px;font-size:12px">${label}</td>
-        ${sortedSizes.map(sz=>`<td style="background:${st.hdr};color:#fff;font-weight:800;text-align:center;padding:6px 8px;min-width:36px">${sz}</td>`).join('')}
+        ${sortedSizes.map(sz=>`<td style="background:${st.hdr};color:#fff;font-weight:800;text-align:center;padding:6px 10px;min-width:40px;font-size:13px">${sz}</td>`).join('')}
         <td style="background:${st.hdr};border-radius:0 6px 6px 0"></td>
       </tr>`;
       // Data rows
       cg.rows.forEach(row=>{
         html+=`<tr style="background:${st.bg}">
-          <td style="padding:5px 10px;font-weight:600;color:var(--text);white-space:nowrap">${row.name}</td>
-          <td style="padding:5px 8px;color:var(--muted);white-space:nowrap">${row.color}<br><span style="font-size:9px;color:var(--faint)">${row.rollLabel}</span></td>
+          <td style="padding:5px 10px;font-weight:700;color:var(--text);white-space:nowrap;font-size:12px">${row.factoryName||row.name}</td>
+          <td style="padding:5px 8px;color:var(--text);font-weight:600;white-space:nowrap;font-size:12px">${row.color}<br><span style="font-size:10px;color:var(--muted)">${row.rollLabel}</span></td>
           ${sortedSizes.map(sz=>{
             const n=(row.counts[sz]||0);
             const ex=(row.extraCounts?.[sz]||0);
             const total=n+ex;
             if(!total) return `<td style="text-align:center;color:var(--faint);padding:5px 8px">-</td>`;
-            return `<td style="text-align:center;font-weight:700;color:var(--text);padding:5px 8px">${total}${ex?`<span style='color:var(--orange);font-size:9px'>+${ex}</span>`:''}`;
+            return `<td style="text-align:center;font-weight:700;color:var(--text);padding:5px 8px">${total}</td>`;
           }).join('')}
           <td style="padding:5px 8px;color:var(--blue);font-weight:700;white-space:nowrap;font-size:10px">${row.pieces}ตัว</td>
         </tr>`;
