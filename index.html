@@ -1056,9 +1056,9 @@ function calcColorOrder(parentSku, skus, days){
     const item=skuBySz[sz];
     const d=item?getAvg(item,days):0;
     demand[sz]=d;
-    // stock on hand from uploaded file
+    // stock on hand from uploaded file (safe access)
     const skuKey=(item?.sku||'').toLowerCase();
-    const rawStock=(stockLoaded&&skuKey&&skuKey in stockMap)?Math.max(0,stockMap[skuKey]||0):0;
+    const rawStock=(stockLoaded&&skuKey&&stockMap&&skuKey in stockMap)?Math.max(0,Number(stockMap[skuKey])||0):0;
     stockOnHand[sz]=rawStock;
     // net demand = demand - stock already on hand
     const net=Math.max(0,d-rawStock);
@@ -1137,7 +1137,10 @@ function setLotsOverride(parentSku,sku,n){
 
 // ── MAIN RENDER ──
 function renderOrderTab(){
-  if(!appData.length) return;
+  if(!appData || !appData.length){
+    const oc=$('order-content'); if(oc) oc.innerHTML='<div class="empty" style="padding:60px">กรุณาซิงก์ข้อมูลก่อน</div>';
+    return;
+  }
   renderLotConfig();
   const srch=($('order-srch')||{}).value?.toLowerCase().trim()||'';
   const groups=groupByParent(appData.filter(d=>{
@@ -1220,7 +1223,7 @@ function renderPantsCard(g, days){
       const maxVel7x30=item?.stockMaxVel7||0;
       const monthlyAvg=item?(item.stockAvg||Math.ceil((recStockVal+maxVel7x30)/2)):0;
       const noNeed=stockLoaded&&onHand>=d&&d>0;
-      const hasFile=stockLoaded&&(item?.sku||'').toLowerCase()in stockMap;
+      const hasFile=stockLoaded&&stockMap&&(item?.sku||'').toLowerCase()in stockMap;
       const cardBg=noNeed?'rgba(46,204,138,.07)':'var(--bg)';
       const cardBdr=noNeed?'1px solid rgba(46,204,138,.3)':'none';
       const lotColor=noNeed?'var(--green)':isOv?'var(--orange)':'var(--blue)';
@@ -1878,11 +1881,14 @@ function parseStockCSV(text){
 function parseStockXLSX(buf){
   const doRead = () => {
     try {
-      const wb   = XLSX.read(new Uint8Array(buf), {type:'array'});
+      // buf is ArrayBuffer — pass directly with arraybuffer type
+      const data = buf instanceof ArrayBuffer ? buf : buf.buffer || buf;
+      const wb   = XLSX.read(data, {type:'arraybuffer'});
       if(!wb || !wb.SheetNames || !wb.SheetNames.length){ alert('ไฟล์ XLSX ไม่มี sheet'); return; }
       const ws   = wb.Sheets[wb.SheetNames[0]];
       if(!ws){ alert('ไม่สามารถอ่าน sheet แรกได้'); return; }
-      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      // use header:1 to get arrays; also try sheet_to_json with defval
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false});
       if(!rows || !rows.length){ alert('ไฟล์ไม่มีข้อมูล'); return; }
       extractStockFromRows(rows);
     } catch(err){ alert('อ่าน XLSX ไม่สำเร็จ: '+err.message); }
