@@ -1132,11 +1132,11 @@ function hideL(){ $('loading').classList.remove('on') }
 // ════════════════════════════════════════════════
 // ORDER TAB  ════════════════════════════════════════════════════
 // Model (กางเกง):
-//   1 ม้วน = 1 สี, ทุกม้วนต้องมี = lotsPerRoll ล็อคเสมอ
+//   1 ไม้ = 1 สี, ทุกไม้ต้องมี = lotsPerRoll ล็อคเสมอ
 //   1 ล็อค = 1 ไซส์ = piecesPerLot ตัว
 //   lots_needed[size] = ceil(demand[size] / piecesPerLot)
-//   จัด butterfly: XS↔XXL, S↔XL, M↔L อยู่ม้วนเดียวกัน
-//   ม้วนสุดท้าย pad ด้วย seq[0..] เพื่อให้ครบ lotsPerRoll
+//   จัด butterfly: XS↔XXL, S↔XL, M↔L อยู่ไม้เดียวกัน
+//   ไม้สุดท้าย pad ด้วย seq[0..] เพื่อให้ครบ lotsPerRoll
 // ════════════════════════════════════════════════════════════════
 
 let orderCatFilter = 'all';
@@ -1471,7 +1471,7 @@ function renderLotConfig(){
         <div class="lot-cfg-name" title="${g.name}">${g.name}</div>
         <div style="display:flex;flex-direction:column;gap:4px">
           <div style="display:flex;align-items:center;gap:5px">
-            <span style="font-size:9px;color:var(--muted);white-space:nowrap;min-width:52px">ล็อค/ม้วน</span>
+            <span style="font-size:9px;color:var(--muted);white-space:nowrap;min-width:52px">ล็อค/ไม้</span>
             <input class="lot-cfg-input" type="number" min="1" max="30" value="${lotsPerRoll}"
               onchange="setLotsPerRoll('${esc}',+this.value)" onclick="event.stopPropagation()" style="width:38px">
           </div>
@@ -1546,7 +1546,7 @@ function renderOrderTab(){
     html+=`<div class="order-group">
       <div class="order-group-hdr">
         <span style="font-size:18px">👖</span>
-        <span class="order-group-ttl">${catName} — 1 ม้วน/สี · ทุกม้วนครบ N ล็อค</span>
+        <span class="order-group-ttl">${catName} — 1 ไม้/สี · ทุกไม้ครบ N ล็อค</span>
         <span class="order-group-badge">${gList.length} รุ่น</span>
       </div>`;
     gList.forEach(g=>{ html+=renderPantsCard(g,days); });
@@ -1723,7 +1723,7 @@ function renderPantsCard(g, days){
       const escName2 = g.name.replace(/"/g,'&quot;');
       return`<div class="lot-vis-roll" style="min-width:140px;flex:1">
         <div class="lot-vis-roll-hdr" style="flex-wrap:wrap;gap:4px">
-          <span>🧵 ม้วน ${ri+1}</span>
+          <span>🧵 ไม้ ${ri+1}</span>
           <span style="font-size:10px;color:var(--muted)">${roll.totalLots} ล็อค · ${rollPieces}ตัว</span>
           ${hasExtra?`<span style="font-size:9px;color:var(--orange)">มีเกิน</span>`:''}
           <button class="cart-select-btn ${rollInCart?'selected':''}" style="margin-left:auto"
@@ -1748,7 +1748,7 @@ function renderPantsCard(g, days){
         ${!colDisc?`<div style="background:rgba(77,143,255,.12);border:1px solid rgba(77,143,255,.2);border-radius:8px;padding:3px 10px;font-size:11px;font-weight:700;color:var(--blue)">${colAvg} ตัว/${days}วัน</div>`:''}
         ${!colDisc&&r.extraSlots>0?`<div style="background:rgba(255,170,68,.1);border:1px solid rgba(255,170,68,.2);border-radius:8px;padding:3px 8px;font-size:10px;color:var(--orange)">สั่งเกิน +${r.extraSlots} ล็อค</div>`:''}
         ${!colDisc?`<div style="margin-left:auto;background:rgba(46,204,138,.1);border:1px solid rgba(46,204,138,.2);border-radius:8px;padding:4px 14px;text-align:right">
-          <div style="font-size:20px;font-weight:800;color:var(--green);font-family:'IBM Plex Mono',monospace">${r.totalRolls}<span style="font-size:11px;font-weight:400"> ม้วน</span></div>
+          <div style="font-size:20px;font-weight:800;color:var(--green);font-family:'IBM Plex Mono',monospace">${r.totalRolls}<span style="font-size:11px;font-weight:400"> ไม้</span></div>
           <div style="font-size:10px;color:${coverColor}">ครอบคลุม ~${coverMonths} เดือน</div>
         </div>`:'<div style="margin-left:auto"></div>'}
         <button class="disc-btn ${colDisc?'active':'inactive'}"
@@ -1764,15 +1764,15 @@ function renderPantsCard(g, days){
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px">${sizeRows}</div>
         <div style="margin-top:8px;font-size:11px;color:var(--muted)">
           รวม <b style="color:var(--text)">${r.totalLots} ล็อค</b> ที่ต้องการ →
-          <b style="color:var(--purple)">${r.totalRolls} ม้วน × ${lotsPerRoll} ล็อค = ${r.totalRolls*lotsPerRoll} ล็อคจริง</b>
+          <b style="color:var(--purple)">${r.totalRolls} ไม้ × ${lotsPerRoll} ล็อค = ${r.totalRolls*lotsPerRoll} ล็อคจริง</b>
           ${r.extraSlots>0?`<span style="color:var(--orange)"> (+${r.extraSlots} เกิน)</span>`:''}
-          ${(()=>{ if(r.totalRolls<=1) return ''; const fr=r.totalRolls-1; const nlpr=Math.ceil(r.totalLots/fr); if(nlpr<=lotsPerRoll) return ''; return `<span style="font-size:10px;color:var(--blue);margin-left:6px">💡 ตั้ง <b>${nlpr} ล็อค/ม้วน</b> จะได้แค่ ${fr} ม้วน</span>`; })()}
+          ${(()=>{ if(r.totalRolls<=1) return ''; const fr=r.totalRolls-1; const nlpr=Math.ceil(r.totalLots/fr); if(nlpr<=lotsPerRoll) return ''; return `<span style="font-size:10px;color:var(--blue);margin-left:6px">💡 ตั้ง <b>${nlpr} ล็อค/ไม้</b> จะได้แค่ ${fr} ไม้</span>`; })()}
         </div>
       </div>
 
       <div>
         <div style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px">
-          📋 แผนม้วน <span style="font-weight:400;color:var(--faint)">(เล็ก↔ใหญ่อยู่ด้วยกัน)</span>
+          📋 แผนไม้ <span style="font-weight:400;color:var(--faint)">(เล็ก↔ใหญ่อยู่ด้วยกัน)</span>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">${rollCards}</div>
       </div>
@@ -1787,7 +1787,7 @@ function renderPantsCard(g, days){
       <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
         <div>
           <div class="lot-card-name">👖 ${g.name}</div>
-          <div class="lot-card-sku">${g.parentSku} · ${lotsPerRoll} ล็อค/ม้วน · ${piecesPerLot} ตัว/ล็อค · ${byColor.size} สี</div>
+          <div class="lot-card-sku">${g.parentSku} · ${lotsPerRoll} ล็อค/ไม้ · ${piecesPerLot} ตัว/ล็อค · ${byColor.size} สี</div>
         </div>
         <button class="disc-btn ${isDiscontinued(g.parentSku)?'active':'inactive'}"
           onclick="event.stopPropagation();toggleDiscontinue('${esc}')"
@@ -1804,7 +1804,7 @@ function renderPantsCard(g, days){
       <div class="lot-card-avg">
         <div class="lot-card-avg-lbl">รวมสั่งทั้งหมด</div>
         <div><span class="lot-card-avg-val">${grandPieces}</span><span class="lot-card-avg-unit"> ตัว</span></div>
-        <div style="font-size:10px;color:var(--green);margin-top:2px">${grandRolls} ม้วน · เฉลี่ย ${totalAvgAll} ตัว/${days}วัน</div>
+        <div style="font-size:10px;color:var(--green);margin-top:2px">${grandRolls} ไม้ · เฉลี่ย ${totalAvgAll} ตัว/${days}วัน</div>
       </div>
     </div>
     ${colorsHtml}
@@ -1984,7 +1984,7 @@ function cartAddRoll(parentSku, name, color, rollIndex, rollData, piecesPerLot){
   cart[id] = {
     type:'pants', parentSku, name, color,
     factoryName: getFactoryName(parentSku)||name,
-    rollIndex, rollLabel:`ม้วน ${rollIndex+1}`,
+    rollIndex, rollLabel:`ไม้ ${rollIndex+1}`,
     szSummary, extraSummary, pieces,
     lots: rollData.totalLots,
     counts: rollData.counts||{},
@@ -2137,7 +2137,7 @@ function showOrderSummaryFromCart(order, days){
         colorMap[item.color].rolls.push(`${item.rollLabel}[${item.szSummary}]`);
         colorMap[item.color].pieces+=item.pieces;
       });
-      const detail=Object.entries(colorMap).map(([col,d])=>`🎨 ${col} · ${d.rolls.length}ม้วน · ${d.pieces}ตัว\n   ${d.rolls.join(' ')}`).join('\n');
+      const detail=Object.entries(colorMap).map(([col,d])=>`🎨 ${col} · ${d.rolls.length}ไม้ · ${d.pieces}ตัว\n   ${d.rolls.join(' ')}`).join('\n');
       const totalP=g.items.reduce((s,i)=>s+i.pieces,0);
       html+=`<div class="order-sum-row"><div><div class="order-sum-name">${g.name}</div><div class="order-sum-detail" style="white-space:pre-wrap;font-size:10px">${detail}</div></div><div class="order-sum-qty">${totalP} ตัว</div></div>`;
     });
@@ -2281,7 +2281,7 @@ function renderHistDetail(order){
   const hasSizes = sortedSizes.length>0;
 
   let html=`<div style="padding:12px;background:var(--bg-dark);border-top:1px solid rgba(255,255,255,.06);overflow-x:auto">`;
-  html+=`<table style="width:100%;border-collapse:collapse;font-size:11px;min-width:400px">`;
+  html+=`<table style="width:100%;border-collapse:collapse;font-size:11px;min-width:400px;table-layout:auto">`;
 
   // Date header
   const d=new Date(order.createdAt);
@@ -2313,8 +2313,8 @@ function renderHistDetail(order){
       // Data rows
       cg.rows.forEach(row=>{
         html+=`<tr style="background:${st.bg}">
-          ${factoryNames.length>1?`<td style="padding:5px 10px;font-weight:700;color:var(--text);white-space:nowrap;font-size:11px;color:var(--muted)">${row.factoryName||row.name}</td>`:`<td style="padding:2px"></td>`}
-          <td style="padding:5px 10px;color:var(--text);font-weight:700;white-space:nowrap;font-size:13px">${row.color}<br><span style="font-size:10px;color:var(--muted)">${row.rollLabel}</span></td>
+          <td style="padding:5px 10px;font-weight:700;color:var(--text);white-space:nowrap;font-size:12px">${row.name}</td>
+          <td style="padding:5px 10px;color:var(--text);font-weight:700;white-space:nowrap;font-size:12px">${row.color}<br><span style="font-size:10px;color:var(--muted)">${row.rollLabel}</span></td>
           ${sortedSizes.map(sz=>{
             const n=(row.counts[sz]||0);
             const ex=(row.extraCounts?.[sz]||0);
@@ -2334,7 +2334,7 @@ function renderHistDetail(order){
       </tr>`;
       cg.rows.forEach(row=>{
         html+=`<tr style="background:${st.bg}">
-          <td style="padding:5px 10px;font-weight:600;color:var(--text)">${row.name}</td>
+          <td style="padding:5px 10px;font-weight:700;color:var(--text);font-size:12px;max-width:140px">${row.factoryName||row.name}</td>
           <td style="padding:5px 8px;color:var(--muted)">${row.color}</td>
           <td colspan="10" style="padding:5px 8px;color:var(--orange);font-weight:700">${row.qty} ชิ้น</td>
         </tr>`;
@@ -2412,9 +2412,9 @@ function generateOrder(){
             const ex=roll.extraCounts[sz]||0;
             return ex>0?`${sz}×${n}(+${ex})`:`${sz}×${n}`;
           }).join(' ');
-          return`ม้วน${ri+1}:[${parts}]`;
+          return`ไม้${ri+1}:[${parts}]`;
         }).join(' ');
-        rollSummary.push(`🎨 ${col} · ${r.totalRolls}ม้วน · ${r.totalPieces}ตัว\n   ${rollDetail}`);
+        rollSummary.push(`🎨 ${col} · ${r.totalRolls}ไม้ · ${r.totalPieces}ตัว\n   ${rollDetail}`);
       });
       html+=`<div class="order-sum-row">
         <div>
@@ -2447,7 +2447,7 @@ function generateOrder(){
 // ── EXPORT CSV ──
 function exportOrderCSV(){
   const days=getOrderDays();
-  const rows=[['ประเภท','รุ่น','สี','ไซส์','SKU','ล็อคต้องการ','ล็อคจริง(+เกิน)','ตัว/ล็อค','รวมตัว','ม้วน','เฉลี่ย/'+days+'วัน']];
+  const rows=[['ประเภท','รุ่น','สี','ไซส์','SKU','ล็อคต้องการ','ล็อคจริง(+เกิน)','ตัว/ล็อค','รวมตัว','ไม้','เฉลี่ย/'+days+'วัน']];
   const pantsGroups=groupByParent(appData.filter(d=>classifyCat(d.category)==='pants'));
   pantsGroups.forEach(g=>{
     const byColor=new Map();
