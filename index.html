@@ -2231,119 +2231,137 @@ function renderOrderHistory(){
 }
 
 function renderHistDetail(order){
-  // Get all sizes in SIZE_ORDER from items
   const allSizes = [...SIZE_ORDER];
 
-  // Group items by category → parentSku → color
-  // For pants: each item = one roll with counts per size
-  const catGroups = {}; // category → { label, color, rows: [{name,color,rollLabel,counts,extraCounts,lots}] }
-
-  // Category display config
-  const catStyle = {
-    'กางเกง กระบอกกลาง': {bg:'rgba(0,180,180,.15)', hdr:'rgba(0,180,180,.35)', label:'กระบอกกลาง'},
-    'กางเกง กระบอกเล็ก':  {bg:'rgba(0,180,180,.1)',  hdr:'rgba(0,180,180,.3)',  label:'กระบอกเล็ก'},
-    'กางเกง กระบอกใหญ่': {bg:'rgba(0,180,180,.15)', hdr:'rgba(0,180,180,.35)', label:'กระบอกใหญ่'},
-    'กางเกง กระโปรง':    {bg:'rgba(150,100,255,.12)',hdr:'rgba(150,100,255,.3)', label:'กระโปรง'},
-    'กางเกง ขาม้า':       {bg:'rgba(240,192,40,.12)', hdr:'rgba(240,192,40,.35)', label:'ขาม้า'},
-    'กางเกง ขาสั้น':      {bg:'rgba(255,130,50,.12)', hdr:'rgba(255,130,50,.3)',  label:'ขาสั้น'},
-    'ยีนส์':              {bg:'rgba(60,100,200,.12)',  hdr:'rgba(60,100,200,.3)',  label:'ยีนส์'},
-  };
-  const defaultStyle = {bg:'rgba(100,100,100,.1)', hdr:'rgba(100,100,100,.25)', label:''};
-
+  // Group by parentSku → { name, factoryName, category, type, colorRolls: {color: [{rollLabel,counts,extraCounts,pieces}]} }
+  const groups = {};
   (order.items||[]).forEach(item=>{
-    // Get category from _productDict if available
-    const pdInfo = (window._productDict||{})[item.parentSku] ||
-                   Object.values(window._productDict||{}).find(d=>d.parentSku===item.parentSku);
-    const cat = pdInfo?.category || (item.type==='pants'?'กางเกง':'เข็มขัด');
-    if(!catGroups[cat]) catGroups[cat]={style:catStyle[cat]||defaultStyle, rows:[]};
-    if(item.type==='pants'){
-      // Parse counts from rollData stored in item
-      const counts = item.counts||{};
-      const extraCounts = item.extraCounts||{};
-      catGroups[cat].rows.push({
-        name:item.name,
-        factoryName: item.factoryName || getFactoryName(item.parentSku) || item.name,
-        parentSku: item.parentSku,
-        color:item.color, rollLabel:item.rollLabel,
-        counts, extraCounts, pieces:item.pieces, lots:item.lots
-      });
+    const key = item.parentSku;
+    if(!groups[key]){
+      const cat = item.category || ((window._productDict||{})[key]?.category) || '';
+      groups[key] = {
+        name: item.name,
+        factoryName: item.factoryName || getFactoryName(key) || item.name,
+        category: cat,
+        type: item.type||'pants',
+        colorRolls: {},
+        beltItems: []
+      };
+    }
+    const g = groups[key];
+    if(item.type==='belt'){
+      g.beltItems.push(item);
     } else {
-      catGroups[cat].rows.push({name:item.name, color:item.color, qty:item.qty, type:'belt'});
+      if(!g.colorRolls[item.color]) g.colorRolls[item.color]=[];
+      g.colorRolls[item.color].push({
+        rollLabel:item.rollLabel, counts:item.counts||{},
+        extraCounts:item.extraCounts||{}, pieces:item.pieces
+      });
     }
   });
 
-  // Sort sizes
-  const sortedSizes = allSizes.filter(sz=>
-    Object.values(catGroups).some(cg=>
-      cg.rows.some(r=>r.counts&&(r.counts[sz]||r.extraCounts?.[sz]))
+  // Collect all sizes used in this order
+  const usedSizes = allSizes.filter(sz=>
+    Object.values(groups).some(g=>
+      Object.values(g.colorRolls).some(rolls=>
+        rolls.some(r=>(r.counts[sz]||0)+(r.extraCounts?.[sz]||0)>0)
+      )
     )
   );
-  const hasSizes = sortedSizes.length>0;
 
-  let html=`<div style="padding:12px;background:var(--bg-dark);border-top:1px solid rgba(255,255,255,.06);overflow-x:auto">`;
-  html+=`<table style="width:100%;border-collapse:collapse;font-size:11px;min-width:400px;table-layout:auto">`;
-
-  // Date header
-  const d=new Date(order.createdAt);
-  const dateStr=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+  // Delivery date (last column)
   const deliveryDate = new Date(order.createdAt + 15*24*60*60*1000);
   const deliveryStr = `${deliveryDate.getDate()}/${deliveryDate.getMonth()+1}/${deliveryDate.getFullYear()}`;
-  html+=`<tr>
-    <td colspan="20" style="text-align:center;padding:8px 0 4px">
-      <div style="font-size:20px;font-weight:800;color:var(--text)">📅 ${dateStr}</div>
-      <div style="font-size:12px;color:var(--green);margin-top:3px">🚚 คาดว่าได้รับ: ${deliveryStr} (~15 วัน)</div>
-    </td>
-  </tr><tr><td colspan="20" style="padding:6px"></td></tr>`;
 
-  Object.entries(catGroups).forEach(([cat, cg])=>{
-    const st = cg.style;
-    const label = st.label||cat;
-    const isPants = cg.rows.some(r=>!r.type);
+  // Check received status
+  const isReceived = (order.received===true);
 
-    if(isPants && hasSizes){
-      // Get factory name(s) for this section — unique names per parentSku
-      const factoryNames = [...new Set(cg.rows.map(r=>r.factoryName||r.name))];
-      const sectionLabel = factoryNames.join(' / ') || label;
-      // Header row with sizes
+  let html=`<div style="padding:12px;background:var(--bg-dark);border-top:1px solid rgba(255,255,255,.06);overflow-x:auto">`;
+
+  // Date row
+  const d=new Date(order.createdAt);
+  const dateStr=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+  html+=`<div style="text-align:center;padding:6px 0 10px">
+    <span style="font-size:18px;font-weight:800;color:var(--text)">📅 ${dateStr}</span>
+  </div>`;
+
+  html+=`<table style="width:100%;border-collapse:collapse;font-size:12px;min-width:400px">`;
+
+  // catStyle map
+  const catStyle={
+    'กางเกง กระบอกกลาง':{bg:'rgba(0,180,180,.13)',hdr:'rgba(0,180,160,.4)'},
+    'กางเกง กระบอกเล็ก': {bg:'rgba(0,180,180,.1)', hdr:'rgba(0,180,160,.35)'},
+    'กางเกง กระบอกใหญ่':{bg:'rgba(0,180,180,.13)',hdr:'rgba(0,180,160,.4)'},
+    'กางเกง กระโปรง':   {bg:'rgba(150,100,255,.1)',hdr:'rgba(130,80,255,.4)'},
+    'กางเกง ขาม้า':      {bg:'rgba(210,170,30,.1)', hdr:'rgba(190,150,20,.5)'},
+    'กางเกง ขาสั้น':     {bg:'rgba(255,130,50,.1)', hdr:'rgba(230,100,30,.4)'},
+    'ยีนส์':             {bg:'rgba(60,100,200,.1)',  hdr:'rgba(50,80,180,.4)'},
+    'เข็มขัด':          {bg:'rgba(80,80,80,.15)',   hdr:'rgba(80,80,80,.4)'},
+  };
+  const defStyle={bg:'rgba(77,143,255,.08)',hdr:'rgba(77,143,255,.35)'};
+
+  Object.entries(groups).forEach(([parentSku, g])=>{
+    const st = catStyle[g.category]||defStyle;
+    const colSpan = 2 + usedSizes.length + 1;
+
+    if(g.type==='belt'||!Object.keys(g.colorRolls).length){
+      // Belt section
       html+=`<tr>
-        <td colspan="2" style="background:${st.hdr};color:#fff;font-weight:800;text-align:center;padding:6px 10px;border-radius:6px 0 0 6px;font-size:13px">${sectionLabel}</td>
-        ${sortedSizes.map(sz=>`<td style="background:${st.hdr};color:#fff;font-weight:800;text-align:center;padding:6px 10px;min-width:40px;font-size:13px">${sz}</td>`).join('')}
-        <td style="background:${st.hdr};border-radius:0 6px 6px 0"></td>
+        <td colspan="${colSpan}" style="background:${st.hdr};color:#fff;font-weight:800;text-align:center;padding:7px 12px;border-radius:6px;font-size:13px">${g.factoryName}</td>
       </tr>`;
-      // Data rows
-      cg.rows.forEach(row=>{
+      g.beltItems.forEach(item=>{
         html+=`<tr style="background:${st.bg}">
-          <td style="padding:5px 10px;font-weight:700;color:var(--text);white-space:nowrap;font-size:12px">${row.name}</td>
-          <td style="padding:5px 10px;color:var(--text);font-weight:700;white-space:nowrap;font-size:12px">${row.color}<br><span style="font-size:10px;color:var(--muted)">${row.rollLabel}</span></td>
-          ${sortedSizes.map(sz=>{
-            const n=(row.counts[sz]||0);
-            const ex=(row.extraCounts?.[sz]||0);
-            const total=n+ex;
-            if(!total) return `<td style="text-align:center;color:var(--faint);padding:5px 8px">-</td>`;
-            return `<td style="text-align:center;font-weight:700;color:var(--text);padding:5px 8px">${total}</td>`;
-          }).join('')}
-          <td style="padding:5px 8px;color:var(--blue);font-weight:700;white-space:nowrap;font-size:10px">${row.pieces}ตัว</td>
+          <td style="padding:6px 12px;font-weight:700;font-size:12px;color:var(--text)">${item.name}</td>
+          <td style="padding:6px 10px;font-size:12px;color:var(--text)">${item.color}</td>
+          <td colspan="${usedSizes.length}" style="padding:6px 10px;font-weight:700;color:var(--orange)">${item.qty} ชิ้น</td>
+          <td style="padding:6px 10px;font-size:10px;color:var(--green);white-space:nowrap">🚚 ${deliveryStr}</td>
         </tr>`;
       });
-      html+=`<tr><td colspan="20" style="padding:4px"></td></tr>`;
-    } else {
-      // Belt/other — simple list
-      html+=`<tr>
-        <td colspan="2" style="background:${st.hdr};color:#fff;font-weight:800;text-align:center;padding:6px 10px;border-radius:6px;font-size:12px">${label||'เข็มขัด/อื่นๆ'}</td>
-        <td colspan="10" style="background:${st.hdr};border-radius:0 6px 6px 0"></td>
-      </tr>`;
-      cg.rows.forEach(row=>{
-        html+=`<tr style="background:${st.bg}">
-          <td style="padding:5px 10px;font-weight:700;color:var(--text);font-size:12px;max-width:140px">${row.factoryName||row.name}</td>
-          <td style="padding:5px 8px;color:var(--muted)">${row.color}</td>
-          <td colspan="10" style="padding:5px 8px;color:var(--orange);font-weight:700">${row.qty} ชิ้น</td>
-        </tr>`;
-      });
-      html+=`<tr><td colspan="20" style="padding:4px"></td></tr>`;
+      html+=`<tr><td colspan="${colSpan}" style="padding:3px"></td></tr>`;
+      return;
     }
+
+    // Pants section — header: factory name + sizes
+    html+=`<tr>
+      <td colspan="2" style="background:${st.hdr};color:#fff;font-weight:800;text-align:center;padding:7px 12px;border-radius:6px 0 0 6px;font-size:13px">${g.factoryName}</td>
+      ${usedSizes.map(sz=>`<td style="background:${st.hdr};color:#fff;font-weight:800;text-align:center;padding:7px 10px;min-width:42px;font-size:13px">${sz}</td>`).join('')}
+      <td style="background:${st.hdr};border-radius:0 6px 6px 0;padding:7px 10px;font-size:10px;color:rgba(255,255,255,.7);text-align:center">รับ/วัน</td>
+    </tr>`;
+
+    // Data rows: per color per roll
+    Object.entries(g.colorRolls).forEach(([color, rolls])=>{
+      rolls.forEach((roll, ri)=>{
+        const isLastRow = ri===rolls.length-1 && Object.keys(g.colorRolls).indexOf(color)===Object.keys(g.colorRolls).length-1;
+        html+=`<tr style="background:${st.bg}">
+          <td style="padding:6px 12px;font-weight:700;font-size:12px;color:var(--text);white-space:nowrap">${g.name}</td>
+          <td style="padding:6px 12px;font-size:12px;color:var(--text);white-space:nowrap">${color} / ${roll.rollLabel}</td>
+          ${usedSizes.map(sz=>{
+            const total=(roll.counts[sz]||0)+(roll.extraCounts?.[sz]||0);
+            return total
+              ? `<td style="text-align:center;font-weight:700;font-size:13px;color:var(--text);padding:6px 8px">${total}</td>`
+              : `<td style="text-align:center;color:var(--faint);padding:6px 8px">-</td>`;
+          }).join('')}
+          <td style="padding:6px 10px;font-size:10px;color:var(--green);white-space:nowrap;text-align:center">${isLastRow?`🚚 ${deliveryStr}`:''}</td>
+        </tr>`;
+      });
+    });
+    html+=`<tr><td colspan="${colSpan}" style="padding:3px"></td></tr>`;
   });
 
-  html+=`</table></div>`;
+  html+=`</table>`;
+
+  // Received checkbox section
+  const rcvKey = 'rcv_'+order.key;
+  html+=`<div style="padding:10px 4px;display:flex;align-items:center;gap:10px;border-top:1px solid rgba(255,255,255,.06);margin-top:8px">
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;color:${isReceived?'var(--green)':'var(--muted)'}">
+      <input type="checkbox" id="${rcvKey}" ${isReceived?'checked':''} onchange="toggleOrderReceived('${order.key}',this.checked)"
+        style="width:16px;height:16px;accent-color:var(--green);cursor:pointer">
+      ${isReceived?'✅ ได้รับสินค้าแล้ว':'ยืนยันว่าได้รับสินค้าแล้ว'}
+    </label>
+    ${isReceived?`<span style="font-size:11px;color:var(--faint)">รับวันที่ ${new Date(order.receivedAt||order.createdAt+15*86400000).toLocaleDateString('th-TH')}` : ''}
+  </div>`;
+
+  html+=`</div>`;
   return html;
 }
 
@@ -2355,6 +2373,47 @@ function toggleHistDetail(key){
   const card=$(`hist-${key}`);
   const arrow=card?.querySelector('.order-hist-hdr span:last-child');
   if(arrow) arrow.textContent=body.style.display==='block'?'▴':'▾';
+}
+
+async function toggleOrderReceived(key, checked){
+  const db=getRtdb(); if(!db) return;
+  try {
+    await db.ref('order_history/'+key).update({
+      received: checked,
+      receivedAt: checked ? Date.now() : null
+    });
+    // Update local cache
+    const order = orderHistory.find(o=>o.key===key);
+    if(order){ order.received=checked; order.receivedAt=checked?Date.now():null; }
+    renderOrderHistory();
+  } catch(e){ console.warn('[Order] toggleReceived failed:', e); }
+}
+
+// Auto-detect received: called after stock file uploaded
+// If stock increased by ≥8 for any SKU in a pending order → mark received
+function autoDetectOrderReceived(newStockMap, oldStockMap){
+  if(!orderHistory.length) return;
+  orderHistory.forEach(order=>{
+    if(order.received) return; // already received
+    const items = order.items||[];
+    let stockIncreased = false;
+    items.forEach(item=>{
+      if(item.type==='pants'){
+        // Check sizes in this roll
+        Object.keys(item.counts||{}).forEach(sz=>{
+          const skuMatch = Object.keys(newStockMap).find(k=>k.includes(item.parentSku.slice(-8)));
+          if(!skuMatch) return;
+          const newVal = Number(newStockMap[skuMatch])||0;
+          const oldVal = Number(oldStockMap?.[skuMatch]||0);
+          if(newVal - oldVal >= 8) stockIncreased = true;
+        });
+      }
+    });
+    if(stockIncreased){
+      toggleOrderReceived(order.key, true);
+      console.log('[Auto] Order', order.key, 'marked received (stock +8)');
+    }
+  });
 }
 
 async function deleteOrderHistory(key){
@@ -3341,6 +3400,10 @@ function applyStockMap(map){
       }
     });
   }
+
+  // Auto-detect received orders from stock change
+  if(orderHistory.length) try{ autoDetectOrderReceived(map, window._prevStockMap||{}); }catch(e){}
+  window._prevStockMap = {...map};
 
   // Re-render
   renderAll(getFilteredData());
