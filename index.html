@@ -2109,34 +2109,71 @@ function parseStockXLSX(buf){
 }
 
 function extractStockFromRows(rows){
-  // scan up to row 10 to find header containing 'sku' AND 'stock_amount'
-  let headerIdx=-1, skuCol=-1, stockCol=-1;
+  // scan up to row 10 to find header row
+  let headerIdx=-1;
+  const COL = {}; // col name → index
   for(let i=0; i<Math.min(rows.length,10); i++){
-    const row = rows[i];
-    if(!row) continue;
+    const row = rows[i]; if(!row) continue;
     const cells = Array.isArray(row) ? row : Object.values(row);
-    const norm  = cells.map(v => String(v==null?'':v).trim().toLowerCase());
-    const si = norm.indexOf('sku');
-    const ti = norm.indexOf('stock_amount');
-    if(si>=0 && ti>=0){ headerIdx=i; skuCol=si; stockCol=ti; break; }
+    const norm  = cells.map(v => String(v==null?'':v).trim().toLowerCase().replace(/\s+/g,'_'));
+    if(norm.indexOf('sku')>=0 && norm.indexOf('stock_amount')>=0){
+      headerIdx = i;
+      norm.forEach((h,ci)=>{ COL[h]=ci; });
+      break;
+    }
   }
   if(headerIdx<0){
-    // show what we found in first 3 rows to help debug
     const sample = rows.slice(0,3).map(r=>(Array.isArray(r)?r:Object.values(r||{})).join(' | ')).join('\n');
     alert('ไม่พบคอลัมน์ sku หรือ stock_amount\n\n3 แถวแรกในไฟล์:\n'+sample);
     return;
   }
-  const map={};
+
+  const map={};          // sku → stock_amount
+  const uploadDict={};   // sku → { parentSku, name, category, color, size, variant }
+
   for(let i=headerIdx+1; i<rows.length; i++){
     const row = rows[i]; if(!row) continue;
     const cells = Array.isArray(row) ? row : Object.values(row);
-    const sku   = String(cells[skuCol]==null?'':cells[skuCol]).trim();
-    if(!sku) continue;
-    const v = parseFloat(cells[stockCol]);
+    const cv = k => String(cells[COL[k]]==null?'':cells[COL[k]]).trim();
+
+    const sku = cv('sku'); if(!sku) continue;
+
+    // stock amount
+    const v = parseFloat(cv('stock_amount'));
     map[sku] = isNaN(v) ? null : v;
     if(sku !== sku.toLowerCase()) map[sku.toLowerCase()] = isNaN(v) ? null : v;
+
+    // product info — parse variant "สี, ไซส์" same as Google Sheets logic
+    const parentSku  = cv('parent_sku') || sku;
+    const category   = cv('product_category');
+    const name       = cv('product_name');
+    const variant    = cv('variant_name');
+    let color='', size='';
+    if(variant){
+      const sep = variant.includes(',') ? ',' : variant.includes('/') ? '/' : null;
+      if(sep){
+        const parts = variant.split(sep).map(s=>s.trim());
+        color = parts[0]||'';
+        size  = parts.slice(1).join('').trim().toUpperCase();
+      } else { color=variant; }
+    }
+    uploadDict[sku] = { sku, parentSku, name, category, variant, color, size, _noSales:true };
   }
+
   if(!Object.keys(map).length){ alert('ไม่พบข้อมูลสต๊อกในไฟล์ (0 rows)'); return; }
+
+  // Merge uploadDict into _productDict — เพิ่มเฉพาะ SKU ที่ยังไม่มีใน Google Sheets
+  const pd = window._productDict||{};
+  let added = 0;
+  Object.values(uploadDict).forEach(info=>{
+    if(!pd[info.sku]){
+      pd[info.sku] = info;
+      added++;
+    }
+  });
+  window._productDict = pd;
+  console.log('[Upload] Added', added, 'new SKUs to productDict from xlsx');
+
   applyStockMap(map);
 }
 
