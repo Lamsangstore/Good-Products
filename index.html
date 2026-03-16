@@ -1039,6 +1039,7 @@ function buildOrderCatButtons(){
     const cat = info.category||'';
     const ct  = classifyCat(cat);
     if(ct==='skip') return;
+    if(cat.includes('ไม่เติม')||cat.includes('marketplace')||cat.includes('อุปกรณ์')||cat==='product_category') return;
     if(!cats.has(cat)) cats.set(cat,{ct,count:0});
     cats.get(cat).count++;
   });
@@ -1218,29 +1219,43 @@ function calcColorOrder(parentSku, skus, days){
 // ── Lot Config Area ──
 function renderLotConfig(){
   const area=$('lot-config-area'); if(!area) return;
-  const pantsGroups=groupByParent(appData.filter(d=>classifyCat(d.category)==='pants'));
+  // กรองเฉพาะกางเกงจริงๆ (classifyCat='pants')
+  const pantsItems = appData.filter(d=>classifyCat(d.category||'')==='pants');
+  const pantsGroups=groupByParent(pantsItems);
   if(!pantsGroups.length){ area.innerHTML='<span style="font-size:12px;color:var(--muted)">ไม่พบสินค้าประเภทกางเกง</span>'; return; }
-  area.innerHTML=pantsGroups.map(g=>{
-    const lotsPerRoll=getLotsPerRoll(g.parentSku);
-    const piecesPerLot=getPiecesPerLot(g.parentSku);
-    const esc=g.parentSku.replace(/'/g,"\\'");
-    return`<div class="lot-cfg-card" style="min-width:230px">
-      <div style="font-size:16px">👖</div>
-      <div class="lot-cfg-name" title="${g.name}">${g.name}</div>
-      <div style="display:flex;flex-direction:column;gap:5px">
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:9px;color:var(--muted);white-space:nowrap;min-width:58px">ล็อค/ม้วน</span>
-          <input class="lot-cfg-input" type="number" min="1" max="30" value="${lotsPerRoll}"
-            onchange="setLotsPerRoll('${esc}',+this.value)" onclick="event.stopPropagation()" style="width:40px">
+  // Group lot config by sub-category
+  const cfgByCat = new Map();
+  pantsGroups.forEach(g=>{
+    const c = g.category||'กางเกง';
+    if(!cfgByCat.has(c)) cfgByCat.set(c,[]);
+    cfgByCat.get(c).push(g);
+  });
+  let cfgHtml='';
+  cfgByCat.forEach((gList, catName)=>{
+    cfgHtml += `<div style="width:100%;font-size:10px;font-weight:800;color:var(--blue);letter-spacing:.6px;text-transform:uppercase;margin:8px 0 6px;padding-bottom:4px;border-bottom:1px solid rgba(77,143,255,.2)">👖 ${catName}</div>`;
+    cfgHtml += gList.map(g=>{
+      const lotsPerRoll=getLotsPerRoll(g.parentSku);
+      const piecesPerLot=getPiecesPerLot(g.parentSku);
+      const esc=g.parentSku.replace(/'/g,"\'");
+      return`<div class="lot-cfg-card" style="min-width:200px">
+        <div style="font-size:14px">👖</div>
+        <div class="lot-cfg-name" title="${g.name}">${g.name}</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;align-items:center;gap:5px">
+            <span style="font-size:9px;color:var(--muted);white-space:nowrap;min-width:52px">ล็อค/ม้วน</span>
+            <input class="lot-cfg-input" type="number" min="1" max="30" value="${lotsPerRoll}"
+              onchange="setLotsPerRoll('${esc}',+this.value)" onclick="event.stopPropagation()" style="width:38px">
+          </div>
+          <div style="display:flex;align-items:center;gap:5px">
+            <span style="font-size:9px;color:var(--green);white-space:nowrap;min-width:52px">ตัว/ล็อค</span>
+            <input class="lot-cfg-input" type="number" min="1" max="50" value="${piecesPerLot}"
+              onchange="setPiecesPerLot('${esc}',+this.value)" onclick="event.stopPropagation()" style="width:38px;color:var(--green)">
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:9px;color:var(--green);white-space:nowrap;min-width:58px">ตัว/ล็อค</span>
-          <input class="lot-cfg-input" type="number" min="1" max="50" value="${piecesPerLot}"
-            onchange="setPiecesPerLot('${esc}',+this.value)" onclick="event.stopPropagation()" style="width:40px;color:var(--green)">
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+      </div>`;
+    }).join('');
+  });
+  area.innerHTML = cfgHtml;
 }
 function setLotsPerRoll(p,n){ getPantsCfg(p).lotsPerRoll=Math.max(1,n||8); saveOrderConfig(); renderOrderTab(); }
 function setPiecesPerLot(p,n){ getPantsCfg(p).piecesPerLot=Math.max(1,n||10); saveOrderConfig(); renderOrderTab(); }
@@ -1265,10 +1280,14 @@ function renderOrderTab(){
     const ct=classifyCat(d.category||'');
     if(ct==='skip') return false;
     if(orderCatFilter!=='all'){
-      // exact category match หรือ type match (pants/belt/other)
-      const matchExact = (d.category||'')===orderCatFilter;
-      const matchType  = ct===orderCatFilter;
-      if(!matchExact && !matchType) return false;
+      // ถ้า filter เป็น type (pants/belt/other) → match type
+      // ถ้า filter เป็น specific category → match exact
+      const isTypeFilter = ['pants','belt','other'].includes(orderCatFilter);
+      if(isTypeFilter){
+        if(ct !== orderCatFilter) return false;
+      } else {
+        if((d.category||'') !== orderCatFilter) return false;
+      }
     }
     if(srch&&!d.name.toLowerCase().includes(srch)&&!d.sku.toLowerCase().includes(srch)) return false;
     return true;
@@ -1279,7 +1298,8 @@ function renderOrderTab(){
   let html='';
   const days=getOrderDays();
 
-  if(pantsGroups.length&&(orderCatFilter==='all'||orderCatFilter==='pants')){
+  const isSpecificCat = !['all','pants','belt','other'].includes(orderCatFilter);
+  if(pantsGroups.length&&(orderCatFilter==='all'||orderCatFilter==='pants'||isSpecificCat)){
   // Group pants by sub-category
   const pantsByCat = new Map();
   pantsGroups.forEach(g=>{
@@ -1298,7 +1318,7 @@ function renderOrderTab(){
     html+='</div>';
   });
   }
-  if(beltGroups.length&&(orderCatFilter==='all'||orderCatFilter==='belt')){
+  if(beltGroups.length&&(orderCatFilter==='all'||orderCatFilter==='belt'||isSpecificCat)){
     html+=`<div class="order-group">
       <div class="order-group-hdr">
         <span style="font-size:18px">🎗️</span>
@@ -1308,7 +1328,7 @@ function renderOrderTab(){
     beltGroups.forEach(g=>{ html+=renderBeltCard(g,days); });
     html+='</div>';
   }
-  if(otherGroups.length&&(orderCatFilter==='all'||orderCatFilter==='other')){
+  if(otherGroups.length&&(orderCatFilter==='all'||orderCatFilter==='other'||isSpecificCat)){
     html+=`<div class="order-group">
       <div class="order-group-hdr">
         <span style="font-size:18px">📦</span>
