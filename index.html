@@ -1733,7 +1733,7 @@ function renderBeltCard(g, days){
     if(itemDisc) return`<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--bg-dark);border:1px solid rgba(255,255,255,.06);border-radius:10px;min-width:190px;opacity:.55">
       <div style="font-size:12px;font-weight:700;color:var(--muted)">${colLabel}</div>
       <button class="disc-btn active" style="margin-left:auto;font-size:9px"
-        onclick="event.stopPropagation();toggleDiscontinue('${esc}','${(item.color||'').replace(/'/g,\"\'\")}')"
+        onclick="event.stopPropagation();beltDiscToggle('${esc}',this)" data-color="${(item.color||'').replace(/"/g,'')}"
         title="คลิกเพื่อเปิดเติมอีกครั้ง">🚫 ไม่เติมแล้ว</button>
     </div>`;
     return`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:${cardBg};border:${cardBdr};border-radius:10px;min-width:190px">
@@ -1741,7 +1741,7 @@ function renderBeltCard(g, days){
         <div style="display:flex;align-items:center;gap:6px">
           <div style="font-size:12px;font-weight:700;color:var(--text)">${colLabel}</div>
           <button class="disc-btn inactive" style="font-size:9px;padding:2px 7px"
-            onclick="event.stopPropagation();toggleDiscontinue('${esc}','${(item.color||'').replace(/'/g,\"\'\")}')"
+            onclick="event.stopPropagation();beltDiscToggle('${esc}',this)" data-color="${(item.color||'').replace(/"/g,'')}"
             title="ไม่เติมสีนี้แล้ว">ยังเติมอยู่</button>
         </div>
         <div style="font-size:9px;color:var(--faint);font-family:'IBM Plex Mono',monospace;margin-top:1px">${(item.sku||'').slice(-8)}</div>
@@ -1785,6 +1785,10 @@ function renderBeltCard(g, days){
       <div style="font-size:10px;color:var(--muted);margin-top:6px">เฉลี่ย ${Math.ceil(totalAvg)} ตัว/${days}วัน</div>
     </div>
   </div>`;
+}
+function beltDiscToggle(parentSku, btn){
+  const col = btn.getAttribute('data-color')||'';
+  toggleDiscontinue(parentSku, col);
 }
 function setBeltQty(parentSku,sku,val){
   if(!orderConfig[parentSku]) orderConfig[parentSku]={};
