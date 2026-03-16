@@ -182,6 +182,7 @@ th[data-col="stock"]    {min-width:90px;max-width:120px}
 th[data-col="stockavg"] {min-width:70px;max-width:96px}
 th[data-col="stockmaxvel7"]{min-width:70px;max-width:96px}
 th[data-col="status"]   {min-width:70px;max-width:96px}
+th[data-col="daysleft"] {min-width:70px;max-width:96px}
 td[data-col="color"],td[data-col="size"]{text-align:center}
 td[data-col="vel"],td[data-col="vel7"],td[data-col="maxvel7"],
 td[data-col="trend"],td[data-col="gap"],td[data-col="consist"],
@@ -701,6 +702,7 @@ canvas{display:block;width:100%!important}
               <label class="col-chk-row" data-col="stock">    <input type="checkbox" onchange="toggleColByKey('stock')"    > 📦 สต๊อก</label>
               <label class="col-chk-row" data-col="stockavg">   <input type="checkbox" onchange="toggleColByKey('stockavg')">   > 🟢 ค่าเฉลี่ยสต๊อก</label>
               <label class="col-chk-row" data-col="stockmaxvel7"><input type="checkbox" onchange="toggleColByKey('stockmaxvel7')"> 📦 สต๊อก(MaxVel7)</label>
+              <label class="col-chk-row" data-col="daysleft"><input type="checkbox" onchange="toggleColByKey('daysleft')"> ⏳ หมดใน(วัน)</label>
               <label class="col-chk-row" data-col="status">   <input type="checkbox" onchange="toggleColByKey('status')"   > 🔰 สถานะ</label>
             </div>
           </div>
@@ -773,6 +775,7 @@ canvas{display:block;width:100%!important}
             <th class="sortable" data-col="stock"    data-key="recStock"     onclick="sortBy(this)">📦 สต๊อกแนะนำ<span class="sort-ico"></span></th>
             <th class="sortable" data-col="stockavg"     data-key="stockAvg"      onclick="sortBy(this)">🟢 ค่าเฉลี่ย<span class="sort-ico"></span></th>
             <th class="sortable" data-col="stockmaxvel7" data-key="stockMaxVel7" onclick="sortBy(this)">📦 สต๊อก(MaxVel7)<span class="sort-ico"></span></th>
+            <th class="sortable" data-col="daysleft"    data-key="daysLeft"     onclick="sortBy(this)">⏳ หมดใน<span class="sort-ico"></span></th>
             <th class="tc"       data-col="status">🔰 สถานะ</th>
           </tr>
         </thead>
@@ -986,7 +989,7 @@ const SHEET_ID = '1rO8rJbVPfTRiuuZB0WVx3NnIFSYgs2Vh2Nu6bc-rKhk';
 let appData = [];
 let maxAdjVel = 1, maxStock = 1;
 let sortKey = 'starScore', sortDir = 'desc';
-const COL_DEFAULTS = ['color','size','vel','maxvel7','totalsold','peakval','lastsale','peakday','stock','stockavg','stockmaxvel7'];
+const COL_DEFAULTS = ['color','size','vel','maxvel7','totalsold','peakval','lastsale','peakday','stock','stockavg','stockmaxvel7','daysleft'];
 const COL_STORAGE_KEY = 'visibleCols';
 function loadVisibleCols(){
   // Try Firebase cache first
@@ -2843,7 +2846,15 @@ function enrichAppData(){
     const rec          = calcStock(item.adjVel, months, item.safetyMult);
     const stockMaxVel7 = Math.ceil((item.maxVel7||0)*30);
     const stockAvg     = Math.ceil((rec + stockMaxVel7) / 2);
-    return {...item, recStock: rec, stockMaxVel7, stockAvg};
+    // daysLeft = stock จริง ÷ MaxVel7/วัน (null ถ้าไม่มีสต๊อกหรือ MaxVel7=0)
+    const stockAmt = isStockLoaded() ? (()=>{
+      const k=(item.sku||'').toLowerCase();
+      return (k in stockMap) ? Math.max(0, Number(stockMap[k])||0) : null;
+    })() : null;
+    const daysLeft = (stockAmt!==null && (item.maxVel7||0)>0)
+      ? Math.round(stockAmt / item.maxVel7)
+      : null;
+    return {...item, recStock: rec, stockMaxVel7, stockAvg, daysLeft};
   });
 }
 
@@ -2966,7 +2977,13 @@ function renderAll(data){
     if(item.peakDate){ const t=parseDate(item.peakDate); if(!isNaN(t)) daysSincePeak=Math.round((today.getTime()-t)/(1000*60*60*24)); }
     const stockMaxVel7val = Math.ceil((item.maxVel7||0)*30);
     const stockAvgVal = Math.ceil((rec + stockMaxVel7val) / 2);
-    return {...item, recStock:rec, daysLastSale, daysSincePeak, stockMaxVel7: stockMaxVel7val, stockAvg: stockAvgVal};
+    const stockAmtR = isStockLoaded() ? (()=>{
+      const k=(item.sku||'').toLowerCase();
+      return (k in stockMap) ? Math.max(0, Number(stockMap[k])||0) : null;
+    })() : null;
+    const daysLeftR = (stockAmtR!==null && (item.maxVel7||0)>0)
+      ? Math.round(stockAmtR / item.maxVel7) : null;
+    return {...item, recStock:rec, daysLastSale, daysSincePeak, stockMaxVel7: stockMaxVel7val, stockAvg: stockAvgVal, daysLeft: daysLeftR};
   });
 
   const sorted=[...enriched].sort((a,b)=>{
@@ -3110,6 +3127,14 @@ function renderAll(data){
             <span style="font-size:10px;color:var(--mid)"> ชิ้น/เดือน</span>
             <div class="stk-sub">จาก MaxVel7 × 30</div>
           </div>`)}
+        ${(()=>{
+          const dl = item.daysLeft;
+          if(dl===null) return td('daysleft','<span style="color:var(--faint)">—</span>','tc');
+          const dlColor = dl<=7?'var(--red)':dl<=15?'var(--orange)':dl<=30?'var(--gold)':'var(--green)';
+          const dlLabel = dl===0?'หมดแล้ว':dl+' วัน';
+          const dlSub = dl<=30 ? `<div style="font-size:9px;color:var(--faint)">จาก MaxVel7</div>` : '';
+          return td('daysleft',`<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:${dlColor}">${dlLabel}</span>${dlSub}`,'tr');
+        })()}
         ${td('status',  badge, 'tc')}
       </tr>`;
     }).join('');
