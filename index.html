@@ -1018,30 +1018,37 @@ function groupByParent(items){
     map.get(key).skus.push(item);
   });
 
-  // supplement with productDict entries that have no sales (missing sizes)
+  // supplement with productDict — เพิ่มทุก SKU ที่ไม่มียอดขาย (missing sizes / no-sales items)
   const pd = window._productDict||{};
   Object.values(pd).forEach(info=>{
-    if(!info.parentSku||!info.sku) return;
-    const key = info.parentSku;
-    if(!map.has(key)) return; // only add to existing groups (don't create new)
+    if(!info.sku) return;
+    const key = info.parentSku||info.sku;
+    // สร้าง group ใหม่ถ้ายังไม่มี (กรณีสินค้าไม่มียอดขายเลย)
+    // แต่ filter เฉพาะ category ที่ไม่ใช่ skip
+    const ct = classifyCat(info.category||'');
+    if(ct === 'skip') return;
+    if(!map.has(key)){
+      map.set(key,{parentSku:key, name:info.name||info.sku, category:info.category||'', skus:[]});
+    }
     const group = map.get(key);
-    // check if this sku already in group.skus
-    if(group.skus.find(s=>s.sku===info.sku)) return;
-    // add as zero-sales placeholder
+    if(group.skus.find(s=>s.sku===info.sku)) return; // already exists
     group.skus.push({
-      sku: info.sku, name: info.name, parentSku: info.parentSku,
-      category: info.category, variant: info.variant,
-      color: info.color, size: (info.size||'').trim().toUpperCase(),
+      sku: info.sku, name: info.name||'', parentSku: key,
+      category: info.category||'', variant: info.variant||'',
+      color: info.color||'', size: (info.size||'').trim().toUpperCase(),
       totalSold:0, adjVel:0, rawVel:0, vel7:0, maxVel7:0,
       recStock:0, stockMaxVel7:0, stockAvg:0,
       starScore:0, stockoutScore:0, trendPct:0,
-      coverageRate:0, safetyMult:1.2, activeDays:0
+      coverageRate:0, safetyMult:1.2, activeDays:0,
+      _noSales: true   // flag: ไม่มีข้อมูลยอดขาย
     });
   });
 
   return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'th'));
 }
 function getAvg(item,days=15){
+  if(!item) return 0;
+  if(item._noSales) return 1; // ไม่มีข้อมูลยอดขาย — demand = 1 เพื่อให้คำนวณล็อคได้
   const monthly = Math.max(0, item.stockAvg||Math.ceil(((item.recStock||0)+(item.stockMaxVel7||0))/2));
   return Math.max(1, Math.ceil(monthly*(days/30)));
 }
@@ -1103,7 +1110,13 @@ function calcColorOrder(parentSku, skus, days){
     const net=Math.max(0,d-rawStock);
     netDemand[sz]=net;
     const ov=item&&overrides[item.sku]!==undefined?overrides[item.sku]:null;
-    lotsNeeded[sz]=ov!==null?ov:(net>0?Math.ceil(net/piecesPerLot):0);
+    if(ov!==null){
+      lotsNeeded[sz]=ov;
+    } else if(net>0){
+      lotsNeeded[sz]=Math.ceil(net/piecesPerLot);
+    } else {
+      lotsNeeded[sz]=0;
+    }
   });
 
   const seq = butterflySequence(allSizes, lotsNeeded);
@@ -1112,10 +1125,27 @@ function calcColorOrder(parentSku, skus, days){
   const paddedLen  = totalRolls * lotsPerRoll;
   const extraSlots = paddedLen - totalLots;
 
-  // pad last roll cycling from seq start (butterfly order)
+  // pad last roll — เลือกไซส์ที่ oversupply ratio ต่ำสุดก่อน
+  // ratio = (onHand + (lotsAllocated+1)×ppl) / demand  → ต่ำ = ยังขาดมาก = ควร pad
   const fullSeq=[...seq];
-  for(let i=0;i<extraSlots;i++){
-    fullSeq.push({sz:seq[i%seq.length].sz, extra:true});
+  if(extraSlots > 0){
+    const lotsFromSeq={};
+    seq.forEach(({sz})=>{ lotsFromSeq[sz]=(lotsFromSeq[sz]||0)+1; });
+    const padExtra={};
+    allSizes.forEach(sz=>{ padExtra[sz]=0; });
+    for(let p=0;p<extraSlots;p++){
+      let bestSz=null, bestRatio=Infinity;
+      allSizes.forEach(sz=>{
+        const d=demand[sz]||0; if(d<=0) return;
+        const onH  = stockOnHand[sz]||0;
+        const lots = (lotsFromSeq[sz]||0)+(padExtra[sz]||0);
+        const ratio = (onH + (lots+1)*piecesPerLot) / d;
+        if(ratio < bestRatio){ bestRatio=ratio; bestSz=sz; }
+      });
+      if(!bestSz) bestSz = allSizes[p % allSizes.length];
+      padExtra[bestSz]=(padExtra[bestSz]||0)+1;
+      fullSeq.push({sz:bestSz, extra:true});
+    }
   }
 
   // pack into rolls
@@ -1275,7 +1305,10 @@ function renderPantsCard(g, days){
           ${noNeed?'<div style="font-size:8px;color:var(--green);font-weight:800;margin-top:2px">✓ พอ</div>':''}
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:10px;color:var(--muted)">ต้องการ <b style="color:var(--blue)">${d}</b> ตัว/${days}วัน</div>
+          ${item&&item._noSales
+            ? `<div style="font-size:10px;color:var(--orange);font-weight:700">⚠ ไม่มีข้อมูลยอดขาย</div>`
+            : `<div style="font-size:10px;color:var(--muted)">ต้องการ <b style="color:var(--blue)">${d}</b> ตัว/${days}วัน</div>`
+          }
           ${hasFile?`<div style="font-size:10px;margin-top:2px">
             มีอยู่ <b style="color:${noNeed?'var(--green)':'var(--orange)'}">${onHand}</b> ตัว
             <span style="color:${noNeed?'var(--green)':'var(--orange)'};font-size:9px">
@@ -2042,26 +2075,35 @@ function parseStockCSV(text){
 
 function parseStockXLSX(buf){
   const doRead = () => {
+    let wb;
     try {
-      // buf is ArrayBuffer — pass directly with arraybuffer type
-      const data = buf instanceof ArrayBuffer ? buf : buf.buffer || buf;
-      const wb   = XLSX.read(data, {type:'arraybuffer'});
-      if(!wb || !wb.SheetNames || !wb.SheetNames.length){ alert('ไฟล์ XLSX ไม่มี sheet'); return; }
-      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const u8 = new Uint8Array(buf instanceof ArrayBuffer ? buf : buf);
+      try { wb = XLSX.read(u8, {type:'array'}); }
+      catch(e1){
+        try {
+          let bin=''; u8.forEach(b=>{ bin+=String.fromCharCode(b); });
+          wb = XLSX.read(btoa(bin), {type:'base64'});
+        } catch(e2){ throw new Error('parse failed: '+e1.message); }
+      }
+      if(!wb||!wb.SheetNames||!wb.SheetNames.length){ alert('ไฟล์ XLSX ไม่มี sheet'); return; }
+      const ws = wb.Sheets[wb.SheetNames[0]];
       if(!ws){ alert('ไม่สามารถอ่าน sheet แรกได้'); return; }
-      // use header:1 to get arrays; also try sheet_to_json with defval
-      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false});
-      if(!rows || !rows.length){ alert('ไฟล์ไม่มีข้อมูล'); return; }
+      let rows;
+      try { rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false}); }
+      catch(e){ rows = XLSX.utils.sheet_to_json(ws, {header:1}); }
+      if(!rows||!rows.length){ alert('ไฟล์ไม่มีข้อมูล'); return; }
       extractStockFromRows(rows);
-    } catch(err){ alert('อ่าน XLSX ไม่สำเร็จ: '+err.message); }
+    } catch(err){
+      console.error('XLSX parse error:', err);
+      alert('อ่าน XLSX ไม่สำเร็จ: '+err.message+'\n\nลองแปลงเป็น .csv แล้วอัพโหลดใหม่ได้ครับ');
+    }
   };
-  if(typeof XLSX !== 'undefined'){
-    doRead();
-  } else {
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-    s.onload  = doRead;
-    s.onerror = () => alert('โหลด XLSX library ไม่สำเร็จ กรุณาแปลงเป็น .csv แล้วลองใหม่');
+  if(typeof XLSX !== 'undefined'){ doRead(); }
+  else {
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload=doRead;
+    s.onerror=()=>alert('โหลด XLSX library ไม่สำเร็จ กรุณาแปลงเป็น .csv แล้วลองใหม่');
     document.head.appendChild(s);
   }
 }
@@ -2138,7 +2180,7 @@ function applyStockMap(map){
 
   // Re-render
   renderAll(getFilteredData());
-  if(typeof renderRiskTab === 'function') renderRiskTab();
+  if(typeof renderRiskTab === 'function' && window._lastSorted) renderRiskTab(window._lastSorted, window._lastMonths);
 }
 
 function clearFirebaseStock(){
@@ -2590,6 +2632,12 @@ document.addEventListener('click', e=>{
 });
 
 function renderRiskTab(sorted, months){
+  // if called without args (e.g. from applyStockMap), use last known sorted data
+  if(!sorted || !Array.isArray(sorted)){
+    sorted = window._lastSorted || [];
+    months = window._lastMonths;
+  }
+  if(!sorted.length) return; // nothing to render yet
   window._lastSorted = sorted;
   window._lastMonths = months;
   const threshold = window.riskThreshold ?? 60;
