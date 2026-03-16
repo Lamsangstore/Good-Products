@@ -1755,14 +1755,15 @@ async function syncData(){
     syncToggleButtons();
     buildFilterOptions();
     renderAll();
-    // enrich appData with computed fields so order tab reads correct recStock/stockAvg/stockMaxVel7
-    enrichAppData();
-    renderOrderTab();
 
   }catch(e){
     console.error(e);
     alert('ดึงข้อมูลไม่ได้ โปรดตรวจสอบการแชร์ Google Sheets');
   }finally{ hideL() }
+
+  // แยก try-catch เพื่อไม่ให้ error ที่นี่ขึ้น alert Google Sheets
+  try { enrichAppData(); } catch(ex){ console.warn('enrichAppData:', ex); }
+  try { renderOrderTab(); } catch(ex){ console.warn('renderOrderTab:', ex); }
 }
 
 function parseDate(s){
@@ -2326,7 +2327,7 @@ function renderAll(data){
 
   applyColVisibility();
   // keep appData enriched for order tab
-  enrichAppData();
+  try{ enrichAppData(); }catch(ex){ console.warn('enrich:', ex); }
   // Insight Tab
   renderInsight(sorted, months);
 }
