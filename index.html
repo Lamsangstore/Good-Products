@@ -1089,7 +1089,16 @@ function buildOrderCatButtons(){
   // group by type
   const groups=[{label:'ทั้งหมด',items:[{cat:'all',label:'ทั้งหมด',emoji:'📋'}]}];
   const typeGroups={pants:{label:'👖 กางเกง',items:[]},belt:{label:'🎗️ เข็มขัด',items:[]},other:{label:'📦 อื่นๆ',items:[]}};
-  sorted.forEach(([cat,{ct}])=>{ typeGroups[ct]?.items.push({cat,label:cat,emoji:emoji[ct]||'📦'}); });
+  sorted.forEach(([cat,{ct}])=>{
+    // For belt: merge all belt categories under single 'belt' type entry
+    const pushCat = ct==='belt' ? cat : cat; // keep exact cat for filtering
+    typeGroups[ct]?.items.push({cat,label:cat,emoji:emoji[ct]||'📦'});
+  });
+  // De-duplicate items within each group by label
+  Object.values(typeGroups).forEach(g=>{
+    const seen=new Set();
+    g.items=g.items.filter(({label})=>seen.has(label)?false:(seen.add(label),true));
+  });
   let html=`<div class="dd-item${orderCatFilter==='all'?' dd-active':''}" onclick="setOrderCat('all','ทั้งหมด')">📋 ทั้งหมด</div>`;
   Object.values(typeGroups).forEach(({label,items})=>{
     if(!items.length) return;
@@ -1123,7 +1132,7 @@ function groupByParent(items){
     if(group.skus.find(s=>s.sku===info.sku)) return; // มีแล้ว ข้ามไป
     group.skus.push({
       sku: info.sku, name: info.name||'', parentSku: key,
-      category: info.category||'', variant: info.variant||'',
+      category: (info.category||'').trim().replace(/\s+/g,' '), variant: info.variant||'',
       color: info.color||'', size: (info.size||'').trim().toUpperCase(),
       totalSold:0, adjVel:0, rawVel:0, vel7:0, maxVel7:0,
       recStock:0, stockMaxVel7:0, stockAvg:0,
@@ -2043,7 +2052,7 @@ async function syncData(){
         sku:          info.sku,
         name:         info.name||'',
         parentSku:    info.parentSku||info.sku,
-        category:     info.category||'',
+        category:     (info.category||'').trim().replace(/\s+/g,' '),
         variant:      info.variant||'',
         color:        info.color||'',
         size:         info.size||'',
@@ -2379,7 +2388,7 @@ function extractStockFromRows(rows){
 
     // product info — parse variant "สี, ไซส์" same as Google Sheets logic
     const parentSku  = cv('parent_sku') || sku;
-    const category   = cv('product_category');
+    const category   = cv('product_category').trim().replace(/\s+/g,' ');
     const name       = cv('product_name');
     const variant    = cv('variant_name');
     let color='', size='';
