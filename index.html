@@ -277,6 +277,11 @@ td .stock-pill.instock{background:rgba(46,204,138,.13);color:var(--green)}
 /* stock file info bar */
 #stock-file-bar{display:none;align-items:center;gap:10px;padding:8px 20px;background:rgba(46,204,138,.08);border-bottom:1px solid rgba(46,204,138,.15);font-size:11px;color:var(--muted)}
 #stock-file-bar b{color:var(--green)}
+/* ─── DROPDOWN ─── */
+.dd-item{padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:background .1s}
+.dd-item:hover{background:rgba(77,143,255,.1);color:var(--text)}
+.dd-item.dd-active{background:rgba(77,143,255,.18);color:var(--blue);font-weight:800}
+.dd-group-hdr{padding:8px 12px 4px;font-size:9px;font-weight:800;color:var(--faint);letter-spacing:.8px;text-transform:uppercase;margin-top:4px}
 /* ─── LOT VISUALIZATION ─── */
 .lot-vis-roll{background:var(--bg-dark);border-radius:14px;padding:12px 14px;border:1px solid rgba(255,255,255,.06)}
 .lot-vis-roll-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:12px;font-weight:800;color:var(--text)}
@@ -396,8 +401,9 @@ tbody tr{animation:rf .28s ease both}
 /* ─── CTOG (Score filter buttons) ─── */
 .col-toggle-bar{display:flex;flex-wrap:wrap;gap:7px;padding:12px 20px;background:var(--bg-dark);border-bottom:1px solid rgba(255,255,255,.06)}
 .col-toggle-lbl{font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:flex;align-items:center;margin-right:4px}
-.ctog{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:10px;font-size:11px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;border:none;background:var(--bg);box-shadow:var(--sm);color:var(--mid);transition:all .14s;user-select:none;letter-spacing:.2px}
-.ctog.on{box-shadow:var(--si);color:var(--blue)}
+.ctog{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:10px;font-size:11px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;border:1px solid transparent;background:var(--bg);box-shadow:var(--sm);color:var(--mid);transition:all .14s;user-select:none;letter-spacing:.2px}
+.ctog.on{box-shadow:var(--si);color:var(--blue);background:rgba(77,143,255,.15);border-color:rgba(77,143,255,.4)}
+.ctog:hover:not(.on){color:var(--text)}
 .ctog:active{box-shadow:var(--sp)}
 
 /* ─── SORTABLE HEADERS ─── */
@@ -904,15 +910,23 @@ canvas{display:block;width:100%!important}
       </div>
     </div>
 
-    <!-- Filter bar — dynamic categories -->
-    <div style="padding:12px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <span style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase">ประเภท:</span>
-      <div id="order-cat-btns" style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="ctog on" data-ocat="all" onclick="setOrderCat(this,'all')">ทั้งหมด</button>
+    <!-- Filter bar — dropdown -->
+    <div style="padding:12px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;white-space:nowrap">ประเภท:</span>
+      <!-- Category dropdown -->
+      <div style="position:relative">
+        <button class="btn" id="order-cat-dropdown-btn" onclick="toggleOrderCatDropdown()"
+          style="min-width:180px;justify-content:space-between;gap:8px;color:var(--text);font-weight:700">
+          <span id="order-cat-label">ทั้งหมด</span>
+          <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div id="order-cat-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:100;background:var(--bg);box-shadow:8px 8px 24px #0a0e14,-4px -4px 12px #232830;border-radius:14px;padding:8px;min-width:220px;max-height:360px;overflow-y:auto">
+          <div id="order-cat-list"></div>
+        </div>
       </div>
       <div style="flex:1"></div>
-      <!-- Lot config popup trigger -->
-      <button class="btn" onclick="toggleLotConfigPopup()" id="lot-cfg-btn" style="color:var(--muted);gap:5px" title="ตั้งค่าล็อคกางเกง">
+      <!-- Lot config popup trigger — only show when pants category selected -->
+      <button class="btn" onclick="toggleLotConfigPopup()" id="lot-cfg-btn" style="color:var(--muted);gap:5px;display:none" title="ตั้งค่าล็อคกางเกง">
         <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         ตั้งค่าล็อค
       </button>
@@ -1012,52 +1026,79 @@ function classifyCat(cat){
   if(c.includes('ไม่เติม')||c.includes('marketplace')) return 'skip';
   return 'other';
 }
-function setOrderCat(btn, cat){
+function setOrderCat(cat, label){
   orderCatFilter = cat;
-  document.querySelectorAll('[data-ocat]').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
+  // update dropdown label
+  const lbl=$('order-cat-label'); if(lbl) lbl.textContent = label||cat;
+  const dd=$('order-cat-dropdown'); if(dd) dd.style.display='none';
+  // show/hide lot config button (only for pants categories)
+  const isPants = classifyCat(cat)==='pants' || cat==='pants' || cat==='all';
+  const cfgBtn=$('lot-cfg-btn');
+  if(cfgBtn) cfgBtn.style.display = (cat!=='all'&&classifyCat(cat)==='pants') ? 'flex' : 'none';
+  // close lot config popup if category changed
+  const popup=$('lot-config-popup');
+  if(popup) popup.style.display='none';
   renderOrderTab();
 }
 
+function toggleOrderCatDropdown(){
+  const dd=$('order-cat-dropdown'); if(!dd) return;
+  const isOpen = dd.style.display!=='none';
+  dd.style.display = isOpen?'none':'block';
+  if(!isOpen){
+    // Close on outside click
+    setTimeout(()=>{
+      const handler = (e)=>{
+        if(!dd.contains(e.target)&&e.target.id!=='order-cat-dropdown-btn'){
+          dd.style.display='none'; document.removeEventListener('click',handler);
+        }
+      };
+      document.addEventListener('click',handler);
+    },10);
+  }
+}
+
 function toggleLotConfigPopup(){
-  const popup = $('lot-config-popup');
-  if(!popup) return;
-  const isOpen = popup.style.display !== 'none';
-  popup.style.display = isOpen ? 'none' : 'block';
-  const btn = $('lot-cfg-btn');
-  if(btn) btn.style.color = isOpen ? 'var(--muted)' : 'var(--blue)';
+  const popup=$('lot-config-popup'); if(!popup) return;
+  const isOpen=popup.style.display!=='none';
+  popup.style.display=isOpen?'none':'block';
+  const btn=$('lot-cfg-btn');
+  if(btn) btn.style.color=isOpen?'var(--muted)':'var(--blue)';
   if(!isOpen) renderLotConfig();
 }
 
-// ── Build dynamic category filter buttons from appData ──
+// ── Build dropdown list from productDict ──
 function buildOrderCatButtons(){
-  const area = $('order-cat-btns'); if(!area) return;
-  // get unique categories from _productDict
-  const pd = window._productDict||{};
-  const cats = new Map(); // category → { type, count }
+  const list=$('order-cat-list'); if(!list) return;
+  const pd=window._productDict||{};
+  const cats=new Map();
   Object.values(pd).forEach(info=>{
-    const cat = info.category||'';
-    const ct  = classifyCat(cat);
+    const cat=info.category||'';
+    const ct=classifyCat(cat);
     if(ct==='skip') return;
     if(cat.includes('ไม่เติม')||cat.includes('marketplace')||cat.includes('อุปกรณ์')||cat==='product_category') return;
     if(!cats.has(cat)) cats.set(cat,{ct,count:0});
     cats.get(cat).count++;
   });
-  // sort: pants first, belt, other, then alphabetical
-  const typeOrder = {pants:0, belt:1, other:2};
-  const sorted = [...cats.entries()].sort((a,b)=>{
-    const to = (typeOrder[a[1].ct]??9) - (typeOrder[b[1].ct]??9);
-    if(to!==0) return to;
-    return a[0].localeCompare(b[0],'th');
+  const typeOrder={pants:0,belt:1,other:2};
+  const sorted=[...cats.entries()].sort((a,b)=>{
+    const to=(typeOrder[a[1].ct]??9)-(typeOrder[b[1].ct]??9);
+    return to!==0?to:a[0].localeCompare(b[0],'th');
   });
-  // emoji per type
-  const emoji = {pants:'👖', belt:'🎗️', other:'📦'};
-  let html = `<button class="ctog on" data-ocat="all" onclick="setOrderCat(this,'all')">ทั้งหมด</button>`;
-  sorted.forEach(([cat, {ct}])=>{
-    const e = emoji[ct]||'📦';
-    html += `<button class="ctog" data-ocat="${cat}" onclick="setOrderCat(this,'${cat.replace(/'/g,"\'")}')">${e} ${cat}</button>`;
+  const emoji={pants:'👖',belt:'🎗️',other:'📦'};
+  // group by type
+  const groups=[{label:'ทั้งหมด',items:[{cat:'all',label:'ทั้งหมด',emoji:'📋'}]}];
+  const typeGroups={pants:{label:'👖 กางเกง',items:[]},belt:{label:'🎗️ เข็มขัด',items:[]},other:{label:'📦 อื่นๆ',items:[]}};
+  sorted.forEach(([cat,{ct}])=>{ typeGroups[ct]?.items.push({cat,label:cat,emoji:emoji[ct]||'📦'}); });
+  let html=`<div class="dd-item${orderCatFilter==='all'?' dd-active':''}" onclick="setOrderCat('all','ทั้งหมด')">📋 ทั้งหมด</div>`;
+  Object.values(typeGroups).forEach(({label,items})=>{
+    if(!items.length) return;
+    html+=`<div class="dd-group-hdr">${label}</div>`;
+    items.forEach(({cat,emoji:e})=>{
+      html+=`<div class="dd-item${orderCatFilter===cat?' dd-active':''}" onclick="setOrderCat('${cat.replace(/'/g,"\'")}','${cat.replace(/'/g,"\'")}')">${e} ${cat}</div>`;
+    });
   });
-  area.innerHTML = html;
+  list.innerHTML=html;
 }
 function groupByParent(items){
   const map=new Map();
@@ -1219,8 +1260,15 @@ function calcColorOrder(parentSku, skus, days){
 // ── Lot Config Area ──
 function renderLotConfig(){
   const area=$('lot-config-area'); if(!area) return;
-  // กรองเฉพาะกางเกงจริงๆ (classifyCat='pants')
-  const pantsItems = appData.filter(d=>classifyCat(d.category||'')==='pants');
+  // กรองตาม orderCatFilter — ถ้าเลือก specific pants category แสดงแค่นั้น
+  const pantsItems = appData.filter(d=>{
+    const ct=classifyCat(d.category||'');
+    if(ct!=='pants') return false;
+    if(orderCatFilter!=='all'&&orderCatFilter!=='pants'){
+      return (d.category||'')===orderCatFilter;
+    }
+    return true;
+  });
   const pantsGroups=groupByParent(pantsItems);
   if(!pantsGroups.length){ area.innerHTML='<span style="font-size:12px;color:var(--muted)">ไม่พบสินค้าประเภทกางเกง</span>'; return; }
   // Group lot config by sub-category
@@ -1502,9 +1550,10 @@ function renderPantsCard(g, days){
         <div style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px">ล็อคต่อไซส์ = ceil(เฉลี่ย ÷ ${piecesPerLot})</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px">${sizeRows}</div>
         <div style="margin-top:8px;font-size:11px;color:var(--muted)">
-          รวม <b style="color:var(--text)">${r.totalLots} ล็อค</b> ที่ต้องการ → 
+          รวม <b style="color:var(--text)">${r.totalLots} ล็อค</b> ที่ต้องการ →
           <b style="color:var(--purple)">${r.totalRolls} ม้วน × ${lotsPerRoll} ล็อค = ${r.totalRolls*lotsPerRoll} ล็อคจริง</b>
           ${r.extraSlots>0?`<span style="color:var(--orange)"> (+${r.extraSlots} เกิน)</span>`:''}
+          ${(()=>{ if(r.totalRolls<=1) return ''; const fr=r.totalRolls-1; const nlpr=Math.ceil(r.totalLots/fr); if(nlpr<=lotsPerRoll) return ''; return `<span style="font-size:10px;color:var(--blue);margin-left:6px">💡 ตั้ง <b>${nlpr} ล็อค/ม้วน</b> จะได้แค่ ${fr} ม้วน</span>`; })()}
         </div>
       </div>
 
