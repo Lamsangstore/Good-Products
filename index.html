@@ -904,25 +904,32 @@ canvas{display:block;width:100%!important}
       </div>
     </div>
 
-    <!-- Category Config: กางเกง lot settings -->
-    <div style="padding:18px 24px;border-bottom:1px solid rgba(255,255,255,.06)">
-      <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px">⚙️ ตั้งค่าล็อคกางเกง (จำนวนไซส์ต่อล็อค)</div>
-      <div id="lot-config-area" style="display:flex;flex-wrap:wrap;gap:10px">
-        <div class="empty" style="padding:20px">กำลังโหลดข้อมูลสินค้า…</div>
-      </div>
-    </div>
-
-    <!-- Filter bar -->
-    <div style="padding:14px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <!-- Filter bar — dynamic categories -->
+    <div style="padding:12px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <span style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase">ประเภท:</span>
-      <button class="ctog on" data-ocat="all"       onclick="setOrderCat(this,'all')">ทั้งหมด</button>
-      <button class="ctog"    data-ocat="pants"     onclick="setOrderCat(this,'pants')">👖 กางเกง (ล็อค)</button>
-      <button class="ctog"    data-ocat="belt"      onclick="setOrderCat(this,'belt')">🎗️ เข็มขัด (จำนวน)</button>
-      <button class="ctog"    data-ocat="other"     onclick="setOrderCat(this,'other')">📦 อื่นๆ</button>
+      <div id="order-cat-btns" style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="ctog on" data-ocat="all" onclick="setOrderCat(this,'all')">ทั้งหมด</button>
+      </div>
       <div style="flex:1"></div>
+      <!-- Lot config popup trigger -->
+      <button class="btn" onclick="toggleLotConfigPopup()" id="lot-cfg-btn" style="color:var(--muted);gap:5px" title="ตั้งค่าล็อคกางเกง">
+        <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        ตั้งค่าล็อค
+      </button>
       <div class="srch-wrap">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" id="order-srch" class="srch" placeholder="ค้นหาสินค้า…" oninput="renderOrderTab()">
+      </div>
+    </div>
+
+    <!-- Lot config popup (hidden by default) -->
+    <div id="lot-config-popup" style="display:none;padding:18px 24px;border-bottom:1px solid rgba(255,255,255,.06);background:var(--bg-dark)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.8px;text-transform:uppercase">⚙️ ตั้งค่าล็อคกางเกง</div>
+        <button class="btn" onclick="toggleLotConfigPopup()" style="font-size:10px;padding:3px 10px;color:var(--muted)">✕ ปิด</button>
+      </div>
+      <div id="lot-config-area" style="display:flex;flex-wrap:wrap;gap:10px">
+        <div class="empty" style="padding:20px">กำลังโหลดข้อมูลสินค้า…</div>
       </div>
     </div>
 
@@ -992,6 +999,7 @@ function hideL(){ $('loading').classList.remove('on') }
 // ════════════════════════════════════════════════════════════════
 
 let orderCatFilter = 'all';
+let orderCatType   = 'all'; // 'all' | 'pants' | 'belt' | 'other' | specific category string
 const ORDER_STORE_KEY = 'lamsang_order_v4';
 let orderConfig = {};
 try { const s=localStorage.getItem(ORDER_STORE_KEY); if(s) orderConfig=JSON.parse(s); } catch(e){}
@@ -1004,11 +1012,51 @@ function classifyCat(cat){
   if(c.includes('ไม่เติม')||c.includes('marketplace')) return 'skip';
   return 'other';
 }
-function setOrderCat(btn,cat){
-  orderCatFilter=cat;
+function setOrderCat(btn, cat){
+  orderCatFilter = cat;
   document.querySelectorAll('[data-ocat]').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
   renderOrderTab();
+}
+
+function toggleLotConfigPopup(){
+  const popup = $('lot-config-popup');
+  if(!popup) return;
+  const isOpen = popup.style.display !== 'none';
+  popup.style.display = isOpen ? 'none' : 'block';
+  const btn = $('lot-cfg-btn');
+  if(btn) btn.style.color = isOpen ? 'var(--muted)' : 'var(--blue)';
+  if(!isOpen) renderLotConfig();
+}
+
+// ── Build dynamic category filter buttons from appData ──
+function buildOrderCatButtons(){
+  const area = $('order-cat-btns'); if(!area) return;
+  // get unique categories from _productDict
+  const pd = window._productDict||{};
+  const cats = new Map(); // category → { type, count }
+  Object.values(pd).forEach(info=>{
+    const cat = info.category||'';
+    const ct  = classifyCat(cat);
+    if(ct==='skip') return;
+    if(!cats.has(cat)) cats.set(cat,{ct,count:0});
+    cats.get(cat).count++;
+  });
+  // sort: pants first, belt, other, then alphabetical
+  const typeOrder = {pants:0, belt:1, other:2};
+  const sorted = [...cats.entries()].sort((a,b)=>{
+    const to = (typeOrder[a[1].ct]??9) - (typeOrder[b[1].ct]??9);
+    if(to!==0) return to;
+    return a[0].localeCompare(b[0],'th');
+  });
+  // emoji per type
+  const emoji = {pants:'👖', belt:'🎗️', other:'📦'};
+  let html = `<button class="ctog on" data-ocat="all" onclick="setOrderCat(this,'all')">ทั้งหมด</button>`;
+  sorted.forEach(([cat, {ct}])=>{
+    const e = emoji[ct]||'📦';
+    html += `<button class="ctog" data-ocat="${cat}" onclick="setOrderCat(this,'${cat.replace(/'/g,"\'")}')">${e} ${cat}</button>`;
+  });
+  area.innerHTML = html;
 }
 function groupByParent(items){
   const map=new Map();
@@ -1210,30 +1258,45 @@ function renderOrderTab(){
     const oc=$('order-content'); if(oc) oc.innerHTML='<div class="empty" style="padding:60px">กรุณาซิงก์ข้อมูลก่อน</div>';
     return;
   }
+  buildOrderCatButtons();
   renderLotConfig();
   const srch=($('order-srch')||{}).value?.toLowerCase().trim()||'';
   const groups=groupByParent(appData.filter(d=>{
-    const ct=classifyCat(d.category);
+    const ct=classifyCat(d.category||'');
     if(ct==='skip') return false;
-    if(orderCatFilter!=='all'&&ct!==orderCatFilter) return false;
+    if(orderCatFilter!=='all'){
+      // exact category match หรือ type match (pants/belt/other)
+      const matchExact = (d.category||'')===orderCatFilter;
+      const matchType  = ct===orderCatFilter;
+      if(!matchExact && !matchType) return false;
+    }
     if(srch&&!d.name.toLowerCase().includes(srch)&&!d.sku.toLowerCase().includes(srch)) return false;
     return true;
   }));
-  const pantsGroups=groups.filter(g=>classifyCat(g.category)==='pants');
-  const beltGroups =groups.filter(g=>classifyCat(g.category)==='belt');
-  const otherGroups=groups.filter(g=>classifyCat(g.category)==='other');
+  const pantsGroups=groups.filter(g=>classifyCat(g.category||'')==='pants');
+  const beltGroups =groups.filter(g=>classifyCat(g.category||'')==='belt');
+  const otherGroups=groups.filter(g=>classifyCat(g.category||'')==='other');
   let html='';
   const days=getOrderDays();
 
   if(pantsGroups.length&&(orderCatFilter==='all'||orderCatFilter==='pants')){
+  // Group pants by sub-category
+  const pantsByCat = new Map();
+  pantsGroups.forEach(g=>{
+    const c=g.category||'กางเกง';
+    if(!pantsByCat.has(c)) pantsByCat.set(c,[]);
+    pantsByCat.get(c).push(g);
+  });
+  pantsByCat.forEach((gList, catName)=>{
     html+=`<div class="order-group">
       <div class="order-group-hdr">
         <span style="font-size:18px">👖</span>
-        <span class="order-group-ttl">กางเกง — 1 ม้วน/สี · ทุกม้วนครบ N ล็อค · เล็ก↔ใหญ่คู่กัน</span>
-        <span class="order-group-badge">${pantsGroups.length} รุ่น</span>
+        <span class="order-group-ttl">${catName} — 1 ม้วน/สี · ทุกม้วนครบ N ล็อค</span>
+        <span class="order-group-badge">${gList.length} รุ่น</span>
       </div>`;
-    pantsGroups.forEach(g=>{ html+=renderPantsCard(g,days); });
+    gList.forEach(g=>{ html+=renderPantsCard(g,days); });
     html+='</div>';
+  });
   }
   if(beltGroups.length&&(orderCatFilter==='all'||orderCatFilter==='belt')){
     html+=`<div class="order-group">
@@ -1823,6 +1886,32 @@ async function syncData(){
           return Number(best.toFixed(2));
         })()
       };
+    });
+
+    // เพิ่ม SKU ที่ไม่มียอดขายจาก dict (Google Sheets products) เข้า appData
+    const existingSkus = new Set(appData.map(d=>d.sku));
+    Object.values(dict).forEach(info=>{
+      if(!info.sku || existingSkus.has(info.sku)) return;
+      const ct = getCategoryThreshold(info.category);
+      if(ct.skip) return; // ข้าม category ที่ไม่ติดตาม
+      appData.push({
+        sku:          info.sku,
+        name:         info.name||'',
+        parentSku:    info.parentSku||info.sku,
+        category:     info.category||'',
+        variant:      info.variant||'',
+        color:        info.color||'',
+        size:         info.size||'',
+        totalSold:    0, activeDays:0, rawVel:0, adjVel:0, coverageRate:0,
+        maxGap:       0, avgGap:0, stockoutScore:0,
+        trendPct:     0, trendLabel:'—', trendColor:'var(--muted)',
+        weekendEffect:0, cv:0, consistLabel:'—', consistColor:'var(--muted)',
+        starScore:    0, safetyMult:1.2,
+        dailySales:   {}, lastSaleDate:null, peakDate:null, peakSold:0,
+        vel7:0, activeVelAvg:0, maxVel7:0,
+        recStock:0, stockMaxVel7:0, stockAvg:0,
+        _noSales:     true
+      });
     });
 
     maxAdjVel=Math.max(...appData.map(d=>d.adjVel),1);
