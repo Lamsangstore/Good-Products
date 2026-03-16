@@ -726,6 +726,11 @@ canvas{display:block;width:100%!important}
         <button class="btn" onclick="clearFirebaseStock()" style="font-size:10px;padding:4px 12px;color:var(--muted)">&#x2715; ล้าง</button>
       </div>
     </div>
+    <!-- Cache status bar -->
+    <div id="cache-status-bar" style="display:none;align-items:center;gap:10px;padding:6px 24px;background:rgba(77,143,255,.05);border-bottom:1px solid rgba(77,143,255,.1);font-size:11px">
+      <span id="cache-status-lbl"></span>
+    </div>
+
     <!-- Stock file status bar -->
     <div id="stock-status-bar" style="display:none;padding:10px 24px;background:rgba(46,204,138,.06);border-bottom:1px solid rgba(46,204,138,.12);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <span style="font-size:11px;font-weight:800;color:var(--green)">📦 สต๊อกจริง:</span>
@@ -1000,7 +1005,21 @@ function saveVisibleCols(){
 }
 let visibleCols = loadVisibleCols();
 
-window.onload = () => syncData();
+window.onload = async () => {
+  // Try loading from Firebase cache first — much faster than full Sheets sync
+  const cacheLoaded = await loadAppDataCache();
+  if(cacheLoaded){
+    // Load configs + stock in background without re-syncing Sheets
+    loadAllConfigs().then(()=>{
+      try{ renderAll(getFilteredData()); }catch(e){}
+      try{ renderOrderTab(); }catch(e){}
+    });
+    if(!isStockLoaded()) loadStockFromFirebase().catch(()=>{});
+  } else {
+    // No cache yet — do full sync
+    syncData();
+  }
+};
 
 const $= id => document.getElementById(id);
 
@@ -2161,16 +2180,16 @@ async function syncData(){
   try { enrichAppData(); } catch(ex){ console.warn('enrichAppData:', ex); }
   try { renderOrderTab(); } catch(ex){ console.warn('renderOrderTab:', ex); }
 
-  // Load all configs + stock from Firebase
+  // Load configs + stock + save new cache to Firebase
   (async()=>{
     await loadAllConfigs();
-    // re-render after configs applied
     try { renderAll(getFilteredData()); } catch(e){}
     try { renderOrderTab(); } catch(e){}
-    // Auto-load stock from Firebase (if not already loaded from file)
     if(!isStockLoaded()){
       loadStockFromFirebase().catch(e=>console.warn('Firebase stock auto-load:', e));
     }
+    // Save appData cache to Firebase (background)
+    if(appData.length) saveAppDataCache(appData).catch(e=>console.warn('Cache save:', e));
   })();
 }
 
@@ -2261,6 +2280,7 @@ const FIREBASE_CONFIG = {
 };
 const RTDB_PATH   = 'stock';    // /stock/meta /stock/skus
 const RTDB_CONFIG = 'config';   // /config/visibleCols /config/orderConfig /config/riskCols
+// RTDB_CACHE = 'appdata_cache' — defined near cache functions
 
 // ── FIREBASE CONFIG STORE (replaces localStorage) ──────────────
 // Write to RTDB async (fire-and-forget); read on init
@@ -2296,6 +2316,90 @@ async function fbLoad(key, defaultVal){
   } catch(e){}
   return defaultVal;
 }
+
+// ── APPDATA CACHE in Firebase RTDB ─────────────────────────────
+const RTDB_CACHE = 'appdata_cache';
+
+// Serialise appData for RTDB (strip dailySales to save space — rebuild if needed)
+function serializeAppData(data){
+  return data.map(item=>({
+    sku:item.sku, name:item.name, parentSku:item.parentSku,
+    category:item.category, variant:item.variant,
+    color:item.color, size:item.size,
+    totalSold:item.totalSold, activeDays:item.activeDays,
+    rawVel:item.rawVel, adjVel:item.adjVel, coverageRate:item.coverageRate,
+    maxGap:item.maxGap, avgGap:item.avgGap, stockoutScore:item.stockoutScore,
+    trendPct:item.trendPct, trendLabel:item.trendLabel, trendColor:item.trendColor,
+    weekendEffect:item.weekendEffect, cv:item.cv,
+    consistLabel:item.consistLabel, consistColor:item.consistColor,
+    starScore:item.starScore, safetyMult:item.safetyMult,
+    lastSaleDate:item.lastSaleDate, peakDate:item.peakDate,
+    peakSold:item.peakSold, vel7:item.vel7,
+    activeVelAvg:item.activeVelAvg, maxVel7:item.maxVel7,
+    _noSales:item._noSales||false
+    // dailySales omitted — too large; chart will fetch on demand if needed
+  }));
+}
+
+async function saveAppDataCache(data){
+  const db=getRtdb(); if(!db) return;
+  try {
+    const payload = {
+      savedAt: Date.now(),
+      rowCount: data.length,
+      data: serializeAppData(data)
+    };
+    await db.ref(RTDB_CACHE).set(payload);
+    console.log('[Cache] Saved', data.length, 'SKUs to Firebase');
+    updateCacheStatus('saved', data.length);
+  } catch(e){ console.warn('[Cache] Save failed:', e.message); }
+}
+
+async function loadAppDataCache(){
+  const db=getRtdb(); if(!db) return false;
+  try {
+    showL('กำลังโหลดข้อมูลจาก Firebase Cache…');
+    const snap = await db.ref(RTDB_CACHE).get();
+    if(!snap.exists()){ hideL(); return false; }
+    const payload = snap.val();
+    if(!payload?.data?.length){ hideL(); return false; }
+    const savedAt = payload.savedAt ? new Date(payload.savedAt) : null;
+    const ageHours = savedAt ? (Date.now()-payload.savedAt)/(1000*3600) : 999;
+    appData = payload.data;
+    // rebuild dailySales as empty (chart will use on-demand fetch)
+    appData.forEach(item=>{ if(!item.dailySales) item.dailySales={}; });
+    maxAdjVel = Math.max(...appData.map(d=>d.adjVel),1);
+    $('srch').value='';
+    syncToggleButtons();
+    buildFilterOptions();
+    renderAll();
+    enrichAppData();
+    renderOrderTab();
+    const ageStr = ageHours<1 ? 'เมื่อกี้' : ageHours<24 ? Math.round(ageHours)+' ชม.ที่แล้ว' : Math.round(ageHours/24)+' วันที่แล้ว';
+    updateCacheStatus('loaded', payload.data.length, ageStr);
+    hideL();
+    console.log('[Cache] Loaded', payload.data.length, 'SKUs, age:', ageStr);
+    return true;
+  } catch(e){
+    console.warn('[Cache] Load failed:', e.message);
+    hideL(); return false;
+  }
+}
+
+function updateCacheStatus(state, count=0, age=''){
+  const lbl = $('cache-status-lbl');
+  const bar = $('cache-status-bar');
+  if(!lbl||!bar) return;
+  if(state==='saved'){
+    bar.style.display='flex';
+    lbl.innerHTML=`<span style="color:var(--green)">✅ Cache บันทึกแล้ว — ${count.toLocaleString()} SKUs</span>`;
+  } else if(state==='loaded'){
+    bar.style.display='flex';
+    lbl.innerHTML=`<span style="color:var(--blue)">⚡ โหลดจาก Cache — ${count.toLocaleString()} SKUs · บันทึก${age}</span>
+      <button class="btn" onclick="syncData()" style="font-size:10px;padding:3px 10px;color:var(--muted);margin-left:8px">🔄 ซิงก์ใหม่จาก Sheets</button>`;
+  }
+}
+// ────────────────────────────────────────────────────────────────
 
 // Load all configs from Firebase on startup
 async function loadAllConfigs(){
