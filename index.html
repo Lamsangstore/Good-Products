@@ -1126,16 +1126,32 @@ function renderPantsCard(g, days){
       const isOv=(cfg.lotsOverride||{})[skuId]!==undefined;
       const ovEsc=skuId.replace(/'/g,"\\'");
       const autoVal=d>0?Math.ceil(d/piecesPerLot):0;
-      return`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg);box-shadow:var(--sx);border-radius:10px">
-        <div style="min-width:34px;font-size:12px;font-weight:800;color:var(--text)">${sz}</div>
-        <div style="flex:1">
+      // stockAvg components (monthly)
+      const recStock   = item?.recStock||0;
+      const maxVel7x30 = item?.stockMaxVel7||0;
+      const monthlyAvg = item ? (item.stockAvg||Math.ceil((recStock+maxVel7x30)/2)) : 0;
+      // colour: orange if demand exceeds proportional stock
+      const demandScale = Math.ceil(monthlyAvg*(days/30));
+      const stockColor  = monthlyAvg===0 ? 'var(--faint)' : (d > demandScale ? 'var(--orange)' : 'var(--green)');
+      return`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:var(--bg);box-shadow:var(--sx);border-radius:12px">
+        <div style="min-width:34px;font-size:13px;font-weight:800;color:var(--text);padding-top:2px">${sz}</div>
+        <div style="flex:1;min-width:0">
           <div style="font-size:10px;color:var(--muted)">เฉลี่ย <b style="color:var(--blue)">${d}</b> ตัว/${days}วัน</div>
-          <div style="font-size:10px;color:var(--faint)">${pcs} ตัวรวม</div>
+          <div style="font-size:10px;color:var(--faint);margin-bottom:6px">${pcs} ตัวรวม</div>
+          <div style="padding:6px 8px;background:var(--bg-dark);border-radius:8px;border-left:3px solid ${stockColor}">
+            <div style="font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin-bottom:3px">สต๊อกแนะนำ/เดือน</div>
+            <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:2px">
+              <span style="font-size:16px;font-weight:800;color:${stockColor};font-family:'IBM Plex Mono',monospace">${monthlyAvg}</span>
+              <span style="font-size:9px;color:var(--muted)">ตัว</span>
+              ${d > demandScale ? `<span style="margin-left:4px;font-size:9px;color:var(--orange)">⚠ สูงกว่าสต๊อก</span>` : ''}
+            </div>
+            <div style="font-size:9px;color:var(--faint)">(${recStock}+${maxVel7x30})÷2</div>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:3px">
-          <span style="font-size:10px;color:var(--muted)">ล็อค:</span>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding-top:2px">
+          <span style="font-size:9px;color:var(--muted)">ล็อค</span>
           <input class="lot-cfg-input" type="number" min="0" max="99" value="${lots}"
-            style="width:40px;color:${isOv?'var(--orange)':'var(--green)'}"
+            style="width:42px;color:${isOv?'var(--orange)':'var(--green)'}"
             onchange="setLotsOverride('${esc}','${ovEsc}',+this.value)"
             onclick="event.stopPropagation()"
             title="${isOv?'✎ ปรับเอง (auto='+autoVal+')':'auto: ceil('+d+'/'+piecesPerLot+')='+autoVal}">
