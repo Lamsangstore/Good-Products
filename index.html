@@ -1073,10 +1073,10 @@ function buildOrderCatButtons(){
   const pd=window._productDict||{};
   const cats=new Map();
   Object.values(pd).forEach(info=>{
-    const cat=info.category||'';
+    const cat=(info.category||'').trim().replace(/\s+/g,' ');  // normalize whitespace
     const ct=classifyCat(cat);
     if(ct==='skip') return;
-    if(cat.includes('ไม่เติม')||cat.includes('marketplace')||cat.includes('อุปกรณ์')||cat==='product_category') return;
+    if(cat.includes('ไม่เติม')||cat.includes('marketplace')||cat.includes('อุปกรณ์')||cat==='product_category'||!cat) return;
     if(!cats.has(cat)) cats.set(cat,{ct,count:0});
     cats.get(cat).count++;
   });
@@ -1595,26 +1595,56 @@ function renderPantsCard(g, days){
 function renderBeltCard(g, days){
   const totalAvg=g.skus.reduce((s,d)=>s+getAvg(d,days),0);
   const cfg=orderConfig[g.parentSku]||{};
-  const esc=g.parentSku.replace(/'/g,"\\'");
-  const colorItems=g.skus.map(item=>{
-    const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(getAvg(item,days));
+  const esc=g.parentSku.replace(/'/g,"\'");
+
+  // sort: OOS first → low stock → ok → no data
+  const skusSorted=[...g.skus].sort((a,b)=>{
+    const ka=(a.sku||'').toLowerCase(), kb=(b.sku||'').toLowerCase();
+    const sa=isStockLoaded()&&ka in stockMap?Number(stockMap[ka])||0:Infinity;
+    const sb=isStockLoaded()&&kb in stockMap?Number(stockMap[kb])||0:Infinity;
+    return sa-sb;
+  });
+
+  const colorItems=skusSorted.map(item=>{
+    const rawAvg=getAvg(item,days);
+    const skuKey=(item.sku||'').toLowerCase();
+    const onHand=isStockLoaded()&&skuKey in stockMap?Math.max(0,Number(stockMap[skuKey])||0):null;
+    const net=onHand!==null?Math.max(0,rawAvg-onHand):rawAvg;
+    const autoOrder=Math.ceil(net/10)*10;  // round up to nearest 10
+    const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:autoOrder;
     const colLabel=[item.color,item.size].filter(Boolean).join(' / ')||item.sku;
-    return`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-dark);border-radius:10px;min-width:180px">
+    const isOOS=onHand!==null&&onHand<=0;
+    // เหลือน้อย = stock < demand 15 วัน (lead time เข็มขัด ~15 วัน)
+    const demand15d=Math.ceil(getAvg(item,15));
+    const isLow=onHand!==null&&onHand>0&&onHand<demand15d;
+    const isOk =onHand!==null&&rawAvg>0&&onHand>=rawAvg;
+    const cardBg=isOOS?'rgba(255,85,114,.07)':isLow?'rgba(255,170,68,.06)':isOk?'rgba(46,204,138,.06)':`var(--bg-dark)`;
+    const cardBdr=isOOS?'1px solid rgba(255,85,114,.3)':isLow?'1px solid rgba(255,170,68,.3)':isOk?'1px solid rgba(46,204,138,.25)':`1px solid transparent`;
+    const inputColor=isOOS?'var(--red)':isLow?'var(--orange)':isOk?'var(--green)':`var(--blue)`;
+    const stockBadge=isOOS?`<span style="font-size:9px;color:var(--red);font-weight:800">🔴 หมด</span>`:
+                     isLow?`<span style="font-size:9px;color:var(--orange);font-weight:800">🟡 เหลือ ${onHand} (ต้องการ ${demand15d}/15วัน)</span>`:
+                     isOk ?`<span style="font-size:9px;color:var(--green)">✓ พอ (${onHand})</span>`:
+                     onHand!==null?`<span style="font-size:9px;color:var(--muted)">มี ${onHand}</span>`:``;
+    return`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:${cardBg};border:${cardBdr};border-radius:10px;min-width:190px">
       <div style="flex:1">
         <div style="font-size:12px;font-weight:700;color:var(--text)">${colLabel}</div>
-        <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">${item.sku}</div>
-        <div style="font-size:10px;color:var(--green);margin-top:2px">เฉลี่ย ${Math.ceil(getAvg(item,days))} ตัว/${days}วัน</div>
+        <div style="font-size:9px;color:var(--faint);font-family:'IBM Plex Mono',monospace;margin-top:1px">${(item.sku||'').slice(-8)}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
+          <span style="font-size:10px;color:var(--blue)">เฉลี่ย ${Math.ceil(rawAvg)} /${days}วัน</span>
+          ${stockBadge}
+        </div>
+        ${onHand!==null&&net>0?`<div style="font-size:9px;color:var(--muted)">ขาด ${net} → สั่ง ${autoOrder}</div>`:''}
       </div>
       <div style="text-align:center">
-        <div style="font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px">สั่ง</div>
-        <input class="lot-cfg-input" type="number" min="0" value="${saved}" style="width:52px;font-size:17px"
+        <div style="font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin-bottom:3px">สั่ง</div>
+        <input class="lot-cfg-input" type="number" min="0" step="10" value="${saved}" style="width:54px;font-size:16px;color:${inputColor}"
           onchange="setBeltQty('${esc}','${item.sku}',+this.value)" onclick="event.stopPropagation()">
-        <div style="font-size:10px;color:var(--muted)">ชิ้น</div>
+        <div style="font-size:9px;color:var(--muted)">ชิ้น</div>
       </div>
     </div>`;
   }).join('');
-  const totalOrder=g.skus.reduce((s,item)=>{
-    const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(getAvg(item,days));
+  const totalOrder=skusSorted.reduce((s,item)=>{
+    const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(Math.max(0,getAvg(item,days)-(isStockLoaded()&&(item.sku||'').toLowerCase() in stockMap?Math.max(0,Number(stockMap[(item.sku||'').toLowerCase()])||0):0))/10)*10;
     return s+saved;
   },0);
   return`<div class="belt-card">
@@ -1747,7 +1777,7 @@ async function syncData(){
     prod.table.rows.forEach(row=>{
       if(!row?.c) return;
       const parentSku = row.c[0]?.v ? String(row.c[0].v).trim() : '';
-      const category  = row.c[1]?.v ? String(row.c[1].v).trim() : '';
+      const category  = row.c[1]?.v ? String(row.c[1].v).trim().replace(/\s+/g,' ') : '';
       const sku       = row.c[2]?.v ? String(row.c[2].v).trim() : '';
       const name      = row.c[4]?.v ? String(row.c[4].v).trim() : '';
       const variant   = row.c[5]?.v ? String(row.c[5].v).trim() : '';
