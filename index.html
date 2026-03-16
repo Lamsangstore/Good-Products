@@ -1006,17 +1006,26 @@ function saveVisibleCols(){
 let visibleCols = loadVisibleCols();
 
 window.onload = async () => {
-  // Try loading from Firebase cache first — much faster than full Sheets sync
-  const cacheLoaded = await loadAppDataCache();
+  let cacheLoaded = false;
+  try {
+    // Try Firebase cache with 5s timeout
+    const cachePromise = loadAppDataCache();
+    const timeout = new Promise(resolve => setTimeout(()=>resolve(false), 5000));
+    cacheLoaded = await Promise.race([cachePromise, timeout]);
+  } catch(e){
+    console.warn('[Cache] Load error:', e);
+    cacheLoaded = false;
+  }
+
   if(cacheLoaded){
-    // Load configs + stock in background without re-syncing Sheets
-    loadAllConfigs().then(()=>{
+    // Cache loaded — apply configs + stock in background
+    try { loadAllConfigs().then(()=>{
       try{ renderAll(getFilteredData()); }catch(e){}
       try{ renderOrderTab(); }catch(e){}
-    });
+    }); } catch(e){}
     if(!isStockLoaded()) loadStockFromFirebase().catch(()=>{});
   } else {
-    // No cache yet — do full sync
+    // No cache or timeout — full sync from Sheets
     syncData();
   }
 };
@@ -1853,11 +1862,13 @@ function exportOrderCSV(){
 }
 
 function switchTab(name, btn){
+  try {
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
-  if(name==='order') setTimeout(renderOrderTab, 50);
+  if(name==='order') setTimeout(()=>{ try{ renderOrderTab(); }catch(e){} }, 50);
   btn.classList.add('active');
   $('tab-'+name).classList.add('active');
+  } catch(e){ console.warn('switchTab:', e); }
 }
 
 async function fetchJSON(sheet){
@@ -2358,8 +2369,10 @@ async function saveAppDataCache(data){
 async function loadAppDataCache(){
   const db=getRtdb(); if(!db) return false;
   try {
-    showL('กำลังโหลดข้อมูลจาก Firebase Cache…');
-    const snap = await db.ref(RTDB_CACHE).get();
+    showL('กำลังโหลดข้อมูลจาก Cache…');
+    // 4s timeout for RTDB read
+    const snapPromise = db.ref(RTDB_CACHE).get();
+    const snap = await Promise.race([snapPromise, new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),4000))]);
     if(!snap.exists()){ hideL(); return false; }
     const payload = snap.val();
     if(!payload?.data?.length){ hideL(); return false; }
