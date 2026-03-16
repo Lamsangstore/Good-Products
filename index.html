@@ -1965,7 +1965,9 @@ function cartAddRoll(parentSku, name, color, rollIndex, rollData, piecesPerLot){
     type:'pants', parentSku, name, color,
     rollIndex, rollLabel:`ม้วน ${rollIndex+1}`,
     szSummary, extraSummary, pieces,
-    lots: rollData.totalLots
+    lots: rollData.totalLots,
+    counts: rollData.counts||{},
+    extraCounts: rollData.extraCounts||{}
   };
   updateCartFab();
   renderCartModal();
@@ -2208,30 +2210,106 @@ function renderOrderHistory(){
 }
 
 function renderHistDetail(order){
-  const grouped={};
+  // Get all sizes in SIZE_ORDER from items
+  const allSizes = [...SIZE_ORDER];
+
+  // Group items by category → parentSku → color
+  // For pants: each item = one roll with counts per size
+  const catGroups = {}; // category → { label, color, rows: [{name,color,rollLabel,counts,extraCounts,lots}] }
+
+  // Category display config
+  const catStyle = {
+    'กางเกง กระบอกกลาง': {bg:'rgba(0,180,180,.15)', hdr:'rgba(0,180,180,.35)', label:'กระบอกกลาง'},
+    'กางเกง กระบอกเล็ก':  {bg:'rgba(0,180,180,.1)',  hdr:'rgba(0,180,180,.3)',  label:'กระบอกเล็ก'},
+    'กางเกง กระบอกใหญ่': {bg:'rgba(0,180,180,.15)', hdr:'rgba(0,180,180,.35)', label:'กระบอกใหญ่'},
+    'กางเกง กระโปรง':    {bg:'rgba(150,100,255,.12)',hdr:'rgba(150,100,255,.3)', label:'กระโปรง'},
+    'กางเกง ขาม้า':       {bg:'rgba(240,192,40,.12)', hdr:'rgba(240,192,40,.35)', label:'ขาม้า'},
+    'กางเกง ขาสั้น':      {bg:'rgba(255,130,50,.12)', hdr:'rgba(255,130,50,.3)',  label:'ขาสั้น'},
+    'ยีนส์':              {bg:'rgba(60,100,200,.12)',  hdr:'rgba(60,100,200,.3)',  label:'ยีนส์'},
+  };
+  const defaultStyle = {bg:'rgba(100,100,100,.1)', hdr:'rgba(100,100,100,.25)', label:''};
+
   (order.items||[]).forEach(item=>{
-    if(!grouped[item.parentSku]) grouped[item.parentSku]={name:item.name,type:item.type,items:[]};
-    grouped[item.parentSku].items.push(item);
+    // Get category from _productDict if available
+    const pdInfo = (window._productDict||{})[item.parentSku] ||
+                   Object.values(window._productDict||{}).find(d=>d.parentSku===item.parentSku);
+    const cat = pdInfo?.category || (item.type==='pants'?'กางเกง':'เข็มขัด');
+    if(!catGroups[cat]) catGroups[cat]={style:catStyle[cat]||defaultStyle, rows:[]};
+    if(item.type==='pants'){
+      // Parse counts from rollData stored in item
+      const counts = item.counts||{};
+      const extraCounts = item.extraCounts||{};
+      catGroups[cat].rows.push({
+        name:item.name, color:item.color, rollLabel:item.rollLabel,
+        counts, extraCounts, pieces:item.pieces, lots:item.lots
+      });
+    } else {
+      catGroups[cat].rows.push({name:item.name, color:item.color, qty:item.qty, type:'belt'});
+    }
   });
-  let html='<div style="padding:12px 16px;background:var(--bg-dark);border-top:1px solid rgba(255,255,255,.06)">';
-  Object.values(grouped).forEach(g=>{
-    html+=`<div style="margin-bottom:12px">
-      <div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:4px">${g.type==='pants'?'👖':'🎗️'} ${g.name}</div>`;
-    g.items.forEach(item=>{
-      if(item.type==='pants'){
-        html+=`<div style="font-size:11px;color:var(--text);padding:4px 8px;background:rgba(77,143,255,.06);border-radius:6px;margin-bottom:3px">
-          🎨 <b>${item.color}</b> · ${item.rollLabel} · <span style="color:var(--blue)">${item.pieces}ตัว</span>
-          <span style="color:var(--faint);font-size:10px"> [${item.szSummary}]</span>
-        </div>`;
-      } else {
-        html+=`<div style="font-size:11px;color:var(--text);padding:4px 8px;background:rgba(255,170,68,.06);border-radius:6px;margin-bottom:3px">
-          🎨 <b>${item.color}</b> · <span style="color:var(--orange)">${item.qty}ชิ้น</span>
-        </div>`;
-      }
-    });
-    html+='</div>';
+
+  // Sort sizes
+  const sortedSizes = allSizes.filter(sz=>
+    Object.values(catGroups).some(cg=>
+      cg.rows.some(r=>r.counts&&(r.counts[sz]||r.extraCounts?.[sz]))
+    )
+  );
+  const hasSizes = sortedSizes.length>0;
+
+  let html=`<div style="padding:12px;background:var(--bg-dark);border-top:1px solid rgba(255,255,255,.06);overflow-x:auto">`;
+  html+=`<table style="width:100%;border-collapse:collapse;font-size:11px;min-width:400px">`;
+
+  // Date header
+  const d=new Date(order.createdAt);
+  const dateStr=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+  html+=`<tr><td colspan="20" style="text-align:center;font-size:18px;font-weight:800;color:var(--text);padding:8px 0 12px">${dateStr}</td></tr>`;
+
+  Object.entries(catGroups).forEach(([cat, cg])=>{
+    const st = cg.style;
+    const label = st.label||cat;
+    const isPants = cg.rows.some(r=>!r.type);
+
+    if(isPants && hasSizes){
+      // Header row with sizes
+      html+=`<tr>
+        <td colspan="2" style="background:${st.hdr};color:#fff;font-weight:800;text-align:center;padding:6px 10px;border-radius:6px 0 0 6px;font-size:12px">${label}</td>
+        ${sortedSizes.map(sz=>`<td style="background:${st.hdr};color:#fff;font-weight:800;text-align:center;padding:6px 8px;min-width:36px">${sz}</td>`).join('')}
+        <td style="background:${st.hdr};border-radius:0 6px 6px 0"></td>
+      </tr>`;
+      // Data rows
+      cg.rows.forEach(row=>{
+        html+=`<tr style="background:${st.bg}">
+          <td style="padding:5px 10px;font-weight:600;color:var(--text);white-space:nowrap">${row.name}</td>
+          <td style="padding:5px 8px;color:var(--muted);white-space:nowrap">${row.color}<br><span style="font-size:9px;color:var(--faint)">${row.rollLabel}</span></td>
+          ${sortedSizes.map(sz=>{
+            const n=(row.counts[sz]||0);
+            const ex=(row.extraCounts?.[sz]||0);
+            const total=n+ex;
+            if(!total) return `<td style="text-align:center;color:var(--faint);padding:5px 8px">-</td>`;
+            return `<td style="text-align:center;font-weight:700;color:var(--text);padding:5px 8px">${total}${ex?`<span style='color:var(--orange);font-size:9px'>+${ex}</span>`:''}`;
+          }).join('')}
+          <td style="padding:5px 8px;color:var(--blue);font-weight:700;white-space:nowrap;font-size:10px">${row.pieces}ตัว</td>
+        </tr>`;
+      });
+      html+=`<tr><td colspan="20" style="padding:4px"></td></tr>`;
+    } else {
+      // Belt/other — simple list
+      html+=`<tr>
+        <td colspan="2" style="background:${st.hdr};color:#fff;font-weight:800;text-align:center;padding:6px 10px;border-radius:6px;font-size:12px">${label||'เข็มขัด/อื่นๆ'}</td>
+        <td colspan="10" style="background:${st.hdr};border-radius:0 6px 6px 0"></td>
+      </tr>`;
+      cg.rows.forEach(row=>{
+        html+=`<tr style="background:${st.bg}">
+          <td style="padding:5px 10px;font-weight:600;color:var(--text)">${row.name}</td>
+          <td style="padding:5px 8px;color:var(--muted)">${row.color}</td>
+          <td colspan="10" style="padding:5px 8px;color:var(--orange);font-weight:700">${row.qty} ชิ้น</td>
+        </tr>`;
+      });
+      html+=`<tr><td colspan="20" style="padding:4px"></td></tr>`;
+    }
   });
-  html+='</div>';
+
+  html+=`</table></div>`;
   return html;
 }
 
