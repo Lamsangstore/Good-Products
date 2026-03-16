@@ -1049,15 +1049,22 @@ function calcColorOrder(parentSku, skus, days){
   const skuBySz={};
   skus.forEach(d=>{ skuBySz[d.size||'?']=d; });
 
-  const demand={}, lotsNeeded={};
+  const demand={}, stockOnHand={}, netDemand={}, lotsNeeded={};
   const cfg=getPantsCfg(parentSku);
   const overrides=(cfg.lotsOverride||{});
   allSizes.forEach(sz=>{
     const item=skuBySz[sz];
     const d=item?getAvg(item,days):0;
     demand[sz]=d;
-    const ov=item&&overrides[item.sku]!==undefined ? overrides[item.sku] : null;
-    lotsNeeded[sz]= ov!==null ? ov : (d>0?Math.ceil(d/piecesPerLot):0);
+    // stock on hand from uploaded file
+    const skuKey=(item?.sku||'').toLowerCase();
+    const rawStock=(stockLoaded&&skuKey&&skuKey in stockMap)?Math.max(0,stockMap[skuKey]||0):0;
+    stockOnHand[sz]=rawStock;
+    // net demand = demand - stock already on hand
+    const net=Math.max(0,d-rawStock);
+    netDemand[sz]=net;
+    const ov=item&&overrides[item.sku]!==undefined?overrides[item.sku]:null;
+    lotsNeeded[sz]=ov!==null?ov:(net>0?Math.ceil(net/piecesPerLot):0);
   });
 
   const seq = butterflySequence(allSizes, lotsNeeded);
@@ -1088,7 +1095,7 @@ function calcColorOrder(parentSku, skus, days){
   const neededPieces  = totalLots*piecesPerLot;
   const extraPieces   = extraSlots*piecesPerLot;
 
-  return {allSizes,skuBySz,demand,lotsNeeded,totalLots,totalRolls,rolls,
+  return {allSizes,skuBySz,demand,stockOnHand,netDemand,lotsNeeded,totalLots,totalRolls,rolls,
           piecesPerLot,lotsPerRoll,totalPieces,neededPieces,extraPieces,extraSlots};
 }
 
@@ -1196,47 +1203,54 @@ function renderPantsCard(g, days){
     grandPieces+=r.totalPieces;
     grandRolls+=r.totalRolls;
 
-    // size demand rows
+    // size demand rows — show ALL sizes, factor in stock on hand
     const sizeRows=r.allSizes.map(sz=>{
       const item=r.skuBySz[sz];
       const d=r.demand[sz];
+      const onHand=r.stockOnHand[sz];
+      const net=r.netDemand[sz];
       const lots=r.lotsNeeded[sz];
       const pcs=lots*piecesPerLot;
       const skuId=item?.sku||'';
       const cfg=getPantsCfg(g.parentSku);
       const isOv=(cfg.lotsOverride||{})[skuId]!==undefined;
-      const ovEsc=skuId.replace(/'/g,"\\'");
-      const autoVal=d>0?Math.ceil(d/piecesPerLot):0;
-      // stockAvg components (monthly)
-      const recStock   = item?.recStock||0;
-      const maxVel7x30 = item?.stockMaxVel7||0;
-      const monthlyAvg = item ? (item.stockAvg||Math.ceil((recStock+maxVel7x30)/2)) : 0;
-      // colour: orange if demand exceeds proportional stock
-      const demandScale = Math.ceil(monthlyAvg*(days/30));
-      const stockColor  = monthlyAvg===0 ? 'var(--faint)' : (d > demandScale ? 'var(--orange)' : 'var(--green)');
-      return`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:var(--bg);box-shadow:var(--sx);border-radius:12px">
-        <div style="min-width:34px;font-size:13px;font-weight:800;color:var(--text);padding-top:2px">${sz}</div>
+      const ovEsc=skuId.replace(/'/g,"\'");
+      const autoVal=net>0?Math.ceil(net/piecesPerLot):0;
+      const recStockVal=item?.recStock||0;
+      const maxVel7x30=item?.stockMaxVel7||0;
+      const monthlyAvg=item?(item.stockAvg||Math.ceil((recStockVal+maxVel7x30)/2)):0;
+      const noNeed=stockLoaded&&onHand>=d&&d>0;
+      const hasFile=stockLoaded&&(item?.sku||'').toLowerCase()in stockMap;
+      const cardBg=noNeed?'rgba(46,204,138,.07)':'var(--bg)';
+      const cardBdr=noNeed?'1px solid rgba(46,204,138,.3)':'none';
+      const lotColor=noNeed?'var(--green)':isOv?'var(--orange)':'var(--blue)';
+      return`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:${cardBg};box-shadow:var(--sx);border-radius:12px;border:${cardBdr}">
+        <div style="min-width:36px;text-align:center">
+          <div style="font-size:13px;font-weight:800;color:var(--text)">${sz}</div>
+          ${noNeed?'<div style="font-size:8px;color:var(--green);font-weight:800;margin-top:2px">✓ พอ</div>':''}
+        </div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:10px;color:var(--muted)">เฉลี่ย <b style="color:var(--blue)">${d}</b> ตัว/${days}วัน</div>
-          <div style="font-size:10px;color:var(--faint);margin-bottom:6px">${pcs} ตัวรวม</div>
-          <div style="padding:6px 8px;background:var(--bg-dark);border-radius:8px;border-left:3px solid ${stockColor}">
-            <div style="font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin-bottom:3px">สต๊อกแนะนำ/เดือน</div>
-            <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:2px">
-              <span style="font-size:16px;font-weight:800;color:${stockColor};font-family:'IBM Plex Mono',monospace">${monthlyAvg}</span>
-              <span style="font-size:9px;color:var(--muted)">ตัว</span>
-              ${d > demandScale ? `<span style="margin-left:4px;font-size:9px;color:var(--orange)">⚠ สูงกว่าสต๊อก</span>` : ''}
-            </div>
-            <div style="font-size:9px;color:var(--faint)">(${recStock}+${maxVel7x30})÷2</div>
+          <div style="font-size:10px;color:var(--muted)">ต้องการ <b style="color:var(--blue)">${d}</b> ตัว/${days}วัน</div>
+          ${hasFile?`<div style="font-size:10px;margin-top:2px">
+            มีอยู่ <b style="color:${noNeed?'var(--green)':'var(--orange)'}">${onHand}</b> ตัว
+            <span style="color:${noNeed?'var(--green)':'var(--orange)'};font-size:9px">
+              ${noNeed?' · เกิน +'+(onHand-d):' · ขาด '+net}
+            </span></div>`:''}
+          <div style="font-size:10px;color:${noNeed?'var(--green)':'var(--faint)'};margin-top:2px">
+            ${noNeed?'<b>ไม่ต้องสั่ง</b>':pcs+' ตัวที่สั่ง'}
+          </div>
+          <div style="margin-top:5px;padding:4px 7px;background:var(--bg-dark);border-radius:7px;border-left:2px solid var(--purple)">
+            <div style="font-size:9px;color:var(--muted)">แนะนำ/เดือน: <b style="color:var(--purple)">${monthlyAvg}</b> ตัว <span style="color:var(--faint)">(${recStockVal}+${maxVel7x30})÷2</span></div>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding-top:2px">
           <span style="font-size:9px;color:var(--muted)">ล็อค</span>
           <input class="lot-cfg-input" type="number" min="0" max="99" value="${lots}"
-            style="width:42px;color:${isOv?'var(--orange)':'var(--green)'}"
+            style="width:42px;color:${lotColor}"
             onchange="setLotsOverride('${esc}','${ovEsc}',+this.value)"
             onclick="event.stopPropagation()"
-            title="${isOv?'✎ ปรับเอง (auto='+autoVal+')':'auto: ceil('+d+'/'+piecesPerLot+')='+autoVal}">
-          ${isOv?`<span style="font-size:9px;color:var(--orange)">✎</span>`:''}
+            title="${isOv?'✎ ปรับเอง':'auto: ceil(ขาด '+net+'/'+piecesPerLot+')='+autoVal}">
+          ${noNeed?`<span style="font-size:8px;color:var(--green)">ไม่สั่ง</span>`:isOv?`<span style="font-size:9px;color:var(--orange)">✎</span>`:''}
         </div>
       </div>`;
     }).join('');
