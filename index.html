@@ -1058,7 +1058,7 @@ function calcColorOrder(parentSku, skus, days){
     demand[sz]=d;
     // stock on hand from uploaded file (safe access)
     const skuKey=(item?.sku||'').toLowerCase();
-    const rawStock=(stockLoaded&&skuKey&&stockMap&&skuKey in stockMap)?Math.max(0,Number(stockMap[skuKey])||0):0;
+    const rawStock=(isStockLoaded()&&skuKey&&skuKey in stockMap)?Math.max(0,Number(stockMap[skuKey])||0):0;
     stockOnHand[sz]=rawStock;
     // net demand = demand - stock already on hand
     const net=Math.max(0,d-rawStock);
@@ -1137,6 +1137,7 @@ function setLotsOverride(parentSku,sku,n){
 
 // ── MAIN RENDER ──
 function renderOrderTab(){
+  try {
   if(!appData || !appData.length){
     const oc=$('order-content'); if(oc) oc.innerHTML='<div class="empty" style="padding:60px">กรุณาซิงก์ข้อมูลก่อน</div>';
     return;
@@ -1188,6 +1189,7 @@ function renderOrderTab(){
   }
   if(!html) html=`<div class="empty" style="padding:80px">ไม่พบสินค้าที่ตรงเงื่อนไข</div>`;
   $('order-content').innerHTML=html;
+  } catch(ex){ console.error('renderOrderTab error:',ex); const oc=$('order-content'); if(oc) oc.innerHTML='<div class="empty" style="padding:60px;color:var(--red)">เกิดข้อผิดพลาด: '+ex.message+'</div>'; }
 }
 
 // ── PANTS CARD ──
@@ -1222,8 +1224,8 @@ function renderPantsCard(g, days){
       const recStockVal=item?.recStock||0;
       const maxVel7x30=item?.stockMaxVel7||0;
       const monthlyAvg=item?(item.stockAvg||Math.ceil((recStockVal+maxVel7x30)/2)):0;
-      const noNeed=stockLoaded&&onHand>=d&&d>0;
-      const hasFile=stockLoaded&&stockMap&&(item?.sku||'').toLowerCase()in stockMap;
+      const noNeed=isStockLoaded()&&onHand>=d&&d>0;
+      const hasFile=isStockLoaded()&&(item?.sku||'').toLowerCase()in stockMap;
       const cardBg=noNeed?'rgba(46,204,138,.07)':'var(--bg)';
       const cardBdr=noNeed?'1px solid rgba(46,204,138,.3)':'none';
       const lotColor=noNeed?'var(--green)':isOv?'var(--orange)':'var(--blue)';
@@ -1843,6 +1845,8 @@ function kpiSort(key, dir, label){
 // ════════════════════════════════════════════════
 let stockMap = {};  // sku → stock_amount (number)
 let stockFileName = '';
+// helper: ถือว่า stock loaded ถ้า stockMap มีข้อมูล
+function isStockLoaded(){ return Object.keys(stockMap).length > 0; }
 
 function loadStockFile(input){
   try {
@@ -1937,7 +1941,7 @@ function extractStockFromRows(rows){
 
 function applyStockMap(map){
   stockMap = map;
-  const vals  = Object.values(map).filter(v=>v!==null);
+  const vals  = map ? Object.values(map).filter(v=>v!==null) : [];
   const total = Object.keys(map).length;
   const out   = vals.filter(v=>v<=0).length;
   const low   = vals.filter(v=>v>0&&v<=5).length;
@@ -1997,7 +2001,7 @@ function getStockAmount(sku){
 let activeFilters = { names: new Set(), colors: new Set(), sizes: new Set() };
 
 function getFilteredData(){
-  const srch = $('srch').value.toLowerCase().trim();
+  const srch = ($('srch')?.value||'').toLowerCase().trim();
   const filterOut = $('stk-filter-out')?.checked;
   return appData.filter(item=>{
     if(srch && !item.name.toLowerCase().includes(srch) && !item.sku.toLowerCase().includes(srch)) return false;
