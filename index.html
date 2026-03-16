@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lamsang Store Analytics</title>
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -698,6 +701,18 @@ canvas{display:block;width:100%!important}
     </div>
     <!-- Active filter chips row -->
     <div id="active-filters" style="display:none;padding:8px 18px;background:var(--bg-dark);border-bottom:1px solid rgba(255,255,255,.06);display:flex;flex-wrap:wrap;gap:6px;align-items:center"></div>
+    <!-- Firebase stock status bar -->
+    <div id="fb-status-bar" style="display:none;align-items:center;gap:10px;padding:8px 24px;background:rgba(77,143,255,.07);border-bottom:1px solid rgba(77,143,255,.15);font-size:12px;flex-wrap:wrap">
+      <span id="fb-status-icon" style="font-size:16px">&#x2705;</span>
+      <div>
+        <div id="fb-status-txt" style="font-weight:700;color:var(--text)"></div>
+        <div id="fb-status-sub" style="font-size:10px;color:var(--muted);margin-top:1px"></div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <button class="btn" onclick="loadStockFromFirebase()" style="font-size:10px;padding:4px 12px;color:var(--blue)">&#x1F504; รีโหลด</button>
+        <button class="btn" onclick="clearFirebaseStock()" style="font-size:10px;padding:4px 12px;color:var(--muted)">&#x2715; ล้าง</button>
+      </div>
+    </div>
     <!-- Stock file status bar -->
     <div id="stock-status-bar" style="display:none;padding:10px 24px;background:rgba(46,204,138,.06);border-bottom:1px solid rgba(46,204,138,.12);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <span style="font-size:11px;font-weight:800;color:var(--green)">📦 สต๊อกจริง:</span>
@@ -1002,6 +1017,28 @@ function groupByParent(items){
     if(!map.has(key)) map.set(key,{parentSku:key,name:item.name,category:item.category,skus:[]});
     map.get(key).skus.push(item);
   });
+
+  // supplement with productDict entries that have no sales (missing sizes)
+  const pd = window._productDict||{};
+  Object.values(pd).forEach(info=>{
+    if(!info.parentSku||!info.sku) return;
+    const key = info.parentSku;
+    if(!map.has(key)) return; // only add to existing groups (don't create new)
+    const group = map.get(key);
+    // check if this sku already in group.skus
+    if(group.skus.find(s=>s.sku===info.sku)) return;
+    // add as zero-sales placeholder
+    group.skus.push({
+      sku: info.sku, name: info.name, parentSku: info.parentSku,
+      category: info.category, variant: info.variant,
+      color: info.color, size: (info.size||'').trim().toUpperCase(),
+      totalSold:0, adjVel:0, rawVel:0, vel7:0, maxVel7:0,
+      recStock:0, stockMaxVel7:0, stockAvg:0,
+      starScore:0, stockoutScore:0, trendPct:0,
+      coverageRate:0, safetyMult:1.2, activeDays:0
+    });
+  });
+
   return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'th'));
 }
 function getAvg(item,days=15){
@@ -1495,7 +1532,7 @@ async function syncData(){
   try{
     showL('กำลังอ่านรายชื่อสินค้าจาก Page 365…');
     const prod=await fetchJSON('สินค้าจาก Page 365');
-    const dict={};
+    const dict={}; window._productDict = dict; // expose for order tab
     // Col A=0 parent_sku | B=1 product_category | C=2 sku | E=4 product_name | F=5 variant_name
     prod.table.rows.forEach(row=>{
       if(!row?.c) return;
@@ -1774,6 +1811,11 @@ async function syncData(){
   // แยก try-catch เพื่อไม่ให้ error ที่นี่ขึ้น alert Google Sheets
   try { enrichAppData(); } catch(ex){ console.warn('enrichAppData:', ex); }
   try { renderOrderTab(); } catch(ex){ console.warn('renderOrderTab:', ex); }
+
+  // Auto-load stock from Firebase (if not already loaded from file)
+  if(!isStockLoaded()){
+    loadStockFromFirebase().catch(e=>console.warn('Firebase auto-load:', e));
+  }
 }
 
 function parseDate(s){
@@ -1850,6 +1892,116 @@ function kpiSort(key, dir, label){
 // ════════════════════════════════════════════════
 let stockMap = {};  // sku → stock_amount (number)
 let stockFileName = '';
+
+// ── FIREBASE CONFIG (Realtime Database) ──────────────────
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyCbs3cRzXkZBkrA8Ymxa4Q8g7uBwRW9uLk",
+  authDomain:        "lamsang-analytics.firebaseapp.com",
+  projectId:         "lamsang-analytics",
+  storageBucket:     "lamsang-analytics.firebasestorage.app",
+  messagingSenderId: "674845061970",
+  appId:             "1:674845061970:web:f53fbf40eb24e34224008b",
+  databaseURL:       "https://lamsang-analytics-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+const RTDB_PATH = 'stock';  // /stock/meta  /stock/skus
+
+let _fbApp = null, _rtdb = null;
+function getRtdb(){
+  if(_rtdb) return _rtdb;
+  try {
+    if(!firebase.apps.length) _fbApp = firebase.initializeApp(FIREBASE_CONFIG);
+    else _fbApp = firebase.app();
+    _rtdb = firebase.database(_fbApp);
+    return _rtdb;
+  } catch(e){ console.error('Firebase RTDB init error:', e); return null; }
+}
+
+// ── SAVE stock to RTDB ──
+async function saveStockToFirebase(map, fileName){
+  const db = getRtdb(); if(!db){ alert('Firebase ไม่พร้อม'); return false; }
+  try {
+    updateFbStatus('saving');
+    // RTDB node size limit ~10MB — safe for ~5000 SKUs with stock values
+    // Write skus + meta atomically
+    const updates = {};
+    updates[RTDB_PATH+'/meta'] = {
+      fileName,
+      totalSkus: Object.keys(map).length,
+      updatedAt: Date.now()
+    };
+    updates[RTDB_PATH+'/skus'] = map;
+    await db.ref().update(updates);
+    console.log('[RTDB] Saved', Object.keys(map).length, 'SKUs');
+    return true;
+  } catch(e){
+    console.error('RTDB save error:', e);
+    alert('บันทึก Firebase ไม่สำเร็จ: '+e.message);
+    return false;
+  }
+}
+
+// ── LOAD stock from RTDB ──
+async function loadStockFromFirebase(){
+  const db = getRtdb(); if(!db){ updateFbStatus('error','Firebase ไม่พร้อม'); return false; }
+  try {
+    updateFbStatus('loading');
+    const snap = await db.ref(RTDB_PATH).get();
+    if(!snap.exists()){ updateFbStatus('empty'); return false; }
+    const data = snap.val();
+    const meta = data.meta || {};
+    const skus = data.skus || {};
+    if(!Object.keys(skus).length){ updateFbStatus('empty'); return false; }
+    stockFileName = meta.fileName || 'Firebase';
+    applyStockMap(skus);
+    const ts = meta.updatedAt ? new Date(meta.updatedAt) : new Date();
+    updateFbStatus('loaded', meta.fileName||'Firebase', Object.keys(skus).length, ts);
+    return true;
+  } catch(e){
+    console.error('RTDB load error:', e);
+    updateFbStatus('error', e.message);
+    return false;
+  }
+}
+
+function updateFbStatus(state, fileName='', count=0, date=null){
+  const bar  = $('fb-status-bar');  if(!bar) return;
+  const icon = $('fb-status-icon');
+  const txt  = $('fb-status-txt');
+  const sub  = $('fb-status-sub');
+  if(state==='saving'){
+    bar.style.display='flex';
+    if(icon) icon.textContent='💾';
+    if(txt)  txt.textContent='กำลังบันทึกไปยัง Firebase…';
+    if(sub)  sub.textContent='';
+  } else if(state==='loading'){
+    bar.style.display='flex';
+    if(icon) icon.textContent='⏳';
+    if(txt)  txt.textContent='กำลังโหลดสต๊อกจาก Firebase…';
+    if(sub)  sub.textContent='';
+  } else if(state==='loaded'){
+    bar.style.display='flex';
+    if(icon) icon.textContent='✅';
+    if(txt)  txt.textContent='สต๊อกจาก Firebase: '+fileName;
+    const d = date ? date.toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    if(sub)  sub.textContent=count.toLocaleString()+' SKUs · อัพเดท '+d;
+    // update header button
+    const lbl=$('stock-btn-label'); if(lbl) lbl.textContent='✓ Firebase';
+    const btn=$('stock-hdr-btn');   if(btn) btn.style.color='var(--green)';
+  } else if(state==='empty'){
+    bar.style.display='flex';
+    if(icon) icon.textContent='📭';
+    if(txt)  txt.textContent='ยังไม่มีสต๊อกใน Firebase';
+    if(sub)  sub.textContent='อัพโหลดไฟล์ xlsx เพื่อบันทึกครั้งแรก';
+  } else if(state==='error'){
+    bar.style.display='flex';
+    if(icon) icon.textContent='⚠️';
+    if(txt)  txt.textContent='โหลด Firebase ไม่สำเร็จ';
+    if(sub)  sub.textContent=fileName;
+  } else {
+    bar.style.display='none';
+  }
+}
+// ──────────────────────────────────────────────────────────
 // helper: ถือว่า stock loaded ถ้า stockMap มีข้อมูล
 function isStockLoaded(){ return Object.keys(stockMap).length > 0; }
 
@@ -1940,6 +2092,7 @@ function extractStockFromRows(rows){
     if(!sku) continue;
     const v = parseFloat(cells[stockCol]);
     map[sku] = isNaN(v) ? null : v;
+    if(sku !== sku.toLowerCase()) map[sku.toLowerCase()] = isNaN(v) ? null : v;
   }
   if(!Object.keys(map).length){ alert('ไม่พบข้อมูลสต๊อกในไฟล์ (0 rows)'); return; }
   applyStockMap(map);
@@ -1947,6 +2100,7 @@ function extractStockFromRows(rows){
 
 function applyStockMap(map){
   stockMap = map;
+  console.log('[Stock] Loaded', Object.keys(map).length, 'SKUs. Sample key:', Object.keys(map)[0]);
   const vals  = map ? Object.values(map).filter(v=>v!==null) : [];
   const total = Object.keys(map).length;
   const out   = vals.filter(v=>v<=0).length;
@@ -1971,7 +2125,28 @@ function applyStockMap(map){
   setCol('stock-upload-btn','var(--green)');
   setCol('stock-hdr-btn',   'var(--green)');
 
+  // Save to Firebase (async, don't block UI)
+  if(stockFileName && stockFileName !== 'Firebase'){
+    saveStockToFirebase(map, stockFileName).then(ok=>{
+      if(ok){
+        const ts = new Date();
+        updateFbStatus('loaded', stockFileName, Object.keys(map).length, ts);
+        console.log('[Firebase] Stock saved successfully');
+      }
+    });
+  }
+
   // Re-render
+  renderAll(getFilteredData());
+  if(typeof renderRiskTab === 'function') renderRiskTab();
+}
+
+function clearFirebaseStock(){
+  stockMap = {}; stockFileName = '';
+  updateFbStatus('none');
+  const cb=$('stk-filter-out'); if(cb) cb.checked=false;
+  const lbl=$('stock-upload-lbl'); if(lbl) lbl.textContent='อัพโหลดสต๊อก';
+  const lbl2=$('stock-btn-label'); if(lbl2) lbl2.textContent='อัพโหลดไฟล์สต๊อก';
   renderAll(getFilteredData());
   if(typeof renderRiskTab === 'function') renderRiskTab();
 }
