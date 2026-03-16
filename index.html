@@ -1018,29 +1018,19 @@ function groupByParent(items){
     map.get(key).skus.push(item);
   });
 
-  // supplement with productDict — เพิ่มทุก SKU ที่ไม่มียอดขาย (missing sizes / no-sales items)
-  // ใช้ _productDict รวมกับ appData ทั้งหมด เพื่อหา parentSku ที่ขายได้บางไซส์
+  // supplement with productDict — เพิ่มทุก SKU จาก Sheet ที่ไม่มียอดขาย
   const pd = window._productDict||{};
-  // สร้าง map ของ parentSku ที่มียอดขาย (จาก appData ทั้งหมด ไม่ใช่แค่ items ที่ filter มา)
-  const allParentSkus = new Set((appData||[]).map(d=>d.parentSku||d.sku));
   Object.values(pd).forEach(info=>{
     if(!info.sku) return;
     const key = info.parentSku||info.sku;
     const ct = classifyCat(info.category||'');
     if(ct === 'skip') return;
-    // เพิ่ม group ใหม่ได้เฉพาะถ้า parentSku นี้มีสินค้าขายในช่วงเวลาที่วิเคราะห์
-    // หรือ map มี key อยู่แล้ว (สินค้าถูก filter มาแล้ว)
+    // สร้าง group ถ้ายังไม่มี
     if(!map.has(key)){
-      if(!allParentSkus.has(key)){
-        // ถ้าไม่มีใน appData เลย ให้สร้าง group ใหม่เสมอ (สินค้าไม่เคยขาย)
-        map.set(key,{parentSku:key, name:info.name||info.sku, category:info.category||'', skus:[]});
-      } else {
-        map.set(key,{parentSku:key, name:info.name||info.sku, category:info.category||'', skus:[]});
-      }
+      map.set(key,{parentSku:key, name:info.name||info.sku, category:info.category||'', skus:[]});
     }
     const group = map.get(key);
-    if(group.skus.find(s=>s.sku===info.sku)) return; // already exists
-    console.log('[Supplement] Adding missing SKU:', info.sku, 'size:', info.size, 'to group:', key);
+    if(group.skus.find(s=>s.sku===info.sku)) return; // มีแล้ว ข้ามไป
     group.skus.push({
       sku: info.sku, name: info.name||'', parentSku: key,
       category: info.category||'', variant: info.variant||'',
@@ -1603,7 +1593,7 @@ async function syncData(){
         }
       }
 
-      dict[sku] = { name: name||'ไม่มีชื่อสินค้า', parentSku, category, variant, color, size };
+      dict[sku] = { sku, name: name||'ไม่มีชื่อสินค้า', parentSku, category, variant, color, size, _noSales:true };
     });
 
     showL('กำลังอ่านข้อมูลคำสั่งซื้อ…');
@@ -1751,6 +1741,7 @@ async function syncData(){
       else if(stockoutScore>=40) safetyMult=1.5;
 
       const info = dict[sku] || { name:'รหัสสินค้าใหม่ (ยังไม่มีในระบบ)', parentSku:'', category:'', variant:'', color:'', size:'' };
+      if(dict[sku]) dict[sku]._noSales = false; // มียอดขายใน Orders แล้ว
 
       // ── กรอง gap ที่ต่ำกว่า threshold (สินค้าตกค้าง) ออกจาก maxGap ──
       const catThresh = getCategoryThreshold(info.category);
