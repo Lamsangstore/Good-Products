@@ -2398,7 +2398,8 @@ async function saveAppDataCache(data){
     const payload = {
       savedAt: Date.now(),
       rowCount: data.length,
-      data: serializeAppData(data)
+      data: serializeAppData(data),
+      productDict: window._productDict||{}  // เก็บ dict ไว้ด้วยเพื่อ order tab
     };
     await db.ref(RTDB_CACHE).set(payload);
     console.log('[Cache] Saved', data.length, 'SKUs to Firebase');
@@ -2419,8 +2420,12 @@ async function loadAppDataCache(){
     const savedAt = payload.savedAt ? new Date(payload.savedAt) : null;
     const ageHours = savedAt ? (Date.now()-payload.savedAt)/(1000*3600) : 999;
     appData = payload.data;
-    // rebuild dailySales as empty (chart will use on-demand fetch)
     appData.forEach(item=>{ if(!item.dailySales) item.dailySales={}; });
+    // restore _productDict from cache
+    if(payload.productDict && Object.keys(payload.productDict).length){
+      window._productDict = payload.productDict;
+      console.log('[Cache] Restored _productDict:', Object.keys(payload.productDict).length, 'items');
+    }
     maxAdjVel = Math.max(...appData.map(d=>d.adjVel),1);
     $('srch').value='';
     syncToggleButtons();
