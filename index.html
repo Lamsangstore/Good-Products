@@ -1425,17 +1425,25 @@ function renderPantsCard(g, days){
   let colorsHtml='', grandPieces=0, grandRolls=0;
   const esc=g.parentSku.replace(/'/g,"\\'");
 
-  // เรียงสีตามจำนวนไซส์ที่หมด (OOS) มากสุดก่อน
+  // เรียงสีตาม: OOS มากก่อน → stock รวมน้อยก่อน → ปกติ
+  const getColorStock = (skuList) => {
+    if(!isStockLoaded()) return {oos:0, low:0, total:Infinity};
+    let oos=0, low=0, total=0;
+    skuList.forEach(item=>{
+      const k=(item.sku||'').toLowerCase();
+      if(!(k in stockMap)) return;
+      const v=Number(stockMap[k])||0;
+      total+=Math.max(0,v);
+      if(v<=0) oos++;
+      else if(v<10) low++;
+    });
+    return {oos, low, total};
+  };
   const colorsSorted = [...byColor.entries()].sort((a,b)=>{
-    const oosA = a[1].filter(item=>{
-      const k=(item.sku||'').toLowerCase();
-      return isStockLoaded()&&k in stockMap&&(stockMap[k]||0)<=0;
-    }).length;
-    const oosB = b[1].filter(item=>{
-      const k=(item.sku||'').toLowerCase();
-      return isStockLoaded()&&k in stockMap&&(stockMap[k]||0)<=0;
-    }).length;
-    return oosB - oosA; // มากสุดก่อน
+    const sa=getColorStock(a[1]), sb=getColorStock(b[1]);
+    if(sb.oos !== sa.oos) return sb.oos - sa.oos; // OOS มากก่อน
+    if(sb.low !== sa.low) return sb.low - sa.low;  // low มากก่อน
+    return sa.total - sb.total;                    // stock รวมน้อยก่อน
   });
   colorsSorted.forEach(([col,skus])=>{
     const r=calcColorOrder(g.parentSku,skus,days);
@@ -1460,16 +1468,17 @@ function renderPantsCard(g, days){
       const maxVel7x30=item?.stockMaxVel7||0;
       const monthlyAvg=item?(item.stockAvg||Math.ceil((recStockVal+maxVel7x30)/2)):0;
       const noNeed=isStockLoaded()&&onHand>=d&&d>0;
-      const isOOS =isStockLoaded()&&onHand<=0;  // สต๊อกหมด
+      const isOOS =isStockLoaded()&&onHand<=0;            // สต๊อกหมด
+      const isLow =isStockLoaded()&&onHand>0&&onHand<10;  // สต๊อกเหลือน้อย 1-9
       const hasFile=isStockLoaded()&&(item?.sku||'').toLowerCase()in stockMap;
-      const cardBg=noNeed?'rgba(46,204,138,.07)':isOOS?'rgba(255,85,114,.07)':'var(--bg)';
-      const cardBdr=noNeed?'1px solid rgba(46,204,138,.3)':isOOS?'1px solid rgba(255,85,114,.3)':'none';
+      const cardBg=noNeed?'rgba(46,204,138,.07)':isOOS?'rgba(255,85,114,.07)':isLow?'rgba(255,170,68,.06)':'var(--bg)';
+      const cardBdr=noNeed?'1px solid rgba(46,204,138,.3)':isOOS?'1px solid rgba(255,85,114,.3)':isLow?'1px solid rgba(255,170,68,.3)':'none';
       const lotColor=noNeed?'var(--green)':isOv?'var(--orange)':'var(--blue)';
       return`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:${cardBg};box-shadow:var(--sx);border-radius:12px;border:${cardBdr}">
         <div style="min-width:44px;text-align:center">
           <div style="font-size:13px;font-weight:800;color:var(--text)">${sz}</div>
           ${item?`<div style="font-size:8px;color:var(--faint);font-family:'IBM Plex Mono',monospace;margin-top:1px;word-break:break-all">${(item.sku||'').slice(-6)}</div>`:''}
-          ${noNeed?'<div style="font-size:8px;color:var(--green);font-weight:800;margin-top:2px">✓ พอ</div>':isOOS?'<div style="font-size:8px;color:var(--red);font-weight:800;margin-top:2px">🔴 หมด</div>':''}
+          ${noNeed?'<div style="font-size:8px;color:var(--green);font-weight:800;margin-top:2px">✓ พอ</div>':isOOS?'<div style="font-size:8px;color:var(--red);font-weight:800;margin-top:2px">🔴 หมด</div>':isLow?`<div style="font-size:8px;color:var(--orange);font-weight:800;margin-top:2px">🟡 เหลือ ${onHand}</div>`:''}
         </div>
         <div style="flex:1;min-width:0">
           ${item&&item._noSales
@@ -1477,7 +1486,7 @@ function renderPantsCard(g, days){
             : `<div style="font-size:10px;color:var(--muted)">ต้องการ <b style="color:var(--blue)">${d}</b> ตัว/${days}วัน</div>`
           }
           ${hasFile?`<div style="font-size:10px;margin-top:2px">
-            มีอยู่ <b style="color:${noNeed?'var(--green)':'var(--orange)'}">${onHand}</b> ตัว
+            มีอยู่ <b style="color:${noNeed?'var(--green)':isOOS?'var(--red)':isLow?'var(--orange)':'var(--text)'}">${onHand}</b> ตัว
             <span style="color:${noNeed?'var(--green)':'var(--orange)'};font-size:9px">
               ${noNeed?' · เกิน +'+(onHand-d):' · ขาด '+net}
             </span></div>`:''}
