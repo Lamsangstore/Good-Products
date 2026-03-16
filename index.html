@@ -298,6 +298,9 @@ td .stock-pill.instock{background:rgba(46,204,138,.13);color:var(--green)}
 .cart-item{padding:12px 14px;background:var(--bg);border-radius:12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px}
 .cart-item-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0;line-height:1;flex-shrink:0}
 .cart-item-remove:hover{color:var(--red)}
+.order-hist-card{background:var(--bg);border-radius:14px;margin-bottom:10px;overflow:hidden;box-shadow:var(--sm)}
+.order-hist-hdr{padding:14px 18px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:background .15s}
+.order-hist-hdr:hover{background:rgba(255,255,255,.02)}
 /* ─── DISCONTINUE TOGGLE ─── */
 .disc-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;border:none;font-family:'Anuphan',sans-serif;transition:all .15s}
 .disc-btn.active{background:rgba(100,116,139,.2);color:var(--muted);border:1px solid rgba(100,116,139,.25)}
@@ -634,6 +637,7 @@ canvas{display:block;width:100%!important}
 <div class="tab-bar">
   <button class="tab-btn active" onclick="switchTab('dashboard',this)">📊 Dashboard & Stock</button>
   <button class="tab-btn" onclick="switchTab('order',this)">🛒 แบบสั่งสินค้า</button>
+  <button class="tab-btn" onclick="switchTab('history',this)" id="tab-btn-history">📜 ประวัติคำสั่งซื้อ <span id="history-badge" style="display:none;background:var(--green);color:#fff;font-size:10px;font-weight:800;border-radius:10px;padding:1px 6px;margin-left:3px"></span></button>
 </div>
 
 <!-- TAB: DASHBOARD -->
@@ -997,6 +1001,27 @@ canvas{display:block;width:100%!important}
       <div class="panel-ttl">📋 สรุปใบสั่งซื้อ</div>
     </div>
     <div id="order-summary-body" style="padding:20px 24px"></div>
+  </div>
+</div>
+
+<!-- TAB: ORDER HISTORY -->
+<div id="tab-history" class="tab-content">
+  <div class="panel">
+    <div class="panel-hdr">
+      <div>
+        <div class="panel-ttl">📜 ประวัติคำสั่งซื้อ</div>
+        <div class="panel-sub">คลิกเพื่อดูรายละเอียด หรือแก้ไข/ลบได้</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="loadOrderHistory()" style="color:var(--blue);gap:5px">
+          <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+          รีเฟรช
+        </button>
+      </div>
+    </div>
+    <div id="history-content" style="padding:16px 24px;min-height:200px">
+      <div class="empty" style="padding:60px">กำลังโหลดประวัติ…</div>
+    </div>
   </div>
 </div>
 
@@ -2082,6 +2107,138 @@ function showOrderSummaryFromCart(order, days){
   clearCart();
 }
 
+// ══════════════════════════════════════════════════════
+// ORDER HISTORY
+// ══════════════════════════════════════════════════════
+let orderHistory = [];  // loaded from Firebase
+
+async function loadOrderHistory(){
+  const db=getRtdb();
+  const area=$('history-content');
+  if(!area) return;
+  if(!db){ area.innerHTML='<div class="empty" style="padding:40px">Firebase ไม่พร้อม</div>'; return; }
+  area.innerHTML='<div class="empty" style="padding:40px">⏳ กำลังโหลด…</div>';
+  try {
+    const snap = await db.ref('order_history').orderByChild('createdAt').get();
+    if(!snap.exists()){ area.innerHTML='<div class="empty" style="padding:40px">ยังไม่มีประวัติคำสั่งซื้อ</div>'; return; }
+    const raw = snap.val();
+    orderHistory = Object.entries(raw)
+      .map(([key,v])=>({key,...v}))
+      .sort((a,b)=>b.createdAt-a.createdAt);  // newest first
+    // update badge
+    const badge=$('history-badge');
+    if(badge){ badge.style.display=''; badge.textContent=orderHistory.length; }
+    renderOrderHistory();
+  } catch(e){
+    console.error('[History] Load failed:', e);
+    area.innerHTML=`<div class="empty" style="padding:40px;color:var(--red)">โหลดไม่สำเร็จ: ${e.message}</div>`;
+  }
+}
+
+function renderOrderHistory(){
+  const area=$('history-content'); if(!area) return;
+  if(!orderHistory.length){ area.innerHTML='<div class="empty" style="padding:40px">ยังไม่มีประวัติ</div>'; return; }
+  const html = orderHistory.map((order,idx)=>{
+    const d = new Date(order.createdAt);
+    const dateStr = d.toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'});
+    const timeStr = d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    const totalPants = order.totalPants||0;
+    const totalBelt  = order.totalBelt||0;
+    const itemCount  = (order.items||[]).length;
+    return`<div class="order-hist-card" id="hist-${order.key}">
+      <div class="order-hist-hdr" onclick="toggleHistDetail('${order.key}')">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span style="font-size:13px;font-weight:800;color:var(--text)">📋 คำสั่งซื้อ #${orderHistory.length-idx}</span>
+            <span style="font-size:11px;color:var(--muted)">${dateStr} ${timeStr}</span>
+            <span style="font-size:10px;background:rgba(77,143,255,.12);color:var(--blue);padding:2px 8px;border-radius:6px">${itemCount} รายการ · ${order.days||15}วัน</span>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:6px">
+            ${totalPants?`<span style="font-size:11px;color:var(--blue)">👖 ${totalPants.toLocaleString()} ตัว</span>`:''}
+            ${totalBelt?`<span style="font-size:11px;color:var(--orange)">🎗️ ${totalBelt.toLocaleString()} ชิ้น</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn" style="font-size:10px;padding:4px 10px;color:var(--blue)" onclick="event.stopPropagation();reloadCartFromHistory('${order.key}')">🔄 สั่งซ้ำ</button>
+          <button class="btn" style="font-size:10px;padding:4px 10px;color:var(--red)" onclick="event.stopPropagation();deleteOrderHistory('${order.key}')">🗑 ลบ</button>
+          <span style="color:var(--muted);font-size:14px">▾</span>
+        </div>
+      </div>
+      <div class="order-hist-body" id="histbody-${order.key}" style="display:none">
+        ${renderHistDetail(order)}
+      </div>
+    </div>`;
+  }).join('');
+  area.innerHTML=html;
+}
+
+function renderHistDetail(order){
+  const grouped={};
+  (order.items||[]).forEach(item=>{
+    if(!grouped[item.parentSku]) grouped[item.parentSku]={name:item.name,type:item.type,items:[]};
+    grouped[item.parentSku].items.push(item);
+  });
+  let html='<div style="padding:12px 16px;background:var(--bg-dark);border-top:1px solid rgba(255,255,255,.06)">';
+  Object.values(grouped).forEach(g=>{
+    html+=`<div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:4px">${g.type==='pants'?'👖':'🎗️'} ${g.name}</div>`;
+    g.items.forEach(item=>{
+      if(item.type==='pants'){
+        html+=`<div style="font-size:11px;color:var(--text);padding:4px 8px;background:rgba(77,143,255,.06);border-radius:6px;margin-bottom:3px">
+          🎨 <b>${item.color}</b> · ${item.rollLabel} · <span style="color:var(--blue)">${item.pieces}ตัว</span>
+          <span style="color:var(--faint);font-size:10px"> [${item.szSummary}]</span>
+        </div>`;
+      } else {
+        html+=`<div style="font-size:11px;color:var(--text);padding:4px 8px;background:rgba(255,170,68,.06);border-radius:6px;margin-bottom:3px">
+          🎨 <b>${item.color}</b> · <span style="color:var(--orange)">${item.qty}ชิ้น</span>
+        </div>`;
+      }
+    });
+    html+='</div>';
+  });
+  html+='</div>';
+  return html;
+}
+
+function toggleHistDetail(key){
+  const body=$(`histbody-${key}`);
+  if(!body) return;
+  body.style.display=body.style.display==='none'?'block':'none';
+  // flip arrow
+  const card=$(`hist-${key}`);
+  const arrow=card?.querySelector('.order-hist-hdr span:last-child');
+  if(arrow) arrow.textContent=body.style.display==='block'?'▴':'▾';
+}
+
+async function deleteOrderHistory(key){
+  if(!confirm('ลบคำสั่งซื้อนี้?')) return;
+  const db=getRtdb(); if(!db) return;
+  try {
+    await db.ref('order_history/'+key).remove();
+    orderHistory=orderHistory.filter(o=>o.key!==key);
+    const badge=$('history-badge');
+    if(badge){ if(orderHistory.length){ badge.textContent=orderHistory.length; } else badge.style.display='none'; }
+    renderOrderHistory();
+  } catch(e){ alert('ลบไม่สำเร็จ: '+e.message); }
+}
+
+function reloadCartFromHistory(key){
+  const order=orderHistory.find(o=>o.key===key);
+  if(!order){ alert('ไม่พบคำสั่งซื้อ'); return; }
+  // Load items back into cart
+  cart={};
+  (order.items||[]).forEach(item=>{
+    const id=cartId(item.parentSku, item.color||'', item.rollIndex??'');
+    cart[id]=item;
+  });
+  updateCartFab();
+  renderCartModal();
+  // Switch to order tab
+  const orderBtn=document.querySelector('.tab-btn[onclick*="switchTab('order'"]');
+  if(orderBtn) switchTab('order',orderBtn);
+  alert(`โหลดคำสั่งซื้อ #${orderHistory.indexOf(order)+1} เข้าตะกร้าแล้ว (${Object.keys(cart).length} รายการ)`);
+}
+
 function generateOrder(){
   if(!appData.length) return;
   const days=getOrderDays();
@@ -2169,6 +2326,7 @@ function switchTab(name, btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
   if(name==='order') setTimeout(()=>{ try{ renderOrderTab(); }catch(e){} }, 50);
+  if(name==='history') setTimeout(()=>{ try{ loadOrderHistory(); }catch(e){} }, 50);
   btn.classList.add('active');
   $('tab-'+name).classList.add('active');
   } catch(e){ console.warn('switchTab:', e); }
