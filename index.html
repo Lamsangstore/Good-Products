@@ -132,15 +132,17 @@ body{font-family:'Anuphan',sans-serif;background:var(--bg);color:var(--text);min
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 thead th{
-  padding:12px 16px;
-  font-size:10px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;
+  padding:8px 10px;
+  font-size:9px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;
   color:var(--muted);background:var(--bg-dark);
   border-bottom:2px solid rgba(255,255,255,.07);
-  white-space:nowrap;position:sticky;top:0;z-index:2
+  white-space:normal;word-break:keep-all;
+  line-height:1.3;text-align:center;
+  position:sticky;top:0;z-index:2
 }
 tbody td{
-  padding:13px 16px;
-  font-size:13px;
+  padding:10px 10px;
+  font-size:12px;
   border-bottom:1px solid rgba(255,255,255,.06);
   vertical-align:middle;
   transition:background .12s
@@ -155,8 +157,33 @@ tbody tr:active td{background:rgba(77,143,255,.13)!important}
 .tr{text-align:right}.tc{text-align:center}
 
 /* First column # */
-tbody td:first-child{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);text-align:center;width:36px;padding-left:10px;padding-right:10px}
-thead th:first-child{width:36px;text-align:center;padding-left:10px;padding-right:10px}
+tbody td:first-child{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);text-align:center;width:28px;padding:6px 6px}
+thead th:first-child{width:28px;text-align:center;padding:6px 6px}
+/* Column width constraints — snug to data */
+th[data-col="sku"]      {min-width:100px;max-width:130px}
+th[data-col="color"]    {min-width:54px;max-width:80px}
+th[data-col="size"]     {min-width:44px;max-width:64px}
+th[data-col="star"]     {min-width:68px;max-width:90px}
+th[data-col="vel"]      {min-width:60px;max-width:80px}
+th[data-col="vel7"]     {min-width:58px;max-width:78px}
+th[data-col="maxvel7"]  {min-width:60px;max-width:84px}
+th[data-col="trend"]    {min-width:50px;max-width:70px}
+th[data-col="gap"]      {min-width:52px;max-width:70px}
+th[data-col="consist"]  {min-width:60px;max-width:80px}
+th[data-col="totalsold"]{min-width:54px;max-width:72px}
+th[data-col="activevel"]{min-width:58px;max-width:78px}
+th[data-col="peakval"]  {min-width:54px;max-width:72px}
+th[data-col="lastsale"] {min-width:60px;max-width:80px}
+th[data-col="peakday"]  {min-width:58px;max-width:78px}
+th[data-col="stock"]    {min-width:90px;max-width:120px}
+th[data-col="stockavg"] {min-width:70px;max-width:96px}
+th[data-col="stockmaxvel7"]{min-width:70px;max-width:96px}
+th[data-col="status"]   {min-width:70px;max-width:96px}
+td[data-col="color"],td[data-col="size"]{text-align:center}
+td[data-col="vel"],td[data-col="vel7"],td[data-col="maxvel7"],
+td[data-col="trend"],td[data-col="gap"],td[data-col="consist"],
+td[data-col="totalsold"],td[data-col="activevel"],td[data-col="peakval"],
+td[data-col="lastsale"],td[data-col="peakday"]{text-align:right}
 
 /* ─── VELOCITY BAR ─── */
 .vrow{display:flex;align-items:center;gap:10px;min-width:130px}
@@ -371,7 +398,7 @@ tbody tr{animation:rf .28s ease both}
 .ctog:active{box-shadow:var(--sp)}
 
 /* ─── SORTABLE HEADERS ─── */
-th.sortable{cursor:pointer;user-select:none;white-space:nowrap;transition:color .12s}
+th.sortable{cursor:pointer;user-select:none;white-space:normal;word-break:keep-all;transition:color .12s}
 th.sortable:hover{color:var(--blue)}
 th.sortable .sort-ico{display:inline-block;margin-left:5px;opacity:.3;font-size:8px;vertical-align:middle}
 th.sortable.asc  .sort-ico::after{content:'▲'}
@@ -1714,6 +1741,8 @@ async function syncData(){
     syncToggleButtons();
     buildFilterOptions();
     renderAll();
+    // enrich appData with computed fields so order tab reads correct recStock/stockAvg/stockMaxVel7
+    enrichAppData();
     renderOrderTab();
 
   }catch(e){
@@ -2000,6 +2029,18 @@ function updateActiveFilerChips(){
     + `<span style="font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;margin-left:4px" onclick="clearAllFilters()">ล้างทั้งหมด</span>`;
 }
 
+function enrichAppData(){
+  // เขียน recStock, stockMaxVel7, stockAvg กลับเข้า appData
+  // เพื่อให้ order tab และส่วนอื่นๆ ที่อ่าน appData โดยตรงได้ค่าถูกต้อง
+  const months = parseInt(($('monthsAhead')||{}).value) || 1;
+  appData = appData.map(item => {
+    const rec          = calcStock(item.adjVel, months, item.safetyMult);
+    const stockMaxVel7 = Math.ceil((item.maxVel7||0)*30);
+    const stockAvg     = Math.ceil((rec + stockMaxVel7) / 2);
+    return {...item, recStock: rec, stockMaxVel7, stockAvg};
+  });
+}
+
 function buildFilterOptions(){
   if(!appData.length) return;
   // build unique sorted lists
@@ -2235,13 +2276,10 @@ function renderAll(data){
               <span class="star-score" style="color:${starColor}">${item.starScore}</span>
               <span class="stars">${stars}</span>
             </div>
-            <div class="star-bar-o"><div class="star-bar-i" style="width:${sPct}%;background:${starGrad}"></div></div>
+
           </div>`)}
-        ${td('vel', `<div class="vrow" style="justify-content:flex-end">
-            <div class="bar-o"><div class="bar-i ${isHigh?'bar-red':'bar-blue'}" style="width:${vPct}%"></div></div>
-            <span class="vnum" style="color:${isHigh?'var(--red)':'var(--blue)'}">${item.adjVel.toFixed(2)}</span>
-          </div>
-          <div style="font-size:10px;color:var(--muted);text-align:right">ชิ้น/วัน</div>`, 'tr')}
+        ${td('vel', `<span class="vnum" style="color:${isHigh?'var(--red)':'var(--blue)'}">` +
+          `${item.adjVel.toFixed(2)}</span><div style="font-size:10px;color:var(--muted)">ชิ้น/วัน</div>`, 'tr')}
         ${td('vel7', `<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--purple)">${item.vel7.toFixed(2)}</span><div style="font-size:10px;color:var(--muted)">ชิ้น/วัน</div>`, 'tr')}
         ${td('maxvel7', `<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--red)">${(item.maxVel7||0).toFixed(2)}</span><div style="font-size:10px;color:var(--muted)">ชิ้น/วัน</div>`, 'tr')}
         ${td('trend',   trendHtml)}
@@ -2273,6 +2311,8 @@ function renderAll(data){
   }
 
   applyColVisibility();
+  // keep appData enriched for order tab
+  enrichAppData();
   // Insight Tab
   renderInsight(sorted, months);
 }
