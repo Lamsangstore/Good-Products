@@ -1798,29 +1798,29 @@ let stockMap = {};  // sku → stock_amount (number)
 let stockFileName = '';
 
 function loadStockFile(input){
-  const file = input.files[0]; if(!file) return;
-  stockFileName = file.name;
-  const ext = file.name.split('.').pop().toLowerCase();
-  const reader = new FileReader();
-
-  if(ext === 'csv'){
-    reader.onload = e => { parseStockCSV(e.target.result); input.value=''; };
-    reader.readAsText(file, 'UTF-8');
-  } else {
-    // xlsx — use SheetJS from CDN (already available) or manual binary parse
-    reader.onload = e => { parseStockXLSX(e.target.result); input.value=''; };
-    reader.readAsArrayBuffer(file);
-  }
+  try {
+    const file = input.files && input.files[0]; if(!file) return;
+    stockFileName = file.name;
+    const ext = file.name.split('.').pop().toLowerCase();
+    const reader = new FileReader();
+    if(ext === 'csv'){
+      reader.onload = e => { try{ parseStockCSV(e.target.result); }catch(er){alert('อ่าน CSV ไม่สำเร็จ: '+er.message);} input.value=''; };
+      reader.readAsText(file, 'UTF-8');
+    } else {
+      reader.onload = e => { try{ parseStockXLSX(e.target.result); }catch(er){alert('อ่าน XLSX ไม่สำเร็จ: '+er.message);} input.value=''; };
+      reader.readAsArrayBuffer(file);
+    }
+  } catch(err){ alert('เปิดไฟล์ไม่สำเร็จ: '+err.message); }
 }
 
 function parseStockCSV(text){
-  const lines = text.split(/\r?\n/).filter(l=>l.trim());
-  if(!lines.length) return;
+  const lines = (text||'').split(/\r?\n/).filter(l=>l.trim());
+  if(!lines.length){ alert('ไฟล์ว่างเปล่า'); return; }
   const sep = lines[0].includes('\t') ? '\t' : ',';
   const headers = lines[0].split(sep).map(h=>h.replace(/^"|"$/g,'').trim().toLowerCase());
   const skuIdx   = headers.indexOf('sku');
   const stockIdx = headers.indexOf('stock_amount');
-  if(skuIdx<0||stockIdx<0){ alert('ไม่พบคอลัมน์ sku หรือ stock_amount'); return; }
+  if(skuIdx<0||stockIdx<0){ alert('ไม่พบคอลัมน์ sku หรือ stock_amount\nพบหัวตาราง: '+headers.join(', ')); return; }
   const map = {};
   for(let i=1;i<lines.length;i++){
     const cols = lines[i].split(sep).map(c=>c.replace(/^"|"$/g,'').trim());
@@ -1832,74 +1832,86 @@ function parseStockCSV(text){
 }
 
 function parseStockXLSX(buf){
-  // Use SheetJS if loaded, otherwise manual xlsx binary parse
-  try {
-    // Try SheetJS (XLSX global)
-    if(typeof XLSX !== 'undefined'){
-      const wb = XLSX.read(buf, {type:'arraybuffer'});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+  const doRead = () => {
+    try {
+      const wb   = XLSX.read(new Uint8Array(buf), {type:'array'});
+      if(!wb || !wb.SheetNames || !wb.SheetNames.length){ alert('ไฟล์ XLSX ไม่มี sheet'); return; }
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      if(!ws){ alert('ไม่สามารถอ่าน sheet แรกได้'); return; }
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      if(!rows || !rows.length){ alert('ไฟล์ไม่มีข้อมูล'); return; }
       extractStockFromRows(rows);
-    } else {
-      // Fallback: load SheetJS dynamically
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-      s.onload = () => {
-        const wb = XLSX.read(buf, {type:'arraybuffer'});
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, {header:1});
-        extractStockFromRows(rows);
-      };
-      s.onerror = () => alert('โหลด XLSX library ไม่สำเร็จ กรุณาใช้ไฟล์ .csv แทน');
-      document.head.appendChild(s);
-    }
-  } catch(err) { alert('อ่านไฟล์ไม่สำเร็จ: '+err.message); }
+    } catch(err){ alert('อ่าน XLSX ไม่สำเร็จ: '+err.message); }
+  };
+  if(typeof XLSX !== 'undefined'){
+    doRead();
+  } else {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload  = doRead;
+    s.onerror = () => alert('โหลด XLSX library ไม่สำเร็จ กรุณาแปลงเป็น .csv แล้วลองใหม่');
+    document.head.appendChild(s);
+  }
 }
 
 function extractStockFromRows(rows){
-  // Find header row (contains 'sku' and 'stock_amount')
-  let headerIdx = -1, skuCol = -1, stockCol = -1;
-  for(let i=0;i<Math.min(rows.length,10);i++){
-    const row = (rows[i]||[]).map(v=>String(v||'').trim().toLowerCase());
-    const si = row.indexOf('sku');
-    const ti = row.indexOf('stock_amount');
+  // scan up to row 10 to find header containing 'sku' AND 'stock_amount'
+  let headerIdx=-1, skuCol=-1, stockCol=-1;
+  for(let i=0; i<Math.min(rows.length,10); i++){
+    const row = rows[i];
+    if(!row) continue;
+    const cells = Array.isArray(row) ? row : Object.values(row);
+    const norm  = cells.map(v => String(v==null?'':v).trim().toLowerCase());
+    const si = norm.indexOf('sku');
+    const ti = norm.indexOf('stock_amount');
     if(si>=0 && ti>=0){ headerIdx=i; skuCol=si; stockCol=ti; break; }
   }
-  if(headerIdx<0){ alert('ไม่พบคอลัมน์ sku หรือ stock_amount ในไฟล์'); return; }
+  if(headerIdx<0){
+    // show what we found in first 3 rows to help debug
+    const sample = rows.slice(0,3).map(r=>(Array.isArray(r)?r:Object.values(r||{})).join(' | ')).join('\n');
+    alert('ไม่พบคอลัมน์ sku หรือ stock_amount\n\n3 แถวแรกในไฟล์:\n'+sample);
+    return;
+  }
   const map={};
-  for(let i=headerIdx+1;i<rows.length;i++){
-    const row=rows[i]||[];
-    const sku=String(row[skuCol]||'').trim(); if(!sku) continue;
-    const v=parseFloat(row[stockCol]);
+  for(let i=headerIdx+1; i<rows.length; i++){
+    const row = rows[i]; if(!row) continue;
+    const cells = Array.isArray(row) ? row : Object.values(row);
+    const sku   = String(cells[skuCol]==null?'':cells[skuCol]).trim();
+    if(!sku) continue;
+    const v = parseFloat(cells[stockCol]);
     map[sku] = isNaN(v) ? null : v;
   }
+  if(!Object.keys(map).length){ alert('ไม่พบข้อมูลสต๊อกในไฟล์ (0 rows)'); return; }
   applyStockMap(map);
 }
 
 function applyStockMap(map){
   stockMap = map;
-  const total  = Object.keys(map).length;
-  const out    = Object.values(map).filter(v=>v!==null&&v<=0).length;
-  const low    = Object.values(map).filter(v=>v!==null&&v>0&&v<=5).length;
-  const ok     = Object.values(map).filter(v=>v!==null&&v>5).length;
+  const vals  = Object.values(map).filter(v=>v!==null);
+  const total = Object.keys(map).length;
+  const out   = vals.filter(v=>v<=0).length;
+  const low   = vals.filter(v=>v>0&&v<=5).length;
+  const ok    = vals.filter(v=>v>5).length;
 
-  // Update status bar
-  const bar = $('stock-status-bar');
-  bar.style.display = 'flex';
-  $('stk-loaded-name').textContent = stockFileName;
-  $('stk-stat-total').textContent  = `${total.toLocaleString()} SKUs`;
-  $('stk-stat-out').textContent    = `🔴 หมด ${out.toLocaleString()}`;
-  $('stk-stat-low').textContent    = `🟡 เหลือน้อย ${low.toLocaleString()}`;
-  $('stk-stat-ok').textContent     = `🟢 มีสต๊อก ${ok.toLocaleString()}`;
+  // Update status bar (safe)
+  const setText = (id,txt) => { const el=$( id); if(el) el.textContent=txt; };
+  const setDisp = (id,d)   => { const el=$(id);  if(el) el.style.display=d; };
+  const setCol  = (id,c)   => { const el=$(id);  if(el) el.style.color=c; };
+  setDisp('stock-status-bar','flex');
+  setText('stk-loaded-name', stockFileName);
+  setText('stk-stat-total',  `${total.toLocaleString()} SKUs`);
+  setText('stk-stat-out',    `🔴 หมด ${out.toLocaleString()}`);
+  setText('stk-stat-low',    `🟡 เหลือน้อย ${low.toLocaleString()}`);
+  setText('stk-stat-ok',     `🟢 มีสต๊อก ${ok.toLocaleString()}`);
 
-  // Update upload button labels (both header btn and panel btn)
+  // Update button labels
   const shortName = stockFileName.replace(/^.+[/\\]/,'');
-  if($('stock-upload-lbl')) $('stock-upload-lbl').textContent = '✓ ' + shortName;
-  if($('stock-btn-label'))  $('stock-btn-label').textContent  = '✓ ' + shortName;
-  if($('stock-upload-btn')) $('stock-upload-btn').style.color = 'var(--green)';
-  if($('stock-hdr-btn'))    $('stock-hdr-btn').style.color    = 'var(--green)';
+  setText('stock-upload-lbl', '✓ ' + shortName);
+  setText('stock-btn-label',  '✓ ' + shortName);
+  setCol('stock-upload-btn','var(--green)');
+  setCol('stock-hdr-btn',   'var(--green)');
 
-  // Re-render all tables
+  // Re-render
   renderAll(getFilteredData());
   if(typeof renderRiskTab === 'function') renderRiskTab();
 }
@@ -2177,10 +2189,22 @@ function renderAll(data){
       // cv pill
       const cvHtml=`<span class="cv-pill" style="color:${item.consistColor}">${item.consistLabel}</span>`;
 
-      // status badge
-      let badge=`<span class="badge b-ok"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>ปกติ</span>`;
-      if(isHigh) badge=`<span class="badge b-danger"><svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>เสี่ยงสูง</span>`;
-      else if(isMed) badge=`<span class="badge b-warn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>ติดตาม</span>`;
+      // status badge — ถ้ามีไฟล์สต๊อก ให้ใช้สถานะจากไฟล์เป็นหลัก
+      const _stkSt = getStockStatus(item.sku);
+      const _stkAm = getStockAmount(item.sku);
+      let badge;
+      if(_stkSt === 'out'){
+        badge=`<span class="badge b-danger">🔴 หมดสต๊อก${_stkAm!==null?' ('+_stkAm+')':''}</span>`;
+      } else if(_stkSt === 'low'){
+        badge=`<span class="badge b-warn">🟡 เหลือน้อย (${_stkAm})</span>`;
+      } else if(_stkSt === 'ok'){
+        badge=`<span class="badge b-ok">🟢 มี (${_stkAm})</span>`;
+      } else {
+        // ไม่มีไฟล์สต๊อก → ใช้ logic เดิม (stockout score)
+        badge=`<span class="badge b-ok"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>ปกติ</span>`;
+        if(isHigh) badge=`<span class="badge b-danger"><svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>เสี่ยงสูง</span>`;
+        else if(isMed) badge=`<span class="badge b-warn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>ติดตาม</span>`;
+      }
 
       // last sale / peak colours
       const lastColor=item.daysLastSale>=14?'var(--red)':item.daysLastSale>=7?'var(--orange)':'var(--green)';
@@ -2196,19 +2220,11 @@ function renderAll(data){
       }
 
       _colIdx = 0;
-      // stock status
-      const stkStatus = getStockStatus(item.sku);
-      const stkAmt    = getStockAmount(item.sku);
-      const stkBadge  = stkStatus==='out'  ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,85,114,.18);color:var(--red);font-size:9px;font-weight:800;border-radius:4px;padding:1px 6px;margin-left:4px">🔴 หมดสต๊อก${stkAmt!==null?' ('+stkAmt+')':''}</span>`
-                      : stkStatus==='low'  ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,170,68,.18);color:var(--orange);font-size:9px;font-weight:800;border-radius:4px;padding:1px 6px;margin-left:4px">🟡 เหลือน้อย (${stkAmt})</span>`
-                      : stkStatus==='ok'   ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(46,204,138,.12);color:var(--green);font-size:9px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:4px">🟢 ${stkAmt}</span>`
-                      : stkStatus==='unknown' ? `<span style="font-size:9px;color:var(--faint);margin-left:4px">—</span>`
-                      : '';
-      const rowBg = stkStatus==='out' ? 'background:rgba(255,85,114,.06)!important;' : stkStatus==='low' ? 'background:rgba(255,170,68,.05)!important;' : '';
+      const rowBg = _stkSt==='out' ? 'background:rgba(255,85,114,.06)!important;' : _stkSt==='low' ? 'background:rgba(255,170,68,.05)!important;' : '';
       return`<tr style="animation-delay:${i*.025}s;cursor:pointer;${rowBg}" onclick="openChart('${item.sku}')" title="คลิกดูกราฟ Timeline">
         <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)">${i+1}</span></td>
         <td>
-          <div class="pname">${item.name} <span style="font-size:10px;color:var(--blue)">📊</span>${stkBadge}</div>
+          <div class="pname">${item.name} <span style="font-size:10px;color:var(--blue)">📊</span></div>
           ${item.category?`<div style="margin-top:2px"><span style="font-size:10px;background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:1px 6px;color:var(--mid);font-weight:600">${item.category}</span></div>`:''}
         </td>
         ${td('sku',  `<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">${item.sku}${item.parentSku&&item.parentSku!==item.sku?'<br><span style="font-size:10px;color:var(--faint)">'+item.parentSku+'</span>':''}</span>`)}
@@ -2240,19 +2256,16 @@ function renderAll(data){
             <span class="stk-main">${item.recStock.toLocaleString()}</span>
             <span style="font-size:10px;color:var(--mid)"> ชิ้น/${months}เดือน</span>
             <div class="stk-sub">≈${Math.ceil(item.adjVel*30*item.safetyMult).toLocaleString()}/เดือน · ×${item.safetyMult}</div>
-            <div class="stk-mini"><div class="stk-fill" style="width:${stPct}%"></div></div>
           </div>`)}
         ${td('stockavg', `<div class="stk-avg-box">
             <span class="stk-avg-main">${item.stockAvg.toLocaleString()}</span>
             <span style="font-size:10px;color:var(--green);opacity:.8"> ชิ้น/เดือน</span>
             <div class="stk-avg-sub">ค่าเฉลี่ย (สต๊อก + MaxVel7) ÷ 2</div>
-            <div class="stk-avg-mini"><div class="stk-avg-fill" style="width:${Math.min((item.stockAvg/(maxStock||1))*100,100)}%"></div></div>
           </div>`)}
         ${td('stockmaxvel7', `<div class="stk-box">
             <span class="stk-main" style="color:var(--red)">${item.stockMaxVel7.toLocaleString()}</span>
             <span style="font-size:10px;color:var(--mid)"> ชิ้น/เดือน</span>
             <div class="stk-sub">จาก MaxVel7 × 30</div>
-            <div class="stk-mini"><div class="stk-fill" style="width:${Math.min((item.stockMaxVel7/(maxStock||1))*100,100)}%;background:var(--red)"></div></div>
           </div>`)}
         ${td('status',  badge, 'tc')}
       </tr>`;
@@ -2417,13 +2430,13 @@ function renderRiskTab(sorted, months){
         <span class="stk-main">${rec.toLocaleString()}</span>
         <span style="font-size:10px;color:var(--mid)"> ชิ้น/${months}เดือน</span>
         <div class="stk-sub">×${item.safetyMult} safety</div>
-        <div class="stk-mini"><div class="stk-fill" style="width:${stPct}%"></div></div>
+
       </div>`)}
       ${rtd('rstockmaxvel7',`<div class="stk-box">
         <span class="stk-main" style="color:var(--red)">${item.stockMaxVel7.toLocaleString()}</span>
         <span style="font-size:10px;color:var(--mid)"> ชิ้น/เดือน</span>
         <div class="stk-sub">MaxVel7 × 30</div>
-        <div class="stk-mini"><div class="stk-fill" style="width:${Math.min((item.stockMaxVel7/(maxStock||1))*100,100)}%;background:var(--red)"></div></div>
+
       </div>`)}
     </tr>`;
   }).join('');
