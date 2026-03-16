@@ -78,8 +78,10 @@ body{font-family:'Anuphan',sans-serif;background:var(--bg);color:var(--text);min
 .tab-content{display:none}.tab-content.active{display:block}
 
 /* ─── KPI GRID ─── */
-.kpi-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
-.kpi{background:var(--bg);border-radius:16px;box-shadow:var(--sm);padding:14px 18px 12px;position:relative;overflow:hidden;transition:box-shadow .22s,transform .18s;cursor:default;flex:1;min-width:150px;max-width:220px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:auto auto;gap:10px;margin-bottom:16px}
+.kpi{background:var(--bg);border-radius:18px;box-shadow:var(--sm);padding:18px 20px 16px;position:relative;overflow:hidden;transition:box-shadow .22s,transform .18s;cursor:default}
+/* Bento: สินค้าทั้งหมด + True Star = แถวบน 2 กล่อง | Velocity, Trend, Stock = แถวล่าง */
+.kpi.bento-wide{grid-column:span 2}
 .kpi:hover{box-shadow:8px 8px 20px #0a0e14,-6px -6px 16px #252c36;transform:translateY(-2px)}
 .kpi-clickable{cursor:pointer}
 .kpi-clickable::before{content:"↕";position:absolute;top:12px;right:14px;font-size:10px;opacity:0;color:var(--muted);transition:opacity .2s;font-style:normal;line-height:1}
@@ -103,7 +105,7 @@ body{font-family:'Anuphan',sans-serif;background:var(--bg);color:var(--text);min
 .kpi.c-orange .kpi-ico svg{stroke:var(--orange)}
 .kpi.c-gold   .kpi-ico svg{stroke:var(--gold)}
 .kpi-lbl{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.kpi-val{font-size:24px;font-weight:700;letter-spacing:-2px;line-height:1;font-feature-settings:"tnum"}
+.kpi-val{font-size:28px;font-weight:700;letter-spacing:-2px;line-height:1;font-feature-settings:"tnum"}
 .kpi-unit{font-size:13px;font-weight:500;letter-spacing:0;color:var(--muted);margin-left:4px}
 .kpi.c-blue   .kpi-val{color:var(--blue)}
 .kpi.c-red    .kpi-val{color:var(--red)}
@@ -114,7 +116,7 @@ body{font-family:'Anuphan',sans-serif;background:var(--bg);color:var(--text);min
 .kpi-note{font-size:10px;color:var(--muted);margin-top:7px;line-height:1.4}
 
 /* ─── FORMULA STRIP ─── */
-.f-strip{background:var(--bg);border-radius:10px;box-shadow:var(--si);padding:7px 16px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.f-strip{background:var(--bg-dark);border-radius:10px;padding:7px 14px;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1px solid rgba(255,255,255,.05)}
 .f-lbl{font-size:11px;color:var(--mid);font-weight:700;letter-spacing:.2px}
 .f-chip{background:var(--bg);box-shadow:var(--sx);border-radius:8px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--blue);font-weight:500;letter-spacing:.3px}
 .f-chip.red{color:var(--red)}.f-chip.green{color:var(--green)}.f-chip.purple{color:var(--purple)}.f-chip.orange{color:var(--orange)}
@@ -122,7 +124,7 @@ body{font-family:'Anuphan',sans-serif;background:var(--bg);color:var(--text);min
 
 /* ─── PANEL ─── */
 .panel{background:var(--bg);border-radius:24px;box-shadow:var(--so);overflow:hidden;margin-bottom:28px}
-.panel-hdr{padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;background:var(--bg-dark);border-bottom:1px solid rgba(255,255,255,.06)}
+.panel-hdr{padding:12px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;background:var(--bg-dark);border-bottom:1px solid rgba(255,255,255,.06)}
 .panel-ttl{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.2px}
 .panel-sub{font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:.2px}
 .srch-wrap{position:relative}
@@ -556,43 +558,58 @@ canvas{display:block;width:100%!important}
 </div>
 
 
-<!-- KPI -->
+<!-- KPI Bento Grid -->
 <div class="kpi-grid">
-  <div class="kpi c-blue kpi-clickable" onclick="kpiSort('name','asc','สินค้าทั้งหมด (เรียงชื่อ)')" title="คลิกเพื่อเรียงชื่อสินค้า">
+
+  <!-- Row 1: สินค้าทั้งหมด (wide) + True Star (wide) -->
+  <div class="kpi c-blue kpi-clickable bento-wide" onclick="kpiSort('name','asc','สินค้าทั้งหมด')" title="คลิกเรียงชื่อ" style="display:flex;align-items:center;gap:18px">
     <div class="kpi-accent"></div>
-    <div class="kpi-ico"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
-    <div class="kpi-lbl">สินค้าทั้งหมด</div>
-    <div class="kpi-val"><span id="k-total">—</span><span class="kpi-unit">SKUs</span></div>
-    <div class="kpi-note">ที่วิเคราะห์ได้จากข้อมูล</div>
+    <div class="kpi-ico" style="margin-bottom:0;flex-shrink:0"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+    <div>
+      <div class="kpi-lbl">สินค้าทั้งหมด</div>
+      <div class="kpi-val" style="margin:2px 0"><span id="k-total">—</span><span class="kpi-unit">SKUs</span></div>
+      <div class="kpi-note">วิเคราะห์ได้จากข้อมูล</div>
+    </div>
   </div>
-  <div class="kpi c-gold kpi-clickable" onclick="kpiSort('starScore','desc','True Star Score (สูงสุด)')" title="คลิกเพื่อเรียง True Star Score">
+
+  <div class="kpi c-gold kpi-clickable bento-wide" onclick="kpiSort('starScore','desc','True Star Score')" title="คลิกเรียง True Star" style="display:flex;align-items:center;gap:18px">
     <div class="kpi-accent"></div>
-    <div class="kpi-ico"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-    <div class="kpi-lbl">True Star สูงสุด</div>
-    <div class="kpi-val"><span id="k-starscore">—</span><span class="kpi-unit">/ 100</span></div>
-    <div class="kpi-note" id="k-starname">สินค้าขายดีที่สุดแบบรวม</div>
+    <div class="kpi-ico" style="margin-bottom:0;flex-shrink:0"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+    <div style="flex:1;min-width:0">
+      <div class="kpi-lbl">True Star สูงสุด</div>
+      <div class="kpi-val" style="margin:2px 0"><span id="k-starscore">—</span><span class="kpi-unit">/ 100</span></div>
+      <div class="kpi-note" id="k-starname" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+    </div>
   </div>
-  </div>
-  <div class="kpi c-green kpi-clickable" onclick="kpiSort('adjVel','desc','Adj. Velocity (สูงสุด)')" title="คลิกเพื่อเรียง Velocity">
+
+  <!-- Row 2: Velocity + Trend + Stock (3 equal cols) -->
+  <div class="kpi c-green kpi-clickable" style="grid-column:span 1" onclick="kpiSort('adjVel','desc','Adj. Velocity')" title="คลิกเรียง Velocity">
     <div class="kpi-accent"></div>
-    <div class="kpi-lbl">Adj. Velocity สูงสุด</div>
-    <div class="kpi-val"><span id="k-vel">—</span><span class="kpi-unit">ชิ้น/วัน</span></div>
-    <div class="kpi-note">ปรับแก้ Stockout แล้ว</div>
+    <div class="kpi-lbl">Adj. Velocity</div>
+    <div class="kpi-val" style="margin:4px 0 2px"><span id="k-vel">—</span><span class="kpi-unit">ชิ้น/วัน</span></div>
+    <div class="kpi-note">สูงสุดในระบบ</div>
   </div>
-  <div class="kpi c-orange kpi-clickable" onclick="kpiSort('trendPct','desc','Trend (มาแรงสูงสุด)')" title="คลิกเพื่อเรียง Trend">
+
+  <div class="kpi c-orange kpi-clickable" style="grid-column:span 1" onclick="kpiSort('trendPct','desc','Trend')" title="คลิกเรียง Trend">
     <div class="kpi-accent"></div>
-    <div class="kpi-ico"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+    <div class="kpi-ico" style="width:24px;height:24px;margin-bottom:8px"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
     <div class="kpi-lbl">กำลังมาแรง 🚀</div>
-    <div class="kpi-val"><span id="k-rising">—</span><span class="kpi-unit">SKUs</span></div>
-    <div class="kpi-note">Trend ขาขึ้น &gt;30%</div>
+    <div class="kpi-val" style="margin:4px 0 2px"><span id="k-rising">—</span><span class="kpi-unit">SKUs</span></div>
+    <div class="kpi-note">Trend &gt;30%</div>
   </div>
-  <div class="kpi c-purple kpi-clickable" onclick="kpiSort('recStock','desc','สต๊อกแนะนำ (มากสุด)')" title="คลิกเพื่อเรียงสต๊อกที่แนะนำ">
+
+  <div class="kpi c-purple kpi-clickable" style="grid-column:span 2" onclick="kpiSort('recStock','desc','สต๊อกแนะนำ')" title="คลิกเรียงสต๊อก" >
     <div class="kpi-accent"></div>
-    <div class="kpi-ico"><svg viewBox="0 0 24 24"><path d="M5 8h14M5 8a2 2 0 1 0 0-4h14a2 2 0 1 0 0 4M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/></svg></div>
-    <div class="kpi-lbl">สต๊อกรวมที่แนะนำ</div>
-    <div class="kpi-val"><span id="k-totalstock">—</span><span class="kpi-unit">ชิ้น</span></div>
-    <div class="kpi-note" id="k-stocknote">สำหรับ 3 เดือนข้างหน้า</div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="kpi-ico" style="margin-bottom:0;flex-shrink:0"><svg viewBox="0 0 24 24"><path d="M5 8h14M5 8a2 2 0 1 0 0-4h14a2 2 0 1 0 0 4M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/></svg></div>
+      <div>
+        <div class="kpi-lbl">สต๊อกรวมที่แนะนำ</div>
+        <div class="kpi-val" style="margin:4px 0 2px"><span id="k-totalstock">—</span><span class="kpi-unit">ชิ้น</span></div>
+        <div class="kpi-note" id="k-stocknote">สำหรับ 1 เดือนข้างหน้า</div>
+      </div>
+    </div>
   </div>
+
 </div>
 
 <!-- TABS -->
@@ -604,11 +621,15 @@ canvas{display:block;width:100%!important}
 <!-- TAB: DASHBOARD -->
 <div id="tab-dashboard" class="tab-content active">
 
-  <!-- Formula Strip -->
-  <div class="f-strip">
-    <span class="f-lbl">📐 Adj.Velocity</span>
+  <!-- Formula Strip (collapsible) -->
+  <div class="f-strip" id="f-strip-bar" style="cursor:pointer" onclick="this.querySelector('.f-body').style.display=this.querySelector('.f-body').style.display==='none'?'flex':'none'">
+    <span class="f-lbl" style="color:var(--muted);font-size:10px">📐 สูตรคำนวณ</span>
+    <span style="font-size:10px;color:var(--faint);margin-left:4px">▼</span>
+    <div class="f-body" style="display:none;flex-wrap:wrap;gap:10px;align-items:center;width:100%;margin-top:8px">
+    <span class="f-lbl">Adj.Velocity</span>
     <span class="f-chip">Raw Vel × Coverage Rate</span>
     <span class="f-chip red">&gt;60 → ×2.0</span>
+    </div><!-- end f-body -->
   </div>
 
   <!-- Main Table -->
