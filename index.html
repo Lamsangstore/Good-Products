@@ -2080,9 +2080,7 @@ function showOrderSummaryFromCart(order, days){
         colorMap[item.color].rolls.push(`${item.rollLabel}[${item.szSummary}]`);
         colorMap[item.color].pieces+=item.pieces;
       });
-      const detail=Object.entries(colorMap).map(([col,d])=>`🎨 ${col} · ${d.rolls.length}ม้วน · ${d.pieces}ตัว
-   ${d.rolls.join(' ')}`).join('
-');
+      const detail=Object.entries(colorMap).map(([col,d])=>`🎨 ${col} · ${d.rolls.length}ม้วน · ${d.pieces}ตัว\n   ${d.rolls.join(' ')}`).join('\n');
       const totalP=g.items.reduce((s,i)=>s+i.pieces,0);
       html+=`<div class="order-sum-row"><div><div class="order-sum-name">${g.name}</div><div class="order-sum-detail" style="white-space:pre-wrap;font-size:10px">${detail}</div></div><div class="order-sum-qty">${totalP} ตัว</div></div>`;
     });
@@ -2234,8 +2232,14 @@ function reloadCartFromHistory(key){
   updateCartFab();
   renderCartModal();
   // Switch to order tab
-  const orderBtn=document.querySelector('.tab-btn[onclick*="switchTab('order'"]');
-  if(orderBtn) switchTab('order',orderBtn);
+  // Switch to order tab directly
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  const orderTabContent = document.getElementById('tab-order');
+  if(orderTabContent) orderTabContent.classList.add('active');
+  const allTabBtns = document.querySelectorAll('.tab-btn');
+  allTabBtns.forEach(b=>{ if(b.textContent.includes('แบบสั่งสินค้า')) b.classList.add('active'); });
+  try{ renderOrderTab(); }catch(e){}
   alert(`โหลดคำสั่งซื้อ #${orderHistory.indexOf(order)+1} เข้าตะกร้าแล้ว (${Object.keys(cart).length} รายการ)`);
 }
 
