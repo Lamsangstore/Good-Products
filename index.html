@@ -1005,29 +1005,44 @@ function saveVisibleCols(){
 }
 let visibleCols = loadVisibleCols();
 
-window.onload = async () => {
-  let cacheLoaded = false;
-  try {
-    // Try Firebase cache with 5s timeout
-    const cachePromise = loadAppDataCache();
-    const timeout = new Promise(resolve => setTimeout(()=>resolve(false), 5000));
-    cacheLoaded = await Promise.race([cachePromise, timeout]);
-  } catch(e){
-    console.warn('[Cache] Load error:', e);
-    cacheLoaded = false;
-  }
+window.onload = () => {
+  // ลอง load cache จาก Firebase ก่อน ถ้าไม่ได้ใน 3 วินาที → sync จาก Sheets ตามปกติ
+  let syncStarted = false;
+  const fallback = setTimeout(()=>{
+    if(!syncStarted){ syncStarted=true; syncData(); }
+  }, 3000);
 
-  if(cacheLoaded){
-    // Cache loaded — apply configs + stock in background
-    try { loadAllConfigs().then(()=>{
-      try{ renderAll(getFilteredData()); }catch(e){}
-      try{ renderOrderTab(); }catch(e){}
-    }); } catch(e){}
-    if(!isStockLoaded()) loadStockFromFirebase().catch(()=>{});
-  } else {
-    // No cache or timeout — full sync from Sheets
-    syncData();
-  }
+  // รอให้ Firebase SDK พร้อมก่อน (SDK เป็น async script)
+  const tryCache = async () => {
+    try {
+      if(typeof firebase==='undefined'||!firebase.apps){ throw new Error('Firebase not ready'); }
+      const loaded = await Promise.race([
+        loadAppDataCache(),
+        new Promise(r=>setTimeout(()=>r(false),2500))
+      ]);
+      if(loaded){
+        clearTimeout(fallback);
+        if(!syncStarted){
+          syncStarted=true;
+          loadAllConfigs().then(()=>{
+            try{ renderAll(getFilteredData()); }catch(e){}
+            try{ renderOrderTab(); }catch(e){}
+          }).catch(()=>{});
+          if(!isStockLoaded()) loadStockFromFirebase().catch(()=>{});
+        }
+      } else {
+        clearTimeout(fallback);
+        if(!syncStarted){ syncStarted=true; syncData(); }
+      }
+    } catch(e){
+      console.warn('[Cache onload]', e.message);
+      clearTimeout(fallback);
+      if(!syncStarted){ syncStarted=true; syncData(); }
+    }
+  };
+
+  // ให้ Firebase SDK โหลดก่อน 500ms แล้วค่อย try cache
+  setTimeout(tryCache, 500);
 };
 
 const $= id => document.getElementById(id);
