@@ -280,6 +280,24 @@ td .stock-pill.instock{background:rgba(46,204,138,.13);color:var(--green)}
 /* stock file info bar */
 #stock-file-bar{display:none;align-items:center;gap:10px;padding:8px 20px;background:rgba(46,204,138,.08);border-bottom:1px solid rgba(46,204,138,.15);font-size:11px;color:var(--muted)}
 #stock-file-bar b{color:var(--green)}
+/* ─── CART / ORDER SELECTION ─── */
+.cart-fab{position:fixed;bottom:28px;right:28px;z-index:500;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.cart-btn{display:flex;align-items:center;gap:10px;padding:14px 22px;background:var(--blue);color:#fff;border:none;border-radius:20px;font-size:14px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(77,143,255,.4);transition:all .2s}
+.cart-btn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(77,143,255,.5)}
+.cart-badge{background:var(--red);color:#fff;font-size:11px;font-weight:800;border-radius:10px;padding:1px 7px;margin-left:4px}
+.cart-select-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;font-size:10px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;border:1.5px solid rgba(77,143,255,.3);background:rgba(77,143,255,.08);color:var(--blue);transition:all .15s}
+.cart-select-btn.selected{background:rgba(77,143,255,.25);border-color:var(--blue);color:#fff}
+.cart-select-btn:hover{background:rgba(77,143,255,.2)}
+/* Cart Modal */
+.cart-modal{position:fixed;inset:0;z-index:600;display:flex;align-items:flex-end;justify-content:flex-end}
+.cart-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+.cart-modal-panel{position:relative;width:min(520px,100vw);height:100vh;background:var(--bg-dark);display:flex;flex-direction:column;box-shadow:-8px 0 40px rgba(0,0,0,.4);overflow:hidden}
+.cart-modal-hdr{padding:20px 24px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between}
+.cart-modal-body{flex:1;overflow-y:auto;padding:16px 24px}
+.cart-modal-footer{padding:16px 24px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:10px}
+.cart-item{padding:12px 14px;background:var(--bg);border-radius:12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px}
+.cart-item-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0;line-height:1;flex-shrink:0}
+.cart-item-remove:hover{color:var(--red)}
 /* ─── DISCONTINUE TOGGLE ─── */
 .disc-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;border:none;font-family:'Anuphan',sans-serif;transition:all .15s}
 .disc-btn.active{background:rgba(100,116,139,.2);color:var(--muted);border:1px solid rgba(100,116,139,.25)}
@@ -984,6 +1002,39 @@ canvas{display:block;width:100%!important}
 
 </div><!-- /page -->
 
+<!-- CART FAB -->
+<div class="cart-fab" id="cart-fab" style="display:none">
+  <button class="cart-btn" onclick="toggleCartModal()">
+    🛒 ตะกร้าสั่งซื้อ
+    <span class="cart-badge" id="cart-count">0</span>
+  </button>
+</div>
+
+<!-- CART MODAL -->
+<div class="cart-modal" id="cart-modal" style="display:none">
+  <div class="cart-modal-backdrop" onclick="toggleCartModal()"></div>
+  <div class="cart-modal-panel">
+    <div class="cart-modal-hdr">
+      <div>
+        <div style="font-size:16px;font-weight:800;color:var(--text)">🛒 ตะกร้าสั่งซื้อ</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px" id="cart-modal-count">0 รายการ</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="clearCart()" style="color:var(--red);font-size:11px">🗑 ล้างทั้งหมด</button>
+        <button class="btn" onclick="toggleCartModal()" style="color:var(--muted)">✕</button>
+      </div>
+    </div>
+    <div class="cart-modal-body" id="cart-modal-body">
+      <div class="empty" style="padding:40px">ยังไม่มีรายการ</div>
+    </div>
+    <div class="cart-modal-footer">
+      <button class="btn" onclick="submitCartOrder()" style="flex:1;padding:14px;background:var(--blue);color:#fff;border-radius:14px;font-size:14px;font-weight:700;justify-content:center">
+        ✅ สร้างใบสั่งซื้อ
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
 let _configCache = {};  // early init — full definition comes later
 // ── STOCK FILE (xlsx upload) — see loadStockFile / applyStockMap below ──
@@ -1632,11 +1683,18 @@ function renderPantsCard(g, days){
         </div>`;
       }).join('');
       const hasExtra=Object.keys(roll.extraCounts).length>0;
+      const rollInCart = isInCart(g.parentSku, col, ri);
+      const escCol2 = col.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      const rollPieces = roll.totalLots * piecesPerLot;
       return`<div class="lot-vis-roll" style="min-width:140px;flex:1">
-        <div class="lot-vis-roll-hdr">
+        <div class="lot-vis-roll-hdr" style="flex-wrap:wrap;gap:4px">
           <span>🧵 ม้วน ${ri+1}</span>
-          <span style="font-size:10px;color:var(--muted)">${roll.totalLots} ล็อค ✓</span>
+          <span style="font-size:10px;color:var(--muted)">${roll.totalLots} ล็อค · ${rollPieces}ตัว</span>
           ${hasExtra?`<span style="font-size:9px;color:var(--orange)">มีเกิน</span>`:''}
+          <button class="cart-select-btn ${rollInCart?'selected':''}" style="margin-left:auto"
+            onclick="event.stopPropagation();${rollInCart?`cartRemoveRoll('${g.parentSku}','${escCol2}',${ri})`:`cartAddRoll('${g.parentSku}','${g.name}','${escCol2}',${ri},${JSON.stringify({totalLots:roll.totalLots,counts:roll.counts,extraCounts:roll.extraCounts})},${piecesPerLot})`}">
+            ${rollInCart?'✓ เลือกแล้ว':'+ เลือก'}
+          </button>
         </div>
         <div>${rows}</div>
       </div>`;
@@ -1751,6 +1809,7 @@ function renderBeltCard(g, days){
         onclick="event.stopPropagation();beltDiscToggle('${esc}',this)" data-color="${(item.color||'').replace(/"/g,'')}"
         title="คลิกเพื่อเปิดเติมอีกครั้ง">🚫 ไม่เติมแล้ว</button>
     </div>`;
+    const beltInCart = isInCart(g.parentSku, item.sku);
     return`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:${cardBg};border:${cardBdr};border-radius:10px;min-width:190px">
       <div style="flex:1">
         <div style="display:flex;align-items:center;gap:6px">
@@ -1759,6 +1818,10 @@ function renderBeltCard(g, days){
             onclick="event.stopPropagation();beltDiscToggle('${esc}',this)" data-color="${(item.color||'').replace(/"/g,'')}"
             title="ไม่เติมสีนี้แล้ว">ยังเติมอยู่</button>
         </div>
+          <button class="cart-select-btn${beltInCart?' selected':''}" style="font-size:9px;padding:2px 8px;margin-left:auto"
+            onclick="event.stopPropagation();beltInCart?cartRemoveBelt('${esc}','${item.sku}'):cartAddBelt('${esc}','${g.name}','${item.sku}','${colLabel}',${saved})">
+            ${beltInCart?'✓ เลือก':'+ เลือก'}
+          </button>
         <div style="font-size:9px;color:var(--faint);font-family:'IBM Plex Mono',monospace;margin-top:1px">${(item.sku||'').slice(-8)}</div>
         <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
           <span style="font-size:10px;color:var(--blue)">เฉลี่ย ${Math.ceil(rawAvg)} /${days}วัน</span>
@@ -1813,6 +1876,212 @@ function setBeltQty(parentSku,sku,val){
 }
 
 // ── GENERATE ORDER SUMMARY ──
+// ══════════════════════════════════════════════════════
+// CART SYSTEM
+// cart = { id: { type:'pants'|'belt'|'other', parentSku, name, color?, rollIndex?, qty?, details } }
+// ══════════════════════════════════════════════════════
+let cart = {};
+
+function cartId(parentSku, color='', rollIndex=''){
+  return `${parentSku}__${color}__${rollIndex}`;
+}
+function cartCount(){
+  return Object.keys(cart).length;
+}
+function updateCartFab(){
+  const n = cartCount();
+  const fab = $('cart-fab');
+  const badge = $('cart-count');
+  if(fab) fab.style.display = n>0 ? 'flex' : 'none';
+  if(badge) badge.textContent = n;
+}
+
+// ── Add pants roll to cart ──
+function cartAddRoll(parentSku, name, color, rollIndex, rollData, piecesPerLot){
+  const id = cartId(parentSku, color, rollIndex);
+  const szSummary = Object.entries(rollData.counts||{})
+    .filter(([,v])=>v>0).map(([sz,n])=>`${sz}×${n}`).join(' ');
+  const extraSummary = Object.entries(rollData.extraCounts||{})
+    .filter(([,v])=>v>0).map(([sz,n])=>`+${sz}×${n}`).join(' ');
+  const pieces = rollData.totalLots * piecesPerLot;
+  cart[id] = {
+    type:'pants', parentSku, name, color,
+    rollIndex, rollLabel:`ม้วน ${rollIndex+1}`,
+    szSummary, extraSummary, pieces,
+    lots: rollData.totalLots
+  };
+  updateCartFab();
+  renderCartModal();
+}
+function cartRemoveRoll(parentSku, color, rollIndex){
+  delete cart[cartId(parentSku, color, rollIndex)];
+  updateCartFab();
+  renderCartModal();
+  renderOrderTab(); // re-render to update button states
+}
+
+// ── Add belt/other color to cart ──
+function cartAddBelt(parentSku, name, skuKey, color, qty){
+  const id = cartId(parentSku, skuKey);
+  cart[id] = { type:'belt', parentSku, name, color, skuKey, qty };
+  updateCartFab();
+  renderCartModal();
+}
+function cartRemoveBelt(parentSku, skuKey){
+  delete cart[cartId(parentSku, skuKey)];
+  updateCartFab();
+  renderCartModal();
+  renderOrderTab();
+}
+
+function isInCart(parentSku, color='', rollIndex=''){
+  return !!cart[cartId(parentSku, color, rollIndex)];
+}
+
+function clearCart(){
+  cart={};
+  updateCartFab();
+  renderCartModal();
+  renderOrderTab();
+}
+
+function toggleCartModal(){
+  const modal=$('cart-modal');
+  if(!modal) return;
+  const isOpen = modal.style.display!=='none';
+  modal.style.display = isOpen?'none':'flex';
+  if(!isOpen) renderCartModal();
+}
+
+function renderCartModal(){
+  const body=$('cart-modal-body');
+  const countEl=$('cart-modal-count');
+  if(!body) return;
+  const items = Object.values(cart);
+  if(countEl) countEl.textContent = items.length+' รายการ';
+  if(!items.length){
+    body.innerHTML='<div class="empty" style="padding:40px">ยังไม่มีรายการ</div>';
+    return;
+  }
+  // group by parentSku
+  const grouped = {};
+  items.forEach(item=>{
+    if(!grouped[item.parentSku]) grouped[item.parentSku]={name:item.name,type:item.type,items:[]};
+    grouped[item.parentSku].items.push(item);
+  });
+  let html='';
+  Object.values(grouped).forEach(g=>{
+    html+=`<div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">${g.type==='pants'?'👖':'🎗️'} ${g.name}</div>`;
+    g.items.forEach(item=>{
+      if(item.type==='pants'){
+        const removeId = JSON.stringify([item.parentSku,item.color,item.rollIndex]);
+        html+=`<div class="cart-item">
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:700;color:var(--text)">
+              <span style="color:var(--blue)">${item.color}</span> · ${item.rollLabel}
+            </div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">${item.szSummary}${item.extraSummary?' ('+item.extraSummary+')':''}</div>
+            <div style="font-size:11px;color:var(--green);margin-top:3px;font-weight:700">${item.pieces} ตัว · ${item.lots} ล็อค</div>
+          </div>
+          <button class="cart-item-remove" onclick="cartRemoveRoll('${item.parentSku}','${item.color}',${item.rollIndex})">✕</button>
+        </div>`;
+      } else {
+        html+=`<div class="cart-item">
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:700;color:var(--text)">
+              <span style="color:var(--orange)">${item.color}</span>
+            </div>
+            <div style="font-size:11px;color:var(--green);margin-top:3px;font-weight:700">${item.qty} ชิ้น</div>
+          </div>
+          <button class="cart-item-remove" onclick="cartRemoveBelt('${item.parentSku}','${item.skuKey}')">✕</button>
+        </div>`;
+      }
+    });
+    html+='</div>';
+  });
+  // Total summary
+  const totalPants = items.filter(i=>i.type==='pants').reduce((s,i)=>s+i.pieces,0);
+  const totalBelt  = items.filter(i=>i.type!=='pants').reduce((s,i)=>s+(i.qty||0),0);
+  html+=`<div style="padding:12px 14px;background:rgba(77,143,255,.08);border-radius:12px;margin-top:8px">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:4px">รวมทั้งหมด</div>
+    ${totalPants?`<div style="font-size:13px;font-weight:700;color:var(--blue)">👖 ${totalPants.toLocaleString()} ตัว</div>`:''}
+    ${totalBelt?`<div style="font-size:13px;font-weight:700;color:var(--orange)">🎗️ ${totalBelt.toLocaleString()} ชิ้น</div>`:''}
+  </div>`;
+  body.innerHTML=html;
+}
+
+// ── Submit Order → save to Firebase history ──
+async function submitCartOrder(){
+  if(!cartCount()){ alert('ยังไม่มีรายการในตะกร้า'); return; }
+  const days = getOrderDays();
+  const items = Object.values(cart);
+  const order = {
+    createdAt: Date.now(),
+    days,
+    items,
+    totalPants: items.filter(i=>i.type==='pants').reduce((s,i)=>s+i.pieces,0),
+    totalBelt:  items.filter(i=>i.type!=='pants').reduce((s,i)=>s+(i.qty||0),0),
+  };
+  // Save to Firebase
+  const db=getRtdb();
+  if(db){
+    try {
+      const key = 'order_'+Date.now();
+      await db.ref('order_history/'+key).set(order);
+      console.log('[Order] Saved to Firebase:', key);
+    } catch(e){ console.warn('[Order] Save failed:', e); }
+  }
+  // Show summary
+  showOrderSummaryFromCart(order, days);
+  toggleCartModal();
+}
+
+function showOrderSummaryFromCart(order, days){
+  const grouped={};
+  order.items.forEach(item=>{
+    if(!grouped[item.parentSku]) grouped[item.parentSku]={name:item.name,type:item.type,items:[]};
+    grouped[item.parentSku].items.push(item);
+  });
+  let html='';
+  // Pants section
+  const pantsGroups=Object.values(grouped).filter(g=>g.type==='pants');
+  if(pantsGroups.length){
+    html+=`<div class="order-sum-section"><div class="order-sum-ttl">👖 กางเกง (${days} วัน)</div>`;
+    pantsGroups.forEach(g=>{
+      const colorMap={};
+      g.items.forEach(item=>{
+        if(!colorMap[item.color]) colorMap[item.color]={rolls:[],pieces:0};
+        colorMap[item.color].rolls.push(`${item.rollLabel}[${item.szSummary}]`);
+        colorMap[item.color].pieces+=item.pieces;
+      });
+      const detail=Object.entries(colorMap).map(([col,d])=>`🎨 ${col} · ${d.rolls.length}ม้วน · ${d.pieces}ตัว
+   ${d.rolls.join(' ')}`).join('
+');
+      const totalP=g.items.reduce((s,i)=>s+i.pieces,0);
+      html+=`<div class="order-sum-row"><div><div class="order-sum-name">${g.name}</div><div class="order-sum-detail" style="white-space:pre-wrap;font-size:10px">${detail}</div></div><div class="order-sum-qty">${totalP} ตัว</div></div>`;
+    });
+    html+='</div>';
+  }
+  // Belt section
+  const beltGroups=Object.values(grouped).filter(g=>g.type!=='pants');
+  if(beltGroups.length){
+    html+=`<div class="order-sum-section"><div class="order-sum-ttl">🎗️ เข็มขัด / อื่นๆ</div>`;
+    beltGroups.forEach(g=>{
+      const detail=g.items.map(i=>`${i.color}:${i.qty}`).join(' · ');
+      const totalQ=g.items.reduce((s,i)=>s+(i.qty||0),0);
+      html+=`<div class="order-sum-row"><div><div class="order-sum-name">${g.name}</div><div class="order-sum-detail">${detail}</div></div><div class="order-sum-qty">${totalQ} ชิ้น</div></div>`;
+    });
+    html+='</div>';
+  }
+  const sp=$('order-summary');
+  $('order-summary-body').innerHTML=html||'<div class="empty">ไม่มีรายการ</div>';
+  sp.style.display='block';
+  sp.scrollIntoView({behavior:'smooth',block:'start'});
+  // Clear cart after order
+  clearCart();
+}
+
 function generateOrder(){
   if(!appData.length) return;
   const days=getOrderDays();
