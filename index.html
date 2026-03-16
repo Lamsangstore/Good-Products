@@ -1043,11 +1043,13 @@ function butterflySequence(sizes, lotsDict){
 function calcColorOrder(parentSku, skus, days){
   const lotsPerRoll  = getLotsPerRoll(parentSku);
   const piecesPerLot = getPiecesPerLot(parentSku);
-  const sizes = SIZE_ORDER.filter(sz=>skus.find(d=>d.size===sz));
-  const extra_sizes  = skus.map(d=>d.size||'?').filter(sz=>!SIZE_ORDER.includes(sz));
+  // normalize sizes then sort by SIZE_ORDER
+  const skuSizes = [...new Set(skus.map(d=>(d.size||'?').trim().toUpperCase()))];
+  const sizes = SIZE_ORDER.filter(sz=>skuSizes.includes(sz));
+  const extra_sizes = skuSizes.filter(sz=>!SIZE_ORDER.includes(sz));
   const allSizes = [...sizes, ...extra_sizes];
   const skuBySz={};
-  skus.forEach(d=>{ skuBySz[d.size||'?']=d; });
+  skus.forEach(d=>{ skuBySz[(d.size||'?').trim().toUpperCase()]=d; });
 
   const demand={}, stockOnHand={}, netDemand={}, lotsNeeded={};
   const cfg=getPantsCfg(parentSku);
@@ -1230,8 +1232,9 @@ function renderPantsCard(g, days){
       const cardBdr=noNeed?'1px solid rgba(46,204,138,.3)':'none';
       const lotColor=noNeed?'var(--green)':isOv?'var(--orange)':'var(--blue)';
       return`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:${cardBg};box-shadow:var(--sx);border-radius:12px;border:${cardBdr}">
-        <div style="min-width:36px;text-align:center">
+        <div style="min-width:44px;text-align:center">
           <div style="font-size:13px;font-weight:800;color:var(--text)">${sz}</div>
+          ${item?`<div style="font-size:8px;color:var(--faint);font-family:'IBM Plex Mono',monospace;margin-top:1px;word-break:break-all">${(item.sku||'').slice(-6)}</div>`:''}
           ${noNeed?'<div style="font-size:8px;color:var(--green);font-weight:800;margin-top:2px">✓ พอ</div>':''}
         </div>
         <div style="flex:1;min-width:0">
@@ -1512,7 +1515,9 @@ async function syncData(){
         if(sep){
           const parts = variant.split(sep).map(s=>s.trim());
           color = parts[0] || '';
-          size  = parts.slice(1).join(sep.trim()||',').trim() || '';
+          size  = parts.slice(1).join('').trim() || '';
+          // normalize size to uppercase + trim (e.g. " xl" → "XL")
+          size  = size.toUpperCase().trim();
         } else {
           // ถ้าไม่มี separator ถือทั้งหมดเป็น color
           color = variant;
@@ -1878,6 +1883,7 @@ function parseStockCSV(text){
     const sku = cols[skuIdx]; if(!sku) continue;
     const v = parseFloat(cols[stockIdx]);
     map[sku] = isNaN(v) ? null : v;
+    if(sku !== sku.toLowerCase()) map[sku.toLowerCase()] = isNaN(v) ? null : v;
   }
   applyStockMap(map);
 }
@@ -1983,7 +1989,7 @@ function clearStockFile(){
 
 function getStockStatus(sku){
   if(!Object.keys(stockMap).length) return null;
-  const v = stockMap[sku];
+  const v = stockMap[sku] !== undefined ? stockMap[sku] : stockMap[(sku||'').toLowerCase()];
   if(v === undefined) return 'unknown';  // ไม่มีใน file
   if(v === null) return 'unknown';
   if(v <= 0) return 'out';
@@ -1993,7 +1999,7 @@ function getStockStatus(sku){
 
 function getStockAmount(sku){
   if(!Object.keys(stockMap).length) return null;
-  const v = stockMap[sku];
+  const v = stockMap[sku] !== undefined ? stockMap[sku] : stockMap[(sku||'').toLowerCase()];
   return (v===undefined||v===null) ? null : v;
 }
 
