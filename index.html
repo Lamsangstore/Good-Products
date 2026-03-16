@@ -1031,11 +1031,16 @@ function groupByParent(items){
     // เพิ่ม group ใหม่ได้เฉพาะถ้า parentSku นี้มีสินค้าขายในช่วงเวลาที่วิเคราะห์
     // หรือ map มี key อยู่แล้ว (สินค้าถูก filter มาแล้ว)
     if(!map.has(key)){
-      if(!allParentSkus.has(key)) return; // ไม่มียอดขายเลย ข้ามไป
-      map.set(key,{parentSku:key, name:info.name||info.sku, category:info.category||'', skus:[]});
+      if(!allParentSkus.has(key)){
+        // ถ้าไม่มีใน appData เลย ให้สร้าง group ใหม่เสมอ (สินค้าไม่เคยขาย)
+        map.set(key,{parentSku:key, name:info.name||info.sku, category:info.category||'', skus:[]});
+      } else {
+        map.set(key,{parentSku:key, name:info.name||info.sku, category:info.category||'', skus:[]});
+      }
     }
     const group = map.get(key);
     if(group.skus.find(s=>s.sku===info.sku)) return; // already exists
+    console.log('[Supplement] Adding missing SKU:', info.sku, 'size:', info.size, 'to group:', key);
     group.skus.push({
       sku: info.sku, name: info.name||'', parentSku: key,
       category: info.category||'', variant: info.variant||'',
