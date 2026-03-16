@@ -977,6 +977,7 @@ canvas{display:block;width:100%!important}
 </div><!-- /page -->
 
 <script>
+let _configCache = {};  // early init — full definition comes later
 // ── STOCK FILE (xlsx upload) — see loadStockFile / applyStockMap below ──
 // Alias so header button works with existing system
 function handleStockUpload(input){ loadStockFile(input); }
@@ -1005,6 +1006,7 @@ function saveVisibleCols(){
 }
 let visibleCols = loadVisibleCols();
 
+const $= id => document.getElementById(id);
 window.onload = () => {
   // ลอง load cache จาก Firebase ก่อน ถ้าไม่ได้ใน 3 วินาที → sync จาก Sheets ตามปกติ
   let syncStarted = false;
@@ -1045,7 +1047,6 @@ window.onload = () => {
   setTimeout(tryCache, 500);
 };
 
-const $= id => document.getElementById(id);
 
 function showL(t){ $('loadingText').innerText=t||'กำลังประมวลผล…'; $('loading').classList.add('on') }
 function hideL(){ $('loading').classList.remove('on') }
