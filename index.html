@@ -1298,9 +1298,14 @@ function renderOrderTab(){
   let html='';
   const days=getOrderDays();
 
-  const isSpecificCat = !['all','pants','belt','other'].includes(orderCatFilter);
-  if(pantsGroups.length&&(orderCatFilter==='all'||orderCatFilter==='pants'||isSpecificCat)){
-  // Group pants by sub-category
+  // helper: should show this group?
+  const showGroup = (ct, catName) => {
+    if(orderCatFilter==='all') return true;
+    if(orderCatFilter==='pants'||orderCatFilter==='belt'||orderCatFilter==='other') return ct===orderCatFilter;
+    return catName===orderCatFilter; // exact category match
+  };
+
+  // ── PANTS grouped by sub-category ──
   const pantsByCat = new Map();
   pantsGroups.forEach(g=>{
     const c=g.category||'กางเกง';
@@ -1308,6 +1313,7 @@ function renderOrderTab(){
     pantsByCat.get(c).push(g);
   });
   pantsByCat.forEach((gList, catName)=>{
+    if(!showGroup('pants', catName)) return;
     html+=`<div class="order-group">
       <div class="order-group-hdr">
         <span style="font-size:18px">👖</span>
@@ -1317,27 +1323,45 @@ function renderOrderTab(){
     gList.forEach(g=>{ html+=renderPantsCard(g,days); });
     html+='</div>';
   });
-  }
-  if(beltGroups.length&&(orderCatFilter==='all'||orderCatFilter==='belt'||isSpecificCat)){
+
+  // ── BELT grouped by sub-category ──
+  const beltByCat = new Map();
+  beltGroups.forEach(g=>{
+    const c=g.category||'เข็มขัด';
+    if(!beltByCat.has(c)) beltByCat.set(c,[]);
+    beltByCat.get(c).push(g);
+  });
+  beltByCat.forEach((gList, catName)=>{
+    if(!showGroup('belt', catName)) return;
     html+=`<div class="order-group">
       <div class="order-group-hdr">
         <span style="font-size:18px">🎗️</span>
-        <span class="order-group-ttl">เข็มขัด — สั่งรุ่นเดียว หลายสีพร้อมกัน</span>
-        <span class="order-group-badge">${beltGroups.length} รุ่น</span>
+        <span class="order-group-ttl">${catName} — สั่งรุ่นเดียว หลายสีพร้อมกัน</span>
+        <span class="order-group-badge">${gList.length} รุ่น</span>
       </div>`;
-    beltGroups.forEach(g=>{ html+=renderBeltCard(g,days); });
+    gList.forEach(g=>{ html+=renderBeltCard(g,days); });
     html+='</div>';
-  }
-  if(otherGroups.length&&(orderCatFilter==='all'||orderCatFilter==='other'||isSpecificCat)){
+  });
+
+  // ── OTHER grouped by sub-category ──
+  const otherByCat = new Map();
+  otherGroups.forEach(g=>{
+    const c=g.category||'อื่นๆ';
+    if(!otherByCat.has(c)) otherByCat.set(c,[]);
+    otherByCat.get(c).push(g);
+  });
+  otherByCat.forEach((gList, catName)=>{
+    if(!showGroup('other', catName)) return;
     html+=`<div class="order-group">
       <div class="order-group-hdr">
         <span style="font-size:18px">📦</span>
-        <span class="order-group-ttl">สินค้าอื่นๆ</span>
-        <span class="order-group-badge">${otherGroups.length} รุ่น</span>
+        <span class="order-group-ttl">${catName}</span>
+        <span class="order-group-badge">${gList.length} รุ่น</span>
       </div>`;
-    otherGroups.forEach(g=>{ html+=renderBeltCard(g,days); });
+    gList.forEach(g=>{ html+=renderBeltCard(g,days); });
     html+='</div>';
-  }
+  });
+
   if(!html) html=`<div class="empty" style="padding:80px">ไม่พบสินค้าที่ตรงเงื่อนไข</div>`;
   $('order-content').innerHTML=html;
   } catch(ex){ console.error('renderOrderTab error:',ex); const oc=$('order-content'); if(oc) oc.innerHTML='<div class="empty" style="padding:60px;color:var(--red)">เกิดข้อผิดพลาด: '+ex.message+'</div>'; }
