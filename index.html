@@ -1514,6 +1514,15 @@ html, body {
 .kpi { overflow: hidden !important; }
 /* Sparkline wrappers constrain width */
 #kpi-chart-vel, #kpi-chart-trend { max-height: 28px !important; }
+
+/* ── Hard-lock all KPI canvases ── */
+.kpi canvas {
+  display: block !important;
+  flex-shrink: 0 !important;
+  max-width: 100% !important;
+  /* Prevent ResizeObserver loop */
+  contain: strict !important;
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -5896,18 +5905,20 @@ function drawKpiCharts(sorted, months){
   if(!sorted||!sorted.length) return;
   const AMBER='#d97706', GREEN='#16a34a', RED='#ef4444', ORANGE='#ea580c';
 
-  // Helper: destroy old + resize canvas BEFORE creating new chart
+  // Helper: destroy old + set FIXED pixel size before Chart.js
   function freshCanvas(id, w, h){
     if(_kpiCharts[id]){ try{_kpiCharts[id].destroy();}catch(e){} delete _kpiCharts[id]; }
     const c = document.getElementById(id);
     if(!c) return null;
-    // Force pixel size before Chart.js touches it
-    c.width  = w;
-    c.height = h;
-    c.style.width  = w+'px';
-    c.style.height = h+'px';
-    c.style.maxWidth  = w+'px';
-    c.style.maxHeight = h+'px';
+    // On mobile, cap to actual card width
+    const card = c.closest('.kpi');
+    const cardW = card ? card.getBoundingClientRect().width : 999;
+    const fw = Math.min(w, Math.floor(cardW * 0.45));  // max 45% of card
+    const fh = Math.round(h * (fw / w));                // scale height proportionally
+    // Set attribute + style — both needed to prevent Chart.js resize loop
+    c.setAttribute('width',  fw);
+    c.setAttribute('height', fh);
+    c.style.cssText = `width:${fw}px!important;height:${fh}px!important;max-width:${fw}px!important;max-height:${fh}px!important;display:block!important;flex-shrink:0!important`;
     return c;
   }
 
@@ -5955,7 +5966,10 @@ function drawKpiCharts(sorted, months){
   }
 
   // ── Chart 3: Sparkline bars — top 8 velocity ──
-  const velC = freshCanvas('kpi-chart-vel', 100, 28);
+  // Sparkline: use full card width
+  const velCard = document.getElementById('kpi-chart-vel')?.closest('.kpi');
+  const velW = velCard ? Math.floor(velCard.getBoundingClientRect().width - 32) : 120;
+  const velC = freshCanvas('kpi-chart-vel', velW, 28);
   if(velC){
     const top8=[...sorted].sort((a,b)=>b.adjVel-a.adjVel).slice(0,8);
     const maxV=top8[0]?.adjVel||1;
@@ -5972,7 +5986,9 @@ function drawKpiCharts(sorted, months){
   }
 
   // ── Chart 4: Line — trend distribution ──
-  const trendC = freshCanvas('kpi-chart-trend', 100, 28);
+  const trendCard = document.getElementById('kpi-chart-trend')?.closest('.kpi');
+  const trendW = trendCard ? Math.floor(trendCard.getBoundingClientRect().width - 32) : 120;
+  const trendC = freshCanvas('kpi-chart-trend', trendW, 28);
   if(trendC){
     const buckets=[-100,-30,-10,10,30,100];
     const counts=new Array(buckets.length-1).fill(0);
