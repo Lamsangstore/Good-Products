@@ -749,6 +749,150 @@ body {
   input[type=checkbox] { min-width: 20px; min-height: 20px; }
 }
 
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE CARD VIEW — replaces horizontal scroll table
+   ═══════════════════════════════════════════════════════ */
+.mob-card-list { display: none; padding: 0 0 8px; }
+.mob-card {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 0.5px solid rgba(217,119,6,.12);
+  margin-bottom: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(180,130,50,.08);
+  transition: box-shadow .15s;
+}
+.mob-card:active { box-shadow: 0 1px 4px rgba(180,130,50,.1); }
+.mob-card-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+.mob-card-rank {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--faint);
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.mob-card-info { flex: 1; min-width: 0; }
+.mob-card-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.mob-card-meta {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.mob-card-meta-sep { color: var(--faint); }
+.mob-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.mob-card-vel {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--blue);
+  font-family: 'IBM Plex Mono', monospace;
+}
+.mob-card-vel-lbl { font-size: 9px; color: var(--muted); text-align: right; }
+
+.mob-card-pills {
+  display: flex;
+  gap: 6px;
+  padding: 0 14px 10px;
+  flex-wrap: wrap;
+}
+.mob-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--bg-dark);
+  color: var(--mid);
+  border: 0.5px solid rgba(217,119,6,.1);
+}
+.mob-pill.ok { background: rgba(22,163,74,.1); color: #15803d; border-color: rgba(22,163,74,.2); }
+.mob-pill.warn { background: rgba(234,88,12,.1); color: #c2410c; border-color: rgba(234,88,12,.2); }
+.mob-pill.danger { background: rgba(239,68,68,.1); color: #dc2626; border-color: rgba(239,68,68,.2); }
+.mob-pill.disc { background: rgba(100,116,139,.1); color: #64748b; border-color: rgba(100,116,139,.2); }
+
+.mob-card-expand {
+  border-top: 0.5px solid rgba(217,119,6,.1);
+  padding: 12px 14px;
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.mob-card-expand.open { display: grid; }
+.mob-stat {
+  background: var(--bg-dark);
+  border-radius: 10px;
+  padding: 8px 10px;
+  border: 0.5px solid rgba(217,119,6,.08);
+}
+.mob-stat-lbl { font-size: 9px; font-weight: 700; color: var(--muted); letter-spacing: .4px; text-transform: uppercase; margin-bottom: 3px; }
+.mob-stat-val { font-size: 15px; font-weight: 800; color: var(--text); }
+.mob-stat-unit { font-size: 10px; color: var(--muted); font-weight: 400; margin-left: 2px; }
+
+.mob-card-chevron {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--bg-dark);
+  border: 0.5px solid rgba(217,119,6,.15);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .2s;
+  flex-shrink: 0;
+}
+.mob-card-chevron svg { width: 10px; height: 10px; stroke: var(--muted); fill: none; stroke-width: 2.5; }
+.mob-card-chevron.open { transform: rotate(180deg); }
+
+/* ── Hide table on mobile, show cards ── */
+@media (max-width: 768px) {
+  .tbl-wrap { display: none !important; }
+  .mob-card-list { display: block !important; }
+
+  /* Also hide panel header buttons that are desktop-only */
+  #stock-upload-btn { display: none !important; }
+
+  /* Mobile panel header — stacked */
+  .panel-hdr { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .panel-hdr > div:last-child { width: 100%; }
+  .panel-hdr .srch { width: 100%; box-sizing: border-box; }
+  .srch-wrap { width: 100%; }
+
+  /* Show only 1-tab for dashboard — hide tab-bar but keep content visible */
+  #tab-dashboard { display: block !important; }
+
+  /* Mobile filter/col row */
+  .mob-tbl-toolbar {
+    display: flex !important;
+    gap: 8px;
+    padding: 0 14px 12px;
+    flex-wrap: wrap;
+  }
+}
+
+.mob-tbl-toolbar { display: none; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -1152,6 +1296,19 @@ body {
         </tbody>
       </table>
     </div>
+    <!-- Mobile toolbar -->
+    <div class="mob-tbl-toolbar" id="mob-tbl-toolbar">
+      <button class="btn" onclick="toggleFilterPopup()" style="font-size:13px;padding:7px 14px;gap:5px">
+        <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        ฟิลเตอร์<span id="mob-filter-badge"></span>
+      </button>
+      <div class="srch-wrap" style="flex:1;position:relative">
+        <svg viewBox="0 0 24 24" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);width:13px;height:13px;stroke:var(--faint);fill:none;stroke-width:2.2;pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="srch" id="mob-srch" placeholder="ค้นหา SKU / ชื่อ…" oninput="document.getElementById('srch').value=this.value;renderAll(getFilteredData())">
+      </div>
+    </div>
+    <!-- Mobile Card List -->
+    <div id="mob-card-list" class="mob-card-list" style="padding:0 14px 16px"></div>
   </div>
 </div>
 
@@ -1400,6 +1557,12 @@ body {
 
 <script>
 let _configCache = {};  // early init — full definition comes later
+
+
+// Re-render cards on resize (switching between mobile/desktop)
+window.addEventListener('resize', ()=>{
+  if(window._lastSorted) renderMobileCards(window._lastSorted, window._lastMonths||1);
+});
 
 // ── PWA Install Prompt ──────────────────────────────────
 let _pwaPrompt = null;
@@ -4514,6 +4677,70 @@ function renderAll(data){
   try{ enrichAppData(); }catch(ex){ console.warn('enrich:', ex); }
   // Insight Tab
   if(typeof renderInsight==='function') try{ renderInsight(sorted, months); }catch(e){}
+  // Mobile card view
+  try { renderMobileCards(sorted, months); } catch(ex){ console.warn('renderMobileCards:', ex); }
+}
+
+
+function renderMobileCards(sorted, months){
+  const list = document.getElementById('mob-card-list');
+  if(!list) return;
+  if(!window.matchMedia('(max-width:768px)').matches){ list.innerHTML=''; return; }
+  if(!sorted||!sorted.length){ list.innerHTML='<div class="empty" style="padding:40px">ไม่พบสินค้า</div>'; return; }
+
+  list.innerHTML = sorted.map((item, i)=>{
+    const _stkSt = getStockStatus(item.sku);
+    const _stkAm = getStockAmount(item.sku);
+    const _isDisc = isDiscontinued(item.parentSku||item.sku, item.color||'') || isDiscontinued(item.parentSku||item.sku);
+    let statusCls='', statusTxt='';
+    if(_isDisc){ statusCls='disc'; statusTxt='🚫 ไม่เติมแล้ว'; }
+    else if(_stkSt==='out'){ statusCls='danger'; statusTxt='🔴 หมด'+(_stkAm!==null?'('+_stkAm+')':''); }
+    else if(_stkSt==='low'){ statusCls='warn'; statusTxt='🟡 น้อย('+_stkAm+')'; }
+    else if(_stkSt==='ok'){ statusCls='ok'; statusTxt='🟢 มี('+_stkAm+')'; }
+    else if(item.stockoutScore>60){ statusCls='danger'; statusTxt='⚠ เสี่ยง'; }
+    else if(item.stockoutScore>=40){ statusCls='warn'; statusTxt='! ติดตาม'; }
+    else { statusCls='ok'; statusTxt='✓ ปกติ'; }
+
+    const ri = item._restockInfo;
+    const restockPill = ri ? `<span class="mob-pill ${ri.daysAway<=3?'warn':'ok'}">📦 ${ri.daysAway<=0?'วันนี้':ri.daysAway===1?'พรุ่งนี้':ri.daysAway+'วัน'}</span>` : '';
+    const dL = item.daysLeft;
+    const dLpill = dL!==null ? `<span class="mob-pill ${dL<=3?'danger':dL<=7?'warn':'ok'}">⏳ ${dL}วัน</span>` : '';
+    const rec = item.recStock || calcStock(item.adjVel, months, item.safetyMult);
+    const stockAvg = item.stockAvg || Math.ceil((rec + (item.stockMaxVel7||0)) / 2);
+
+    return `<div class="mob-card">
+      <div class="mob-card-main" onclick="this.closest('.mob-card').querySelector('.mob-card-expand').classList.toggle('open');this.querySelector('.mob-card-chevron').classList.toggle('open')">
+        <div class="mob-card-rank">${i+1}</div>
+        <div class="mob-card-info">
+          <div class="mob-card-name">${item.name}</div>
+          <div class="mob-card-meta">
+            <span>${item.color||'—'}</span><span class="mob-card-meta-sep">·</span>
+            <span>${item.size||'—'}</span><span class="mob-card-meta-sep">·</span>
+            <span style="font-size:10px;color:var(--faint)">${(item.category||'').replace('กางเกง ','')}</span>
+          </div>
+        </div>
+        <div class="mob-card-right">
+          <div class="mob-card-vel">${(item.maxVel7||0).toFixed(2)}</div>
+          <div class="mob-card-vel-lbl">MaxVel/วัน</div>
+        </div>
+        <div class="mob-card-chevron">
+          <svg viewBox="0 0 10 10" style="width:10px;height:10px;stroke:var(--muted);fill:none;stroke-width:2.5"><polyline points="2 3 5 7 8 3"/></svg>
+        </div>
+      </div>
+      <div class="mob-card-pills">
+        <span class="mob-pill ${statusCls}">${statusTxt}</span>${dLpill}${restockPill}
+        <span class="mob-pill">${item.trendLabel||''}${item.trendPct>0?'+':''}${item.trendPct||0}%</span>
+      </div>
+      <div class="mob-card-expand">
+        <div class="mob-stat"><div class="mob-stat-lbl">Adj. Vel</div><div class="mob-stat-val">${(item.adjVel||0).toFixed(2)}<span class="mob-stat-unit">ชิ้น/วัน</span></div></div>
+        <div class="mob-stat"><div class="mob-stat-lbl">ยอดรวม</div><div class="mob-stat-val">${item.totalSold||0}<span class="mob-stat-unit">ชิ้น</span></div></div>
+        <div class="mob-stat"><div class="mob-stat-lbl">สต๊อกแนะนำ</div><div class="mob-stat-val">${rec}<span class="mob-stat-unit">ชิ้น</span></div></div>
+        <div class="mob-stat"><div class="mob-stat-lbl">ค่าเฉลี่ย</div><div class="mob-stat-val">${stockAvg}<span class="mob-stat-unit">ชิ้น</span></div></div>
+        <div class="mob-stat"><div class="mob-stat-lbl">ขายล่าสุด</div><div class="mob-stat-val">${item.daysLastSale<9999?item.daysLastSale:'—'}<span class="mob-stat-unit">${item.daysLastSale<9999?'วันที่แล้ว':''}</span></div></div>
+        <div class="mob-stat"><div class="mob-stat-lbl">True Star</div><div class="mob-stat-val">${item.starScore||0}<span class="mob-stat-unit">/ 100</span></div></div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 window.riskThreshold = 60;
