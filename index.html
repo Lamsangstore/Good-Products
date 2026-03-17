@@ -185,6 +185,7 @@ th[data-col="stockavg"] {min-width:70px;max-width:96px}
 th[data-col="stockmaxvel7"]{min-width:70px;max-width:96px}
 th[data-col="status"]   {min-width:70px;max-width:96px}
 th[data-col="daysleft"] {min-width:70px;max-width:96px}
+th[data-col="nextrestock"]{min-width:90px;max-width:120px}
 td[data-col="color"],td[data-col="size"]{text-align:center}
 td[data-col="vel"],td[data-col="vel7"],td[data-col="maxvel7"],
 td[data-col="trend"],td[data-col="gap"],td[data-col="consist"],
@@ -804,6 +805,7 @@ canvas{display:block;width:100%!important}
             <th class="sortable" data-col="stockavg"     data-key="stockAvg"      onclick="sortBy(this)">🟢 ค่าเฉลี่ย<span class="sort-ico"></span></th>
             <th class="sortable" data-col="stockmaxvel7" data-key="stockMaxVel7" onclick="sortBy(this)">📦 สต๊อก(MaxVel7)<span class="sort-ico"></span></th>
             <th class="sortable" data-col="daysleft"    data-key="daysLeft"     onclick="sortBy(this)">⏳ หมดใน<span class="sort-ico"></span></th>
+            <th class="sortable" data-col="nextrestock" data-key="nextRestockTs" onclick="sortBy(this)">📦 คาดรับ<span class="sort-ico"></span></th>
             <th class="tc"       data-col="status">🔰 สถานะ</th>
           </tr>
         </thead>
@@ -1064,7 +1066,7 @@ const SHEET_ID = '1rO8rJbVPfTRiuuZB0WVx3NnIFSYgs2Vh2Nu6bc-rKhk';
 let appData = [];
 let maxAdjVel = 1, maxStock = 1;
 let sortKey = 'starScore', sortDir = 'desc';
-const COL_DEFAULTS = ['color','size','vel','maxvel7','totalsold','lastsale','stock','stockavg','daysleft','status'];
+const COL_DEFAULTS = ['color','size','vel','maxvel7','totalsold','lastsale','stock','stockavg','daysleft','nextrestock','status'];
 const COL_STORAGE_KEY = 'visibleCols';
 function loadVisibleCols(){
   // Try Firebase cache first
@@ -1318,6 +1320,44 @@ function getAvg(item,days=15){
 
 // ── config ──
 function getPantsCfg(p){ if(!orderConfig[p]) orderConfig[p]={}; return orderConfig[p]; }
+// ── NEXT RESTOCK from order history ──────────────────
+// Returns { dateTs, label, isOverdue, isExpected } per SKU
+function getNextRestockInfo(sku){
+  if(!orderHistory||!orderHistory.length) return null;
+  const today = Date.now();
+  // Find pending orders (not fully received) that contain this SKU
+  let best = null;
+  orderHistory.forEach(order=>{
+    if(order.received) return; // fully received — skip
+    const items = order.items||[];
+    const hasItem = items.some(item=>{
+      if(item.type==='pants'){
+        // check if this parentSku has a roll containing this sku via color match
+        return item.parentSku && sku.includes(item.parentSku.slice(-8));
+      }
+      return item.skuKey===sku || item.sku===sku;
+    });
+    if(!hasItem) return;
+    // Compute expected delivery date
+    let deliveryTs = order.createdAt + 15*24*60*60*1000;
+    // If overdue → extend by 7 days per overdue period
+    while(deliveryTs <= today){
+      deliveryTs += 7*24*60*60*1000;
+    }
+    if(!best || deliveryTs < best.ts){
+      best = { ts: deliveryTs, orderKey: order.key, createdAt: order.createdAt };
+    }
+  });
+  if(!best) return null;
+  const dd = new Date(best.ts);
+  const isExpected = best.ts - today < 3*24*60*60*1000; // within 3 days
+  return {
+    dateTs: best.ts,
+    label: `${dd.getDate()}/${dd.getMonth()+1}/${dd.getFullYear()}`,
+    isExpected,
+    isOverdue: best.ts > (order?.createdAt||0) + 15*24*60*60*1000
+  };
+}
 function getFactoryName(parentSku){ return (orderConfig[parentSku]||{}).factoryName||''; }
 function setFactoryName(parentSku, name){
   getPantsCfg(parentSku).factoryName = name.trim();
@@ -3654,7 +3694,9 @@ function renderAll(data){
     })() : null;
     const daysLeftR = (stockAmtR!==null && (item.maxVel7||0)>0)
       ? Math.round(stockAmtR / item.maxVel7) : null;
-    return {...item, recStock:rec, daysLastSale, daysSincePeak, stockMaxVel7: stockMaxVel7val, stockAvg: stockAvgVal, daysLeft: daysLeftR};
+    const restockInfo = getNextRestockInfo(item.sku);
+    const nextRestockTs = restockInfo ? restockInfo.dateTs : null;
+    return {...item, recStock:rec, daysLastSale, daysSincePeak, stockMaxVel7: stockMaxVel7val, stockAvg: stockAvgVal, daysLeft: daysLeftR, nextRestockTs, _restockInfo: restockInfo};
   });
 
   const sorted=[...enriched].sort((a,b)=>{
@@ -3802,6 +3844,15 @@ function renderAll(data){
           const dlLabel = dl===0?'หมดแล้ว':dl+' วัน';
           const dlSub = dl<=30 ? `<div style="font-size:9px;color:var(--faint)">จาก MaxVel7</div>` : '';
           return td('daysleft',`<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:${dlColor}">${dlLabel}</span>${dlSub}`,'tr');
+        })()}
+        ${(()=>{
+          const ri = item._restockInfo;
+          if(!ri) return td('nextrestock','<span style="font-size:10px;color:var(--faint)">ยังไม่มีกำหนด</span>','tc');
+          const today = Date.now();
+          const daysAway = Math.ceil((ri.dateTs - today)/(1000*60*60*24));
+          const color = daysAway<=3?'var(--red)':daysAway<=7?'var(--orange)':'var(--green)';
+          const label = daysAway<=0?'วันนี้':daysAway===1?'พรุ่งนี้':`${daysAway} วัน`;
+          return td('nextrestock',`<div style="text-align:center"><div style="font-size:12px;font-weight:700;color:${color}">${label}</div><div style="font-size:9px;color:var(--faint)">${ri.label}</div></div>`,'tc');
         })()}
         ${td('status',  badge, 'tc')}
       </tr>`;
