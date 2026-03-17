@@ -166,7 +166,7 @@ tbody td{
   vertical-align:middle;
   transition:background .12s
 }
-tbody tr:nth-child(even) td{background:rgba(217,119,6,.03)}
+/* row stripe now handled below */
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:rgba(217,119,6,.08)!important}
 tbody tr:active td{background:rgba(217,119,6,.15)!important}
@@ -1698,18 +1698,19 @@ tbody td:nth-child(3) { left: 196px; }
 tbody td:nth-child(4) { left: 268px; box-shadow: 4px 0 6px rgba(180,130,50,.07); }
 
 /* Match sticky cell bg to row bg */
-tbody tr:nth-child(odd)  td { background: #fdf8ee; }
-tbody tr:nth-child(even) td { background: #f7edd6; }
+/* Subtle row stripes — no column colors */
+tbody tr:nth-child(odd)  td { background: #fefcf6; }
+tbody tr:nth-child(even) td { background: #f9f2e3; }
 
 tbody tr:nth-child(odd)  td:nth-child(1),
 tbody tr:nth-child(odd)  td:nth-child(2),
 tbody tr:nth-child(odd)  td:nth-child(3),
-tbody tr:nth-child(odd)  td:nth-child(4) { background: #fdf8ee; }
+tbody tr:nth-child(odd)  td:nth-child(4) { background: #fefcf6; }
 
 tbody tr:nth-child(even) td:nth-child(1),
 tbody tr:nth-child(even) td:nth-child(2),
 tbody tr:nth-child(even) td:nth-child(3),
-tbody tr:nth-child(even) td:nth-child(4) { background: #f7edd6; }
+tbody tr:nth-child(even) td:nth-child(4) { background: #f9f2e3; }
 
 tbody tr:hover td { background: #fce8b8 !important; }
 
@@ -1764,6 +1765,23 @@ thead th.resizing .col-resize-handle {
 .kpi.c-gold   .kpi-accent { background: #b45309; }
 /* Row border */
 tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
+
+/* ── Status badge: compact 2-line ── */
+.badge {
+  display: inline-flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 1px !important;
+  padding: 4px 8px !important;
+  min-width: 58px !important;
+  line-height: 1.3 !important;
+  text-align: center !important;
+  font-size: 12px !important;
+  white-space: normal !important;
+}
+.badge-status { font-size: 11px; font-weight: 700; }
+.badge-count  { font-size: 13px; font-weight: 800; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -3027,23 +3045,22 @@ function getNextRestockInfo(sku){
 
   let best = null;
   orderHistory.forEach(order=>{
-    // Skip fully-received orders
+    // Skip fully-received orders (either flag or all items ticked)
     if(order.received === true) return;
+    if(isOrderFullyReceived(order)) return;
     const rcv = order.receivedItems||{};
     const items = order.items||[];
     if(!items.length) return;
-    // Also skip if all items individually ticked
-    if(isOrderFullyReceived(order)) return;
 
     // Check if any un-received item in this order contains this exact SKU
     const hasItem = items.some(item=>{
-      const itemKey = item.itemKey || (item.parentSku+'__'+(item.color||'')+'__'+(item.rollIndex??''));
+      // Use same itemKey format as renderHistDetail
+      const itemKey = item.type==='belt'
+        ? item.parentSku+'__'+(item.skuKey||item.sku||item.color||'')
+        : (item.itemKey || (item.parentSku+'__'+(item.color||'')+'__'+(item.rollIndex??'')));
       if(rcv[itemKey]===true) return false; // already received
-      // Must match via skuList (exact SKU) — no parentSku fallback to avoid false matches
       if(item.skuList && item.skuList.length>0) return item.skuList.includes(sku);
-      // Belt: exact skuKey or sku match only
       if(item.type==='belt') return item.skuKey===sku||item.sku===sku;
-      // Old orders without skuList: skip (avoid false positives)
       return false;
     });
     if(!hasItem) return;
@@ -4015,13 +4032,15 @@ function getOrderNameSummary(order){
 
 // ── Helper: check if all items received ──
 function isOrderFullyReceived(order){
-  // Quick check: order-level received flag
   if(order.received === true) return true;
   const items = order.items||[];
   if(!items.length) return false;
   const rcv = order.receivedItems||{};
   return items.every(item=>{
-    const ik = item.itemKey || (item.parentSku+'__'+(item.color||'')+'__'+(item.rollIndex??''));
+    // Match the same itemKey format used when saving
+    const ik = item.type==='belt'
+      ? item.parentSku+'__'+(item.skuKey||item.sku||item.color||'')
+      : (item.itemKey || (item.parentSku+'__'+(item.color||'')+'__'+(item.rollIndex??'')));
     return rcv[ik]===true;
   });
 }
@@ -4279,12 +4298,13 @@ async function checkAllItems(orderKey, checked){
   if(!items.length) return;
 
   const updates = {};
+  if(!order.receivedItems) order.receivedItems={};
   items.forEach(item=>{
+    // Must match EXACT same format as renderHistDetail + toggleItemReceived
     const ik = item.type==='belt'
-      ? item.parentSku+'__'+(item.skuKey||item.sku||item.color)
-      : item.itemKey||(item.parentSku+'__'+item.color+'__'+(item.rollIndex??''));
+      ? item.parentSku+'__'+(item.skuKey||item.sku||item.color||'')
+      : (item.itemKey || (item.parentSku+'__'+(item.color||'')+'__'+(item.rollIndex??'')));
     updates['order_history/'+orderKey+'/receivedItems/'+ik] = checked||null;
-    if(!order.receivedItems) order.receivedItems={};
     order.receivedItems[ik] = checked;
   });
   // Also set order-level received flag
@@ -4293,10 +4313,14 @@ async function checkAllItems(orderKey, checked){
 
   try {
     await db.ref('/').update(updates);
-    order.received = checked;
+    order.received = !!checked;
     order.receivedAt = checked?Date.now():null;
     renderOrderHistory();
+    // Update table so คาดรับ column clears immediately
     try { renderAll(getFilteredData()); } catch(e){}
+    // Visual feedback
+    const hdr = document.querySelector(`#hist-${orderKey} .order-hist-hdr`);
+    if(hdr && checked){ hdr.style.animation='none'; requestAnimationFrame(()=>{ hdr.style.animation='popIn .3s ease'; }); }
   } catch(e){ console.warn('[Order] checkAll failed:', e); }
 }
 
@@ -5910,18 +5934,17 @@ function renderAll(data){
                    || isDiscontinued(item.parentSku||item.sku); // whole model
       let badge;
       if(_isDisc){
-        // ไม่เติมแล้ว — override ทุก status
-        badge=`<span class="badge" style="background:rgba(100,116,139,.2);color:var(--muted);border:1px solid rgba(100,116,139,.3)">🚫 ไม่เติมแล้ว</span>`;
+        badge=`<span class="badge" style="background:rgba(100,116,139,.15);color:#64748b;border:1px solid rgba(100,116,139,.25);font-size:11px">🚫<br>ไม่เติม</span>`;
       } else if(_stkSt === 'out'){
-        badge=`<span class="badge b-danger">🔴 หมดสต๊อก${_stkAm!==null?' ('+_stkAm+')':''}</span>`;
+        badge=`<span class="badge b-danger"><span class="badge-status">🔴 หมด</span>${_stkAm!==null?`<span class="badge-count">(${_stkAm})</span>`:''}</span>`;
       } else if(_stkSt === 'low'){
-        badge=`<span class="badge b-warn">🟡 เหลือน้อย (${_stkAm})</span>`;
+        badge=`<span class="badge b-warn"><span class="badge-status">🟡 น้อย</span><span class="badge-count">(${_stkAm})</span></span>`;
       } else if(_stkSt === 'ok'){
-        badge=`<span class="badge b-ok">🟢 มี (${_stkAm})</span>`;
+        badge=`<span class="badge b-ok"><span class="badge-status">🟢 มี</span><span class="badge-count">${_stkAm}</span></span>`;
       } else {
-        badge=`<span class="badge b-ok"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>ปกติ</span>`;
-        if(isHigh) badge=`<span class="badge b-danger"><svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>เสี่ยงสูง</span>`;
-        else if(isMed) badge=`<span class="badge b-warn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>ติดตาม</span>`;
+        badge=`<span class="badge b-ok" style="font-size:11px">ปกติ</span>`;
+        if(isHigh) badge=`<span class="badge b-danger"><span class="badge-status">⚠ เสี่ยง</span></span>`;
+        else if(isMed) badge=`<span class="badge b-warn"><span class="badge-status">! ติดตาม</span></span>`;
       }
 
       // last sale / peak colours
