@@ -555,6 +555,200 @@ button.fchip.on { background: rgba(217,119,6,.15); border-color: var(--blue); co
 /* ── Stock status bar warm ── */
 #stock-status-bar { background: rgba(22,163,74,.06) !important; border-color: rgba(22,163,74,.15) !important; }
 #fb-status-bar    { background: rgba(217,119,6,.06) !important; border-color: rgba(217,119,6,.12) !important; }
+
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE-FIRST APP LAYOUT
+   ═══════════════════════════════════════════════════════ */
+
+/* Safe area support for iPhone notch/home bar */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+body {
+  padding: 0 0 calc(72px + var(--safe-bottom)) 0;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Bottom Tab Navigation (mobile app style) ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 900;
+  background: rgba(253,248,238,.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(217,119,6,.12);
+  display: none;
+  padding: 8px 0 calc(8px + var(--safe-bottom));
+  box-shadow: 0 -4px 20px rgba(180,130,50,.1);
+}
+.bottom-nav-items {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+.bnav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all .18s;
+  color: var(--muted);
+  background: none;
+  border: none;
+  font-family: 'Anuphan', sans-serif;
+  min-width: 60px;
+  flex: 1;
+}
+.bnav-item svg {
+  width: 22px; height: 22px;
+  stroke: currentColor; fill: none; stroke-width: 2;
+  transition: all .18s;
+}
+.bnav-item span { font-size: 10px; font-weight: 700; letter-spacing: .3px; }
+.bnav-item.active { color: #d97706; }
+.bnav-item.active svg { stroke: #d97706; filter: drop-shadow(0 2px 4px rgba(217,119,6,.3)); }
+.bnav-item:active { transform: scale(.92); }
+
+/* ── Mobile App Header ── */
+.app-topbar {
+  position: sticky;
+  top: 0; left: 0; right: 0;
+  z-index: 800;
+  background: rgba(253,248,238,.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(217,119,6,.1);
+  padding: calc(var(--safe-top) + 10px) 16px 10px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.app-topbar-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  flex: 1;
+}
+.app-topbar-actions { display: flex; gap: 8px; align-items: center; }
+.icon-btn {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: var(--bg-dark);
+  border: 1px solid rgba(217,119,6,.15);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--sx);
+  transition: all .15s;
+}
+.icon-btn svg { width: 18px; height: 18px; stroke: var(--mid); fill: none; stroke-width: 2; }
+.icon-btn:active { transform: scale(.9); background: var(--bg-darker); }
+
+/* ── Page layout on mobile ── */
+.page {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 16px 14px 0;
+}
+
+/* ── Hide desktop header on mobile, show app header ── */
+@media (max-width: 768px) {
+  .header { display: none; }
+  .app-topbar { display: flex; }
+  .bottom-nav { display: block; }
+  body { padding-bottom: calc(72px + var(--safe-bottom)); }
+  .page { padding: 12px 12px 0; }
+
+  /* KPI grid — 2 cols on mobile */
+  .kpi-grid {
+    grid-template-columns: repeat(2,1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .kpi.bento-wide { grid-column: span 2; }
+  .kpi { padding: 14px 16px 12px; border-radius: 16px; }
+  .kpi-val { font-size: 24px; }
+
+  /* Tabs hidden on mobile (replaced by bottom nav) */
+  .tab-bar { display: none !important; }
+
+  /* Tab content full width */
+  .tab-content { padding: 0; }
+
+  /* Panel full width */
+  .panel { border-radius: 18px; margin-bottom: 16px; }
+  .panel-hdr { padding: 12px 14px; flex-wrap: nowrap; overflow-x: auto; gap: 8px; }
+  .panel-ttl { font-size: 16px; white-space: nowrap; }
+
+  /* Table — horizontal scroll with sticky first col */
+  .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { font-size: 13px; }
+  thead th { font-size: 11px; padding: 7px 8px; }
+  tbody td { font-size: 13px; padding: 9px 8px; }
+  .pname { font-size: 14px; }
+
+  /* Search bar full width */
+  .srch { width: 100%; }
+  .srch-wrap { flex: 1; }
+
+  /* Buttons smaller */
+  .btn { padding: 8px 14px; font-size: 13px; }
+
+  /* Formula strip compact */
+  .f-strip { padding: 6px 12px; }
+
+  /* Cart FAB — bigger on mobile */
+  .cart-fab { bottom: calc(80px + var(--safe-bottom)); right: 16px; }
+  .cart-btn { padding: 14px 20px; font-size: 15px; border-radius: 22px; }
+
+  /* Filter/col popup — full width bottom sheet on mobile */
+  #filterPopup, #colPopup {
+    position: fixed !important;
+    top: auto !important; bottom: calc(72px + var(--safe-bottom)) !important;
+    left: 8px !important; right: 8px !important;
+    max-height: 65vh;
+    overflow-y: auto;
+    border-radius: 20px 20px 16px 16px;
+    animation: slideUp .25s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* KPI number font larger for readability */
+  .kpi-unit { font-size: 14px; }
+  .kpi-lbl { font-size: 11px; }
+
+  /* Order cards */
+  .lot-card { border-radius: 16px; }
+  .belt-card { border-radius: 16px; }
+
+  /* History cards */
+  .order-hist-card { border-radius: 14px; }
+  .order-hist-hdr { padding: 12px 14px; }
+}
+
+/* ── Tablet ── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .page { padding: 20px 16px 0; }
+  .kpi-grid { grid-template-columns: repeat(4,1fr); gap: 10px; }
+}
+
+/* ── Pull-to-refresh feel ── */
+.page { overscroll-behavior-y: contain; }
+
+/* ── Touch-friendly tap targets ── */
+@media (hover: none) {
+  .btn, .tab-btn, .bnav-item, .kpi-clickable { min-height: 44px; }
+  input[type=checkbox] { min-width: 20px; min-height: 20px; }
+}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -609,6 +803,53 @@ button.fchip.on { background: rgba(217,119,6,.15); border-color: var(--blue); co
     </div>
   </div>
 </div>
+
+<!-- ══ MOBILE APP TOPBAR ══ -->
+<div class="app-topbar" id="app-topbar">
+  <div style="display:flex;align-items:center;gap:10px;flex:1">
+    <div class="brand-logo" style="width:36px;height:36px;border-radius:10px;flex-shrink:0">
+      <svg viewBox="0 0 24 24" style="position:relative;z-index:1"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+    </div>
+    <div>
+      <div class="app-topbar-title" id="topbar-title">Lamsang Analytics</div>
+      <div id="topbar-sub" style="font-size:11px;color:var(--muted)">
+        <div class="live-pill" style="display:inline-flex;padding:2px 8px;font-size:10px;gap:5px"><div class="live-dot"></div>LIVE</div>
+      </div>
+    </div>
+  </div>
+  <div class="app-topbar-actions">
+    <button class="icon-btn" onclick="syncData()" title="ซิงก์ข้อมูล">
+      <svg viewBox="0 0 24 24"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+    </button>
+    <button class="icon-btn" onclick="$('stock-upload-input').click()" title="อัพโหลดสต๊อก" style="position:relative">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span id="mob-stock-dot" style="display:none;position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--green);border-radius:50%;border:1.5px solid var(--bg)"></span>
+    </button>
+    <button class="icon-btn" id="mob-cart-btn" onclick="toggleCartModal()" style="position:relative;display:none">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      <span id="mob-cart-badge" style="display:none;position:absolute;top:4px;right:4px;width:16px;height:16px;background:#ef4444;border-radius:50%;font-size:9px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--bg)">0</span>
+    </button>
+  </div>
+</div>
+
+<!-- ══ BOTTOM TAB NAVIGATION ══ -->
+<nav class="bottom-nav" id="bottom-nav">
+  <div class="bottom-nav-items">
+    <button class="bnav-item active" id="bnav-dashboard" onclick="mobileTab('dashboard',this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+      <span>Dashboard</span>
+    </button>
+    <button class="bnav-item" id="bnav-order" onclick="mobileTab('order',this)">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      <span>สั่งซื้อ</span>
+    </button>
+    <button class="bnav-item" id="bnav-history" onclick="mobileTab('history',this)">
+      <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
+      <span>ประวัติ</span>
+      <span id="bnav-hist-badge" style="display:none;position:absolute;top:6px;right:calc(50% - 18px);width:16px;height:16px;background:var(--green);border-radius:50%;font-size:9px;font-weight:800;color:#fff;align-items:center;justify-content:center">0</span>
+    </button>
+  </div>
+</nav>
 
 <div class="page">
 
@@ -2230,6 +2471,11 @@ function updateCartFab(){
   if(fab) fab.style.display = n>0 ? 'flex' : 'none';
   if(badge) badge.textContent = n;
   if(badge2) badge2.textContent = n;
+  // Mobile cart button in topbar
+  const mobCartBtn = $('mob-cart-btn');
+  const mobCartBadge = $('mob-cart-badge');
+  if(mobCartBtn) mobCartBtn.style.display = n>0 ? 'flex' : 'none';
+  if(mobCartBadge){ mobCartBadge.textContent = n; mobCartBadge.style.display = n>0 ? 'flex' : 'none'; }
 }
 
 // ── Add pants roll to cart ──
@@ -2455,6 +2701,7 @@ function showOrderSummaryFromCart(order, days){
   const histTab = document.getElementById('tab-history');
   if(histTab) histTab.classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b=>{ if(b.textContent.includes('ประวัติ')) b.classList.add('active'); });
+  syncMobileNav('history');
   setTimeout(()=>loadOrderHistory(), 300);
 }
 
@@ -2868,6 +3115,36 @@ function exportOrderCSV(){
   a.download='lamsang_order.csv';a.click();
 }
 
+// Mobile tab navigation
+function mobileTab(name, bnavBtn){
+  // sync desktop tabs
+  const tabBtnMap = {'dashboard':0,'order':1,'history':2};
+  const desktopBtns = document.querySelectorAll('.tab-btn');
+  if(desktopBtns[tabBtnMap[name]]) switchTab(name, desktopBtns[tabBtnMap[name]]);
+  // update bottom nav active
+  ['dashboard','order','history'].forEach(t=>{
+    const b=$('bnav-'+t); if(b) b.classList.toggle('active', t===name);
+  });
+  // update topbar title
+  const titles={dashboard:'Dashboard & Stock',order:'แบบสั่งสินค้า',history:'ประวัติคำสั่งซื้อ'};
+  const topTitle=$('topbar-title'); if(topTitle) topTitle.textContent=titles[name]||'Lamsang';
+}
+
+// Sync bottom nav when desktop tab clicked
+function syncMobileNav(name){
+  ['dashboard','order','history'].forEach(t=>{
+    const b=$('bnav-'+t); if(b) b.classList.toggle('active', t===name);
+  });
+  const titles={dashboard:'Dashboard & Stock',order:'แบบสั่งสินค้า',history:'ประวัติคำสั่งซื้อ'};
+  const topTitle=$('topbar-title'); if(topTitle) topTitle.textContent=titles[name]||'Lamsang';
+}
+
+// Show stock dot when stock loaded
+function updateMobStockDot(){
+  const dot=$('mob-stock-dot');
+  if(dot) dot.style.display = isStockLoaded() ? 'block' : 'none';
+}
+
 function switchTab(name, btn){
   try {
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -2876,6 +3153,7 @@ function switchTab(name, btn){
   if(name==='history') setTimeout(()=>{ try{ loadOrderHistory(); }catch(e){} }, 50);
   btn.classList.add('active');
   $('tab-'+name).classList.add('active');
+  syncMobileNav(name);
   } catch(e){ console.warn('switchTab:', e); }
 }
 
@@ -3738,6 +4016,7 @@ function applyStockMap(map){
     });
   }
 
+  updateMobStockDot();
   // Auto-detect received orders from stock change
   if(orderHistory.length) try{ autoDetectOrderReceived(map, window._prevStockMap||{}); }catch(e){}
   window._prevStockMap = {...map};
