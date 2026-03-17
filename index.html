@@ -1407,6 +1407,95 @@ html, body {
     touch-action: pan-x !important;
   }
 }
+
+/* ═══════════════════════════════════════
+   PULL-TO-REFRESH
+   ═══════════════════════════════════════ */
+#ptr-indicator {
+  position: fixed;
+  top: 0; left: 50%;
+  transform: translateX(-50%) translateY(-80px);
+  z-index: 9999;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 4px 16px rgba(180,130,50,.2), 0 1px 4px rgba(0,0,0,.08);
+  display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid rgba(217,119,6,.2);
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1), opacity .2s;
+  opacity: 0;
+  pointer-events: none;
+}
+#ptr-indicator.pulling {
+  opacity: 1;
+}
+#ptr-indicator.ready {
+  border-color: #d97706;
+  background: rgba(217,119,6,.1);
+}
+#ptr-indicator.refreshing {
+  opacity: 1;
+  transform: translateX(-50%) translateY(calc(var(--safe-top) + 56px));
+}
+#ptr-icon {
+  width: 20px; height: 20px;
+  stroke: var(--blue); fill: none; stroke-width: 2.2;
+  transition: transform .3s ease;
+}
+#ptr-indicator.ready #ptr-icon {
+  stroke: #d97706;
+}
+#ptr-indicator.refreshing #ptr-icon {
+  animation: spin .7s linear infinite;
+}
+
+/* ── Order History Cards ── */
+.ord-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Anuphan', sans-serif;
+}
+.ord-status-pill.pending {
+  background: rgba(217,119,6,.12);
+  color: #92400e;
+  border: 1px solid rgba(217,119,6,.25);
+}
+.ord-status-pill.received {
+  background: rgba(22,163,74,.1);
+  color: #15803d;
+  border: 1px solid rgba(22,163,74,.2);
+  animation: popIn .3s ease;
+}
+
+.order-hist-card {
+  transition: box-shadow .2s, border-color .3s, background .3s;
+  border-left: 3px solid #d97706;
+}
+.order-hist-card:active { box-shadow: 0 1px 4px rgba(180,130,50,.1); }
+
+/* Smooth expand */
+.order-hist-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .35s cubic-bezier(.4,0,.2,1);
+  padding: 0 !important;
+}
+.order-hist-body.open {
+  max-height: 2000px;
+  padding: 0 !important;
+}
+.order-hist-body > div {
+  transition: opacity .2s ease .1s;
+  opacity: 0;
+}
+.order-hist-body.open > div {
+  opacity: 1;
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -1460,6 +1549,16 @@ html, body {
       </div>
     </div>
   </div>
+</div>
+
+<!-- Pull-to-refresh indicator -->
+<div id="ptr-indicator">
+  <svg id="ptr-icon" viewBox="0 0 24 24">
+    <path d="M21 2v6h-6"/>
+    <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+    <path d="M3 22v-6h6"/>
+    <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+  </svg>
 </div>
 
 <!-- ══ MOBILE APP TOPBAR ══ -->
@@ -2129,6 +2228,90 @@ window.addEventListener('load', ()=>{
   initTopbarScroll();
   initMobSearch();
 });
+
+
+// ══════════════════════════════════════════
+// PULL-TO-REFRESH
+// ══════════════════════════════════════════
+(function initPTR(){
+  const THRESHOLD = 72;   // px to pull before triggering
+  const MAX_PULL  = 100;
+  let startY = 0, curY = 0, pulling = false, triggered = false;
+  let ind = null;
+
+  function getInd(){ return ind || (ind = document.getElementById('ptr-indicator')); }
+
+  function setProgress(pct){
+    const el = getInd(); if(!el) return;
+    const top = Math.min(pct * 80, 80);
+    const saturate = Math.min(pct, 1);
+    el.style.transform = `translateX(-50%) translateY(${-80 + top}px)`;
+    el.style.opacity   = String(Math.min(pct * 1.5, 1));
+    document.getElementById('ptr-icon').style.transform = `rotate(${pct * 360}deg)`;
+    el.classList.toggle('ready', pct >= 1);
+  }
+
+  document.addEventListener('touchstart', e=>{
+    // Only trigger on mobile, only when scrolled to top
+    if(window.innerWidth > 768) return;
+    if(window.scrollY > 8) return;
+    const touch = e.touches[0];
+    startY = touch.clientY;
+    pulling = false; triggered = false;
+  }, {passive: true});
+
+  document.addEventListener('touchmove', e=>{
+    if(window.innerWidth > 768) return;
+    if(triggered) return;
+    const touch = e.touches[0];
+    curY = touch.clientY;
+    const diff = curY - startY;
+    if(diff <= 0){ pulling = false; return; }
+    if(window.scrollY > 8){ pulling = false; return; }
+    pulling = true;
+    const pct = Math.min(diff / THRESHOLD, 1.3);
+    getInd()?.classList.add('pulling');
+    setProgress(pct);
+  }, {passive: true});
+
+  document.addEventListener('touchend', ()=>{
+    if(!pulling || triggered) return;
+    pulling = false;
+    const diff = curY - startY;
+    if(diff >= THRESHOLD){
+      triggered = true;
+      // Show spinning
+      const el = getInd();
+      if(el){
+        el.classList.remove('pulling','ready');
+        el.classList.add('refreshing');
+        el.style.transform = `translateX(-50%) translateY(calc(var(--safe-top, 0px) + 56px))`;
+        el.style.opacity = '1';
+        document.getElementById('ptr-icon').style.transform = '';
+      }
+      // Trigger sync
+      try { syncData(); } catch(ex){}
+      // Hide after 2.5s
+      setTimeout(()=>{
+        if(el){
+          el.classList.remove('refreshing');
+          el.style.transform = 'translateX(-50%) translateY(-80px)';
+          el.style.opacity   = '0';
+        }
+        triggered = false;
+      }, 2500);
+    } else {
+      // Snap back
+      const el = getInd();
+      if(el){
+        el.classList.remove('pulling','ready');
+        el.style.transform = 'translateX(-50%) translateY(-80px)';
+        el.style.opacity   = '0';
+        document.getElementById('ptr-icon').style.transform = '';
+      }
+    }
+  });
+})();
 
 // ── PWA Install Prompt ──────────────────────────────────
 let _pwaPrompt = null;
@@ -3366,10 +3549,17 @@ async function submitCartOrder(){
   if(!n){ alert('ยังไม่มีรายการในตะกร้า'); return; }
   const days = getOrderDays();
   const items = Object.values(cart);
+  const autoName = (() => {
+    const groups = {};
+    items.forEach(item=>{ groups[item.parentSku]=item.factoryName||item.name||item.parentSku; });
+    return Object.values(groups).slice(0,3).join(' / ')+(Object.keys(groups).length>3?' …':'');
+  })();
   const order = {
     createdAt: Date.now(),
     days,
     items,
+    customName: null,
+    autoName,
     totalPants: items.filter(i=>i.type==='pants').reduce((s,i)=>s+i.pieces,0),
     totalBelt:  items.filter(i=>i.type!=='pants').reduce((s,i)=>s+(i.qty||0),0),
   };
@@ -3462,6 +3652,24 @@ async function loadOrderHistory(){
   }
 }
 
+// ── Helper: get product names summary from order ──
+function getOrderNameSummary(order){
+  const groups = {};
+  (order.items||[]).forEach(item=>{ groups[item.parentSku] = item.factoryName||item.name||item.parentSku; });
+  return Object.values(groups).slice(0,3).join(' / ') + (Object.keys(groups).length>3?' …':'');
+}
+
+// ── Helper: check if all items received ──
+function isOrderFullyReceived(order){
+  const items = order.items||[];
+  if(!items.length) return false;
+  const rcv = order.receivedItems||{};
+  return items.every(item=>{
+    const ik = item.itemKey || (item.parentSku+'__'+(item.color||'')+'__'+(item.rollIndex??''));
+    return rcv[ik]===true;
+  });
+}
+
 function renderOrderHistory(){
   const area=$('history-content'); if(!area) return;
   if(!orderHistory.length){ area.innerHTML='<div class="empty" style="padding:40px">ยังไม่มีประวัติ</div>'; return; }
@@ -3472,31 +3680,73 @@ function renderOrderHistory(){
     const totalPants = order.totalPants||0;
     const totalBelt  = order.totalBelt||0;
     const itemCount  = (order.items||[]).length;
-    return`<div class="order-hist-card" id="hist-${order.key}">
+    const nameSummary = order.customName || getOrderNameSummary(order);
+    const isReceived = isOrderFullyReceived(order);
+    const num = orderHistory.length - idx;
+
+    // Status pill
+    const statusPill = isReceived
+      ? `<span class="ord-status-pill received">✅ ได้รับแล้ว</span>`
+      : `<span class="ord-status-pill pending">🚚 กำลังสั่งซื้อ</span>`;
+
+    // Card accent color based on status
+    const cardStyle = isReceived
+      ? 'border-left: 3px solid #16a34a; background: rgba(22,163,74,.03);'
+      : 'border-left: 3px solid #d97706;';
+
+    return`<div class="order-hist-card" id="hist-${order.key}" style="${cardStyle}animation:cardIn .3s ease both;animation-delay:${Math.min(idx*0.05,0.4)}s">
       <div class="order-hist-hdr" onclick="toggleHistDetail('${order.key}')">
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <span style="font-size:15px;font-weight:800;color:var(--text)">📋 คำสั่งซื้อ #${orderHistory.length-idx}</span>
-            <span style="font-size:13px;color:var(--muted);cursor:pointer" onclick="event.stopPropagation();editOrderDate('${order.key}',${order.createdAt})" title="แก้ไขวันที่">✏️ ${dateStr} ${timeStr}</span>
-            <span style="font-size:12px;background:rgba(77,143,255,.12);color:var(--blue);padding:2px 8px;border-radius:6px">${itemCount} รายการ · ${order.days||15}วัน</span>
+        <div style="flex:1;min-width:0">
+          <!-- Row 1: number + status + date -->
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <span style="font-size:15px;font-weight:800;color:var(--text)">📋 #${num}</span>
+            ${statusPill}
+            <span style="font-size:12px;color:var(--muted);cursor:pointer;margin-left:auto" onclick="event.stopPropagation();editOrderDate('${order.key}',${order.createdAt})" title="แก้ไขวันที่">✏️ ${dateStr} ${timeStr}</span>
           </div>
-          <div style="display:flex;gap:10px;margin-top:6px">
-            ${totalPants?`<span style="font-size:13px;color:var(--blue)">👖 ${totalPants.toLocaleString()} ตัว</span>`:''}
-            ${totalBelt?`<span style="font-size:13px;color:var(--orange)">🎗️ ${totalBelt.toLocaleString()} ชิ้น</span>`:''}
+          <!-- Row 2: product names (editable) -->
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+            <span class="ord-name-lbl" id="ord-name-${order.key}" style="font-size:12px;color:var(--mid);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${nameSummary||'—'}</span>
+            <button onclick="event.stopPropagation();editOrderName('${order.key}')" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--faint);padding:1px 4px;border-radius:4px;flex-shrink:0" title="แก้ไขชื่อ">✎</button>
+          </div>
+          <!-- Row 3: totals + item count -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            ${totalPants?`<span style="font-size:12px;color:var(--blue)">👖 ${totalPants.toLocaleString()} ตัว</span>`:''}
+            ${totalBelt?`<span style="font-size:12px;color:var(--orange)">🎗️ ${totalBelt.toLocaleString()} ชิ้น</span>`:''}
+            <span style="font-size:11px;background:rgba(217,119,6,.1);color:var(--blue);padding:2px 7px;border-radius:6px">${itemCount} รายการ · ${order.days||15}วัน</span>
           </div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <button class="btn" style="font-size:12px;padding:4px 10px;color:var(--blue)" onclick="event.stopPropagation();reloadCartFromHistory('${order.key}')">🔄 สั่งซ้ำ</button>
-          <button class="btn" style="font-size:12px;padding:4px 10px;color:var(--red)" onclick="event.stopPropagation();deleteOrderHistory('${order.key}')">🗑 ลบ</button>
-          <span style="color:var(--muted);font-size:16px">▾</span>
+        <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">
+          <div style="display:flex;gap:5px">
+            <button class="btn" style="font-size:11px;padding:3px 8px;color:var(--blue)" onclick="event.stopPropagation();reloadCartFromHistory('${order.key}')">🔄</button>
+            <button class="btn" style="font-size:11px;padding:3px 8px;color:var(--red)" onclick="event.stopPropagation();deleteOrderHistory('${order.key}')">🗑</button>
+          </div>
+          <span id="hist-arrow-${order.key}" style="color:var(--muted);font-size:14px;transition:transform .25s">▾</span>
         </div>
       </div>
-      <div class="order-hist-body" id="histbody-${order.key}" style="display:none">
+      <div class="order-hist-body" id="histbody-${order.key}" style="display:none;overflow:hidden;transition:max-height .3s ease,padding .3s ease">
         ${renderHistDetail(order)}
       </div>
     </div>`;
   }).join('');
   area.innerHTML=html;
+}
+
+async function editOrderName(key){
+  const order = orderHistory.find(o=>o.key===key);
+  if(!order) return;
+  const cur = order.customName || getOrderNameSummary(order);
+  const newName = prompt('แก้ไขชื่อคำสั่งซื้อ:', cur);
+  if(newName===null) return;
+  const db=getRtdb(); if(!db) return;
+  try {
+    await db.ref('order_history/'+key+'/customName').set(newName.trim()||null);
+    order.customName = newName.trim()||null;
+    // Update display without full re-render
+    const el = document.getElementById('ord-name-'+key);
+    if(el) el.textContent = newName.trim() || getOrderNameSummary(order);
+    // Animate
+    if(el){ el.style.animation='none'; requestAnimationFrame(()=>{ el.style.animation='slideRight .2s ease'; }); }
+  } catch(e){ alert('แก้ไขไม่สำเร็จ: '+e.message); }
 }
 
 function renderHistDetail(order){
@@ -3633,13 +3883,14 @@ function renderHistDetail(order){
 }
 
 function toggleHistDetail(key){
-  const body=$(`histbody-${key}`);
+  const body = document.getElementById('histbody-'+key);
   if(!body) return;
-  body.style.display=body.style.display==='none'?'block':'none';
-  // flip arrow
-  const card=$(`hist-${key}`);
-  const arrow=card?.querySelector('.order-hist-hdr span:last-child');
-  if(arrow) arrow.textContent=body.style.display==='block'?'▴':'▾';
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  body.style.display = 'block'; // always block, max-height controls visibility
+  // Arrow animate
+  const arrow = document.getElementById('hist-arrow-'+key);
+  if(arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
 async function toggleItemReceived(orderKey, itemKey, checked){
