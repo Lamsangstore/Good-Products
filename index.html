@@ -1503,6 +1503,34 @@ html, body {
   /* Also hide filter+col+srch buttons inside panel-hdr */
   #filterBtn, #colBtn, .srch-wrap:not(.mob-tbl-toolbar .srch-wrap) { display: none !important; }
 }
+
+/* ── KPI chart canvas constraints ── */
+#kpi-chart-total, #kpi-chart-star, #kpi-chart-stock {
+  max-width: 64px !important;
+  max-height: 64px !important;
+  width: 64px !important;
+  height: 64px !important;
+}
+#kpi-chart-star {
+  max-width: 96px !important;
+  max-height: 52px !important;
+  width: 96px !important;
+  height: 52px !important;
+}
+#kpi-chart-stock {
+  max-width: 80px !important;
+  max-height: 80px !important;
+  width: 80px !important;
+  height: 80px !important;
+}
+#kpi-chart-vel, #kpi-chart-trend {
+  max-height: 28px !important;
+  height: 28px !important;
+  width: 100% !important;
+}
+/* Prevent chart overflow from KPI card */
+.kpi { overflow: hidden !important; }
+.kpi canvas { display: block !important; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -1666,7 +1694,7 @@ html, body {
     <div class="kpi-accent"></div>
     <div style="display:flex;align-items:center;gap:14px">
       <div style="position:relative;width:64px;height:64px;flex-shrink:0">
-        <canvas id="kpi-chart-total" width="64" height="64"></canvas>
+        <canvas id="kpi-chart-total" width="64" height="64" style="max-width:64px;max-height:64px;width:64px!important;height:64px!important"></canvas>
         <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
           <svg viewBox="0 0 20 20" style="width:18px;height:18px;stroke:#d97706;fill:none;stroke-width:1.8"><path d="M17 13.5V7a2 2 0 0 0-1-1.73l-5-2.88a2 2 0 0 0-2 0L4 5.27A2 2 0 0 0 3 7v6.5a2 2 0 0 0 1 1.73l5 2.88a2 2 0 0 0 2 0l5-2.88A2 2 0 0 0 17 13.5z"/></svg>
         </div>
@@ -1684,7 +1712,7 @@ html, body {
     <div class="kpi-accent"></div>
     <div style="display:flex;align-items:center;gap:14px">
       <div style="position:relative;width:64px;height:40px;flex-shrink:0;overflow:visible">
-        <canvas id="kpi-chart-star" width="96" height="52" style="margin-top:-6px;margin-left:-16px"></canvas>
+        <canvas id="kpi-chart-star" width="96" height="52" style="max-width:96px;max-height:52px;margin-top:-6px;margin-left:-16px"></canvas>
       </div>
       <div style="flex:1;min-width:0">
         <div class="kpi-lbl">True Star สูงสุด</div>
@@ -1732,7 +1760,7 @@ html, body {
           <span id="kpi-bar-lbl-ok"  style="font-size:11px;color:#16a34a"></span>
         </div>
       </div>
-      <canvas id="kpi-chart-stock" width="80" height="80" style="flex-shrink:0"></canvas>
+      <canvas id="kpi-chart-stock" width="80" height="80" style="flex-shrink:0;max-width:80px;max-height:80px"></canvas>
     </div>
   </div>
 
@@ -5898,7 +5926,7 @@ function drawKpiCharts(sorted, months){
     _kpiCharts['total'] = new Chart(totalC, {
       type:'doughnut',
       data:{ datasets:[{data:[out,low,ok,unk], backgroundColor:[RED,ORANGE,GREEN,'rgba(200,180,150,.3)'], borderWidth:0, borderRadius:3 }] },
-      options:{ cutout:'68%', animation:{animateRotate:true,duration:900,easing:'easeOutBack'}, plugins:{legend:{display:false},tooltip:{enabled:false}} }
+      options:{ responsive:false, maintainAspectRatio:false, cutout:'68%', animation:{animateRotate:true,duration:900,easing:'easeOutBack'}, plugins:{legend:{display:false},tooltip:{enabled:false}} }
     });
     // Legend
     const leg = document.getElementById('kpi-stock-legend');
@@ -5913,7 +5941,7 @@ function drawKpiCharts(sorted, months){
     _kpiCharts['total'] = new Chart(totalC, {
       type:'doughnut',
       data:{ datasets:[{data:[sorted.length,0], backgroundColor:[AMBER,'rgba(217,119,6,.1)'], borderWidth:0}] },
-      options:{ cutout:'68%', animation:{duration:800,easing:'easeOutBack'}, plugins:{legend:{display:false},tooltip:{enabled:false}} }
+      options:{ responsive:false, maintainAspectRatio:false, cutout:'68%', animation:{duration:800,easing:'easeOutBack'}, plugins:{legend:{display:false},tooltip:{enabled:false}} }
     });
     const leg=document.getElementById('kpi-stock-legend');
     if(leg) leg.innerHTML=`<span style="font-size:10px;color:var(--muted)">${sorted.length} รายการ</span>`;
@@ -5931,7 +5959,7 @@ function drawKpiCharts(sorted, months){
         backgroundColor:[topScore>=70?GREEN:topScore>=50?AMBER:RED, 'rgba(217,119,6,.1)'],
         borderWidth:0, circumference:180, rotation:270
       }]},
-      options:{ cutout:'62%', animation:{animateRotate:true,duration:1000,easing:'easeOutBack'}, plugins:{legend:{display:false},tooltip:{enabled:false}} }
+      options:{ responsive:false, maintainAspectRatio:false, cutout:'62%', animation:{animateRotate:true,duration:1000,easing:'easeOutBack'}, plugins:{legend:{display:false},tooltip:{enabled:false}} }
     });
   }
 
@@ -5950,10 +5978,9 @@ function drawKpiCharts(sorted, months){
       }]},
       options:{
         responsive:true, maintainAspectRatio:false,
-        animation:{ duration:800, easing:'easeOutBack',
-          onProgress(anim){ const el=velC.parentElement; if(el) el.style.opacity=String(anim.currentStep/anim.numSteps); } },
+        animation:{ duration:800, easing:'easeOutBack' },
         plugins:{legend:{display:false},tooltip:{enabled:false}},
-        scales:{ x:{display:false}, y:{display:false,max:maxV*1.2} }
+        scales:{ x:{display:false}, y:{display:false,min:0,max:maxV*1.3} }
       }
     });
   }
@@ -5978,7 +6005,7 @@ function drawKpiCharts(sorted, months){
         responsive:true, maintainAspectRatio:false,
         animation:{ duration:900, easing:'easeOutElastic' },
         plugins:{legend:{display:false},tooltip:{enabled:false}},
-        scales:{ x:{display:false}, y:{display:false} }
+        scales:{ x:{display:false}, y:{display:false,min:0} }
       }
     });
   }
@@ -5999,7 +6026,7 @@ function drawKpiCharts(sorted, months){
         backgroundColor:[`${RED}cc`,`${ORANGE}cc`,`${GREEN}cc`],
         borderWidth:0
       }]},
-      options:{ animation:{duration:900,easing:'easeOutBack'}, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{r:{display:false}} }
+      options:{ responsive:false, maintainAspectRatio:false, animation:{duration:900,easing:'easeOutBack'}, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{r:{display:false}} }
     });
   }
 
