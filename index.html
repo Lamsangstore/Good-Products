@@ -1523,6 +1523,94 @@ html, body {
   /* Prevent ResizeObserver loop */
   contain: strict !important;
 }
+
+/* ════════════════════════════════════════
+   LOT CARD — Clean Redesign
+   ════════════════════════════════════════ */
+
+/* Main card */
+.lot-card {
+  background: var(--surface) !important;
+  border: 1px solid rgba(217,119,6,.1) !important;
+  border-radius: 20px !important;
+  padding: 20px !important;
+  margin: 12px 0 !important;
+  box-shadow: 0 2px 12px rgba(180,130,50,.07) !important;
+  transition: box-shadow .2s !important;
+}
+.lot-card:hover { box-shadow: 0 4px 20px rgba(180,130,50,.12) !important; }
+
+/* Header */
+.lot-card-hdr { margin-bottom: 16px !important; gap: 10px !important; }
+.lot-card-name { font-size: 17px !important; font-weight: 800 !important; letter-spacing: -.3px !important; }
+.lot-card-sku  { font-size: 12px !important; color: var(--faint) !important; margin-top: 2px !important; }
+
+/* Summary badge */
+.lot-card-avg {
+  background: rgba(22,163,74,.08) !important;
+  border: 1px solid rgba(22,163,74,.18) !important;
+  border-radius: 14px !important;
+  padding: 8px 16px !important;
+  text-align: right !important;
+}
+.lot-card-avg-lbl { font-size: 11px !important; letter-spacing: .4px !important; }
+.lot-card-avg-val { font-size: 20px !important; }
+
+/* Color header */
+.lot-color-name { font-size: 14px !important; font-weight: 700 !important; }
+
+/* Roll container */
+.lot-vis-roll {
+  background: rgba(217,119,6,.04) !important;
+  border: 1px solid rgba(217,119,6,.1) !important;
+  border-radius: 14px !important;
+  padding: 12px !important;
+}
+.lot-vis-roll-hdr {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  margin-bottom: 8px !important;
+  gap: 6px !important;
+  flex-wrap: wrap !important;
+}
+
+/* Size cells — compact clean grid */
+.lot-size-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid rgba(217,119,6,.1);
+  min-width: 52px;
+  position: relative;
+  transition: border-color .15s;
+}
+.lot-size-cell.cell-ok    { background: rgba(22,163,74,.07);  border-color: rgba(22,163,74,.2); }
+.lot-size-cell.cell-oos   { background: rgba(239,68,68,.07);  border-color: rgba(239,68,68,.2); }
+.lot-size-cell.cell-low   { background: rgba(234,88,12,.07);  border-color: rgba(234,88,12,.2); }
+.lot-size-cell-sz   { font-size: 11px; font-weight: 800; color: var(--muted); letter-spacing: .4px; text-transform: uppercase; }
+.lot-size-cell-lots { font-size: 20px; font-weight: 800; color: var(--blue); font-family: 'IBM Plex Mono', monospace; line-height: 1; }
+.lot-size-cell-lots.is-zero { color: var(--faint); font-size: 16px; }
+.lot-size-cell-stock { font-size: 10px; font-weight: 700; margin-top: 1px; }
+.lot-size-cell input {
+  width: 36px;
+  font-size: 18px;
+  font-weight: 800;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--blue);
+  background: none;
+  border: none;
+  outline: none;
+  text-align: center;
+  cursor: text;
+  padding: 0;
+  line-height: 1;
+}
+.lot-size-cell input:focus { color: var(--text); }
+.lot-size-cell-hint { font-size: 9px; color: var(--faint); }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -3139,38 +3227,25 @@ function renderPantsCard(g, days){
       const cardBg=noNeed?'rgba(46,204,138,.07)':isOOS?'rgba(255,85,114,.07)':isLow?'rgba(255,170,68,.06)':'var(--bg)';
       const cardBdr=noNeed?'1px solid rgba(46,204,138,.3)':isOOS?'1px solid rgba(255,85,114,.3)':isLow?'1px solid rgba(255,170,68,.3)':'none';
       const lotColor=noNeed?'var(--green)':isOv?'var(--orange)':'var(--blue)';
-      return`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:${cardBg};box-shadow:var(--sx);border-radius:12px;border:${cardBdr}">
-        <div style="min-width:44px;text-align:center">
-          <div style="font-size:15px;font-weight:800;color:var(--text)">${sz}</div>
-          ${item?`<div style="font-size:10px;color:var(--faint);font-family:'IBM Plex Mono',monospace;margin-top:1px;word-break:break-all">${(item.sku||'').slice(-6)}</div>`:''}
-          ${noNeed?'<div style="font-size:10px;color:var(--green);font-weight:800;margin-top:2px">✓ พอ</div>':isOOS?'<div style="font-size:10px;color:var(--red);font-weight:800;margin-top:2px">🔴 หมด</div>':isLow?`<div style="font-size:10px;color:var(--orange);font-weight:800;margin-top:2px">🟡 เหลือ ${onHand}</div>`:''}
-        </div>
-        <div style="flex:1;min-width:0">
-          ${item&&item._noSales
-            ? `<div style="font-size:12px;color:var(--orange);font-weight:700">⚠ ไม่มีข้อมูลยอดขาย</div>`
-            : `<div style="font-size:12px;color:var(--muted)">ต้องการ <b style="color:var(--blue)">${d}</b> ตัว/${days}วัน</div>`
-          }
-          ${hasFile?`<div style="font-size:12px;margin-top:2px">
-            มีอยู่ <b style="color:${noNeed?'var(--green)':isOOS?'var(--red)':isLow?'var(--orange)':'var(--text)'}">${onHand}</b> ตัว
-            <span style="color:${noNeed?'var(--green)':'var(--orange)'};font-size:11px">
-              ${noNeed?' · เกิน +'+(onHand-d):' · ขาด '+net}
-            </span></div>`:''}
-          <div style="font-size:12px;color:${noNeed?'var(--green)':'var(--faint)'};margin-top:2px">
-            ${noNeed?'<b>ไม่ต้องสั่ง</b>':pcs+' ตัวที่สั่ง'}
-          </div>
-          <div style="margin-top:5px;padding:4px 7px;background:var(--bg-dark);border-radius:7px;border-left:2px solid var(--purple)">
-            <div style="font-size:11px;color:var(--muted)">แนะนำ/เดือน: <b style="color:var(--purple)">${monthlyAvg}</b> ตัว <span style="color:var(--faint)">(${recStockVal}+${maxVel7x30})÷2</span></div>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding-top:2px">
-          <span style="font-size:11px;color:var(--muted)">ล็อค</span>
-          <input class="lot-cfg-input" type="number" min="0" max="99" value="${lots}"
-            style="width:42px;color:${lotColor}"
-            onchange="setLotsOverride('${esc}','${ovEsc}',+this.value)"
-            onclick="event.stopPropagation()"
-            title="${isOv?'✎ ปรับเอง':'auto: ceil(ขาด '+net+'/'+piecesPerLot+')='+autoVal}">
-          ${noNeed?`<span style="font-size:10px;color:var(--green)">ไม่สั่ง</span>`:isOv?`<span style="font-size:11px;color:var(--orange)">✎</span>`:''}
-        </div>
+      // Stock status class
+      const cellCls = noNeed?'cell-ok':isOOS?'cell-oos':isLow?'cell-low':'';
+      // Stock badge text
+      const stockBadge = !hasFile ? ''
+        : noNeed  ? `<span class="lot-size-cell-stock" style="color:var(--green)">✓ ${onHand}</span>`
+        : isOOS   ? `<span class="lot-size-cell-stock" style="color:var(--red)">0</span>`
+        : isLow   ? `<span class="lot-size-cell-stock" style="color:var(--orange)">${onHand}</span>`
+        : `<span class="lot-size-cell-stock" style="color:var(--mid)">${onHand}</span>`;
+      const noSalesBadge = item&&item._noSales ? `<span style="font-size:9px;color:var(--orange)">⚠ ไม่มีข้อมูล</span>` : '';
+      return`<div class="lot-size-cell ${cellCls}">
+        <span class="lot-size-cell-sz">${sz}</span>
+        <input class="lot-cfg-input" type="number" min="0" max="99" value="${noNeed?0:lots}"
+          style="width:36px;font-size:18px;font-weight:800;color:${noNeed?'var(--faint)':lotColor};font-family:'IBM Plex Mono',monospace;background:none;border:none;outline:none;text-align:center;cursor:text;padding:0;line-height:1"
+          onchange="setLotsOverride('${esc}','${ovEsc}',+this.value)"
+          onclick="event.stopPropagation()"
+          title="${sz}: ต้องการ ${d}ตัว · ${isOv?'ปรับเอง':'auto='+autoVal}">
+        ${stockBadge}
+        ${noSalesBadge}
+        <span class="lot-size-cell-hint">${noNeed?'พอ':net>0?'ขาด '+net:d?'ไม่ขาด':''}</span>
       </div>`;
     }).join('');
 
@@ -3201,19 +3276,19 @@ function renderPantsCard(g, days){
       const rollDataB64 = btoa(unescape(encodeURIComponent(JSON.stringify({totalLots:roll.totalLots,counts:roll.counts||{},extraCounts:roll.extraCounts||{}}))));
       const escCol2 = col.replace(/"/g,'&quot;');
       const escName2 = g.name.replace(/"/g,'&quot;');
-      return`<div class="lot-vis-roll" style="min-width:140px;flex:1">
-        <div class="lot-vis-roll-hdr" style="flex-wrap:wrap;gap:4px">
-          <span>🧵 ไม้ ${ri+1}</span>
-          <span style="font-size:12px;color:var(--muted)">${roll.totalLots} ล็อค · ${rollPieces}ตัว</span>
-          ${hasExtra?`<span style="font-size:11px;color:var(--orange)">มีเกิน</span>`:''}
-          <button class="cart-select-btn ${rollInCart?'selected':''}" style="margin-left:auto"
+      return`<div class="lot-vis-roll" style="min-width:120px;flex:1">
+        <div class="lot-vis-roll-hdr" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">
+          <span style="font-size:13px;font-weight:800;color:var(--text)">ไม้ ${ri+1}</span>
+          <span style="font-size:12px;color:var(--blue);font-weight:700;font-family:'IBM Plex Mono',monospace">${rollPieces}ตัว</span>
+          ${hasExtra?`<span style="font-size:10px;color:var(--orange);font-weight:700">+เกิน</span>`:''}
+          <button class="cart-select-btn ${rollInCart?'selected':''}" style="margin-left:auto;font-size:11px;padding:3px 9px"
             data-psku="${g.parentSku}" data-name="${escName2}" data-col="${escCol2}"
             data-ri="${ri}" data-rd="${rollDataB64}" data-ppl="${piecesPerLot}" data-incart="${rollInCart?1:0}"
             onclick="event.stopPropagation();rollCartToggle(this)">
-            ${rollInCart?'✓ เลือกแล้ว':'+ เลือก'}
+            ${rollInCart?'✓':'+ เลือก'}
           </button>
         </div>
-        <div>${rows}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">${rows}</div>
       </div>`;
     }).join('');
 
@@ -3240,7 +3315,7 @@ function renderPantsCard(g, days){
       ${colDisc?'':`
 
       <div style="margin-bottom:14px">
-        <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px">ล็อคต่อไซส์ = ceil(เฉลี่ย ÷ ${piecesPerLot})</div>
+        <div style="font-size:11px;color:var(--faint);margin-bottom:6px;letter-spacing:.2px">ล็อค/ไซส์ = ceil(ขาด ÷ ${piecesPerLot} ตัว)</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px">${sizeRows}</div>
         <div style="margin-top:8px;font-size:13px;color:var(--muted)">
           รวม <b style="color:var(--text)">${r.totalLots} ล็อค</b> ที่ต้องการ →
