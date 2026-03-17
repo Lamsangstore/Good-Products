@@ -1661,52 +1661,78 @@ html, body {
 <!-- KPI Bento Grid -->
 <div class="kpi-grid">
 
-  <!-- Row 1: สินค้าทั้งหมด (wide) + True Star (wide) -->
-  <div class="kpi c-blue kpi-clickable bento-wide" onclick="kpiSort('name','asc','สินค้าทั้งหมด')" title="คลิกเรียงชื่อ" style="display:flex;align-items:center;gap:18px">
+  <!-- Card 1: สินค้าทั้งหมด — Donut chart (stock status distribution) -->
+  <div class="kpi c-blue kpi-clickable bento-wide" onclick="kpiSort('name','asc','สินค้าทั้งหมด')" title="คลิกเรียงชื่อ">
     <div class="kpi-accent"></div>
-    <div class="kpi-ico" style="margin-bottom:0;flex-shrink:0"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
-    <div>
-      <div class="kpi-lbl">สินค้าทั้งหมด</div>
-      <div class="kpi-val" style="margin:2px 0"><span id="k-total">—</span><span class="kpi-unit">SKUs</span></div>
-      <div class="kpi-note">วิเคราะห์ได้จากข้อมูล</div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="position:relative;width:64px;height:64px;flex-shrink:0">
+        <canvas id="kpi-chart-total" width="64" height="64"></canvas>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+          <svg viewBox="0 0 20 20" style="width:18px;height:18px;stroke:#d97706;fill:none;stroke-width:1.8"><path d="M17 13.5V7a2 2 0 0 0-1-1.73l-5-2.88a2 2 0 0 0-2 0L4 5.27A2 2 0 0 0 3 7v6.5a2 2 0 0 0 1 1.73l5 2.88a2 2 0 0 0 2 0l5-2.88A2 2 0 0 0 17 13.5z"/></svg>
+        </div>
+      </div>
+      <div>
+        <div class="kpi-lbl">สินค้าทั้งหมด</div>
+        <div class="kpi-val" style="margin:2px 0"><span id="k-total">—</span><span class="kpi-unit">SKUs</span></div>
+        <div id="kpi-stock-legend" class="kpi-note" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"></div>
+      </div>
     </div>
   </div>
 
-  <div class="kpi c-gold kpi-clickable bento-wide" onclick="kpiSort('starScore','desc','True Star Score')" title="คลิกเรียง True Star" style="display:flex;align-items:center;gap:18px">
+  <!-- Card 2: True Star — Gauge / arc chart -->
+  <div class="kpi c-gold kpi-clickable bento-wide" onclick="kpiSort('starScore','desc','True Star Score')" title="คลิกเรียง True Star">
     <div class="kpi-accent"></div>
-    <div class="kpi-ico" style="margin-bottom:0;flex-shrink:0"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-    <div style="flex:1;min-width:0">
-      <div class="kpi-lbl">True Star สูงสุด</div>
-      <div class="kpi-val" style="margin:2px 0"><span id="k-starscore">—</span><span class="kpi-unit">/ 100</span></div>
-      <div class="kpi-note" id="k-starname" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="position:relative;width:64px;height:40px;flex-shrink:0;overflow:visible">
+        <canvas id="kpi-chart-star" width="96" height="52" style="margin-top:-6px;margin-left:-16px"></canvas>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div class="kpi-lbl">True Star สูงสุด</div>
+        <div class="kpi-val" style="margin:2px 0"><span id="k-starscore">—</span><span class="kpi-unit">/ 100</span></div>
+        <div class="kpi-note" id="k-starname" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+      </div>
     </div>
   </div>
 
-  <!-- Row 2: Velocity + Trend + Stock (3 equal cols) -->
-  <div class="kpi c-green kpi-clickable" style="grid-column:span 1" onclick="kpiSort('adjVel','desc','Adj. Velocity')" title="คลิกเรียง Velocity">
+  <!-- Card 3: Adj. Velocity — Sparkline bar -->
+  <div class="kpi c-green kpi-clickable" onclick="kpiSort('adjVel','desc','Adj. Velocity')" title="คลิกเรียง Velocity">
     <div class="kpi-accent"></div>
     <div class="kpi-lbl">Adj. Velocity</div>
     <div class="kpi-val" style="margin:4px 0 2px"><span id="k-vel">—</span><span class="kpi-unit">ชิ้น/วัน</span></div>
-    <div class="kpi-note">สูงสุดในระบบ</div>
+    <div class="kpi-note" style="margin-bottom:6px">สูงสุดในระบบ</div>
+    <canvas id="kpi-chart-vel" height="28" style="width:100%;display:block"></canvas>
   </div>
 
-  <div class="kpi c-orange kpi-clickable" style="grid-column:span 1" onclick="kpiSort('trendPct','desc','Trend')" title="คลิกเรียง Trend">
+  <!-- Card 4: Trend — Bubble / scatter dots -->
+  <div class="kpi c-orange kpi-clickable" onclick="kpiSort('trendPct','desc','Trend')" title="คลิกเรียง Trend">
     <div class="kpi-accent"></div>
-    <div class="kpi-ico" style="width:24px;height:24px;margin-bottom:8px"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
     <div class="kpi-lbl">กำลังมาแรง 🚀</div>
     <div class="kpi-val" style="margin:4px 0 2px"><span id="k-rising">—</span><span class="kpi-unit">SKUs</span></div>
-    <div class="kpi-note">Trend &gt;30%</div>
+    <div class="kpi-note" style="margin-bottom:6px">Trend &gt;30%</div>
+    <canvas id="kpi-chart-trend" height="28" style="width:100%;display:block"></canvas>
   </div>
 
-  <div class="kpi c-purple kpi-clickable" style="grid-column:span 2" onclick="kpiSort('recStock','desc','สต๊อกแนะนำ')" title="คลิกเรียงสต๊อก" >
+  <!-- Card 5: Stock — Horizontal progress fill -->
+  <div class="kpi c-purple kpi-clickable" style="grid-column:span 2" onclick="kpiSort('recStock','desc','สต๊อกแนะนำ')" title="คลิกเรียงสต๊อก">
     <div class="kpi-accent"></div>
     <div style="display:flex;align-items:center;gap:16px">
-      <div class="kpi-ico" style="margin-bottom:0;flex-shrink:0"><svg viewBox="0 0 24 24"><path d="M5 8h14M5 8a2 2 0 1 0 0-4h14a2 2 0 1 0 0 4M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/></svg></div>
-      <div>
+      <div style="flex:1;min-width:0">
         <div class="kpi-lbl">สต๊อกรวมที่แนะนำ</div>
-        <div class="kpi-val" style="margin:4px 0 2px"><span id="k-totalstock">—</span><span class="kpi-unit">ชิ้น</span></div>
-        <div class="kpi-note" id="k-stocknote">สำหรับ 1 เดือนข้างหน้า</div>
+        <div class="kpi-val" style="margin:4px 0 4px"><span id="k-totalstock">—</span><span class="kpi-unit">ชิ้น</span></div>
+        <div class="kpi-note" id="k-stocknote" style="margin-bottom:8px">สำหรับ 1 เดือนข้างหน้า</div>
+        <!-- Segmented bar: out/low/ok -->
+        <div id="kpi-stock-bar-wrap" style="display:flex;gap:2px;height:8px;border-radius:6px;overflow:hidden;background:rgba(217,119,6,.1)">
+          <div id="kpi-bar-out" style="height:100%;background:#ef4444;border-radius:6px 0 0 6px;width:0;transition:width 1s cubic-bezier(.34,1.56,.64,1)"></div>
+          <div id="kpi-bar-low" style="height:100%;background:#ea580c;width:0;transition:width 1s cubic-bezier(.34,1.56,.64,1) .1s"></div>
+          <div id="kpi-bar-ok"  style="height:100%;background:#16a34a;border-radius:0 6px 6px 0;width:0;transition:width 1s cubic-bezier(.34,1.56,.64,1) .2s"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:5px;flex-wrap:wrap">
+          <span id="kpi-bar-lbl-out" style="font-size:11px;color:#ef4444"></span>
+          <span id="kpi-bar-lbl-low" style="font-size:11px;color:#ea580c"></span>
+          <span id="kpi-bar-lbl-ok"  style="font-size:11px;color:#16a34a"></span>
+        </div>
       </div>
+      <canvas id="kpi-chart-stock" width="80" height="80" style="flex-shrink:0"></canvas>
     </div>
   </div>
 
@@ -5367,6 +5393,9 @@ function renderAll(data){
   $('k-totalstock').textContent=totalStock.toLocaleString();
   $('k-stocknote').textContent=`สำหรับ ${months} เดือนข้างหน้า`;
 
+  // Draw KPI micro-charts
+  try { drawKpiCharts(sorted, months); } catch(e){ console.warn('kpiCharts:', e); }
+
   // Risk tab — update badge count + render
   const highRisk = sorted.filter(d=>d.stockoutScore > (window.riskThreshold??60));
   // risk-badge removed — skip
@@ -5841,6 +5870,154 @@ function closeMobCardConfig(){
   document.body.style.overflow='';
 }
 
+
+
+// ═══════════════════════════════════════════════════
+// KPI MICRO-CHARTS
+// ═══════════════════════════════════════════════════
+let _kpiCharts = {};
+
+function destroyKpiChart(id){
+  if(_kpiCharts[id]){ try{_kpiCharts[id].destroy();}catch(e){} delete _kpiCharts[id]; }
+}
+
+function drawKpiCharts(sorted, months){
+  if(!sorted||!sorted.length) return;
+  const AMBER = '#d97706', GREEN = '#16a34a', RED = '#ef4444', ORANGE = '#ea580c', PURPLE = '#7c3aed', BLUE = '#d97706';
+
+  // ── Chart 1: Donut — stock status distribution ──
+  destroyKpiChart('total');
+  const totalC = document.getElementById('kpi-chart-total');
+  if(totalC && isStockLoaded()){
+    let out=0,low=0,ok=0,unk=0;
+    sorted.forEach(item=>{
+      const s=getStockStatus(item.sku);
+      if(s==='out') out++; else if(s==='low') low++; else if(s==='ok') ok++; else unk++;
+    });
+    const total = sorted.length||1;
+    _kpiCharts['total'] = new Chart(totalC, {
+      type:'doughnut',
+      data:{ datasets:[{data:[out,low,ok,unk], backgroundColor:[RED,ORANGE,GREEN,'rgba(200,180,150,.3)'], borderWidth:0, borderRadius:3 }] },
+      options:{ cutout:'68%', animation:{animateRotate:true,duration:900,easing:'easeOutBack'}, plugins:{legend:{display:false},tooltip:{enabled:false}} }
+    });
+    // Legend
+    const leg = document.getElementById('kpi-stock-legend');
+    if(leg) leg.innerHTML = [
+      out?`<span style="color:${RED};font-size:10px">🔴 ${out}</span>`:'',
+      low?`<span style="color:${ORANGE};font-size:10px">🟡 ${low}</span>`:'',
+      ok?`<span style="color:${GREEN};font-size:10px">🟢 ${ok}</span>`:'',
+    ].filter(Boolean).join('') || `<span style="font-size:10px;color:var(--muted)">ยังไม่มีสต๊อก</span>`;
+  } else if(totalC){
+    // No stock: simple ring placeholder
+    destroyKpiChart('total');
+    _kpiCharts['total'] = new Chart(totalC, {
+      type:'doughnut',
+      data:{ datasets:[{data:[sorted.length,0], backgroundColor:[AMBER,'rgba(217,119,6,.1)'], borderWidth:0}] },
+      options:{ cutout:'68%', animation:{duration:800,easing:'easeOutBack'}, plugins:{legend:{display:false},tooltip:{enabled:false}} }
+    });
+    const leg=document.getElementById('kpi-stock-legend');
+    if(leg) leg.innerHTML=`<span style="font-size:10px;color:var(--muted)">${sorted.length} รายการ</span>`;
+  }
+
+  // ── Chart 2: Gauge arc — True Star score ──
+  destroyKpiChart('star');
+  const starC = document.getElementById('kpi-chart-star');
+  const topScore = sorted[0]?.starScore||0;
+  if(starC){
+    _kpiCharts['star'] = new Chart(starC, {
+      type:'doughnut',
+      data:{ datasets:[{
+        data:[topScore, 100-topScore],
+        backgroundColor:[topScore>=70?GREEN:topScore>=50?AMBER:RED, 'rgba(217,119,6,.1)'],
+        borderWidth:0, circumference:180, rotation:270
+      }]},
+      options:{ cutout:'62%', animation:{animateRotate:true,duration:1000,easing:'easeOutBack'}, plugins:{legend:{display:false},tooltip:{enabled:false}} }
+    });
+  }
+
+  // ── Chart 3: Sparkline bar — top 8 velocities ──
+  destroyKpiChart('vel');
+  const velC = document.getElementById('kpi-chart-vel');
+  if(velC){
+    const top8 = [...sorted].sort((a,b)=>b.adjVel-a.adjVel).slice(0,8);
+    const maxV = top8[0]?.adjVel||1;
+    _kpiCharts['vel'] = new Chart(velC, {
+      type:'bar',
+      data:{ labels:top8.map((_,i)=>i+1), datasets:[{
+        data: top8.map(d=>d.adjVel),
+        backgroundColor: top8.map((_,i)=>`rgba(22,163,74,${1-i*0.1})`),
+        borderRadius:3, borderSkipped:false
+      }]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        animation:{ duration:800, easing:'easeOutBack',
+          onProgress(anim){ const el=velC.parentElement; if(el) el.style.opacity=String(anim.currentStep/anim.numSteps); } },
+        plugins:{legend:{display:false},tooltip:{enabled:false}},
+        scales:{ x:{display:false}, y:{display:false,max:maxV*1.2} }
+      }
+    });
+  }
+
+  // ── Chart 4: Trend wave — mini line of trend distribution ──
+  destroyKpiChart('trend');
+  const trendC = document.getElementById('kpi-chart-trend');
+  if(trendC){
+    // Bucket by trend %: <-30, -30~-10, -10~10, 10~30, >30
+    const buckets = [-50,-20,0,20,50,100];
+    const counts = new Array(buckets.length-1).fill(0);
+    sorted.forEach(d=>{ for(let i=0;i<buckets.length-1;i++){ if(d.trendPct>=buckets[i]&&d.trendPct<buckets[i+1]){ counts[i]++; break; } } });
+    _kpiCharts['trend'] = new Chart(trendC, {
+      type:'line',
+      data:{ labels:['📉📉','📉','→','📈','🚀'], datasets:[{
+        data:counts, fill:true,
+        borderColor:ORANGE, backgroundColor:'rgba(234,88,12,.15)',
+        borderWidth:2, tension:0.4, pointRadius:3, pointBackgroundColor:ORANGE,
+        pointHoverRadius:5
+      }]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        animation:{ duration:900, easing:'easeOutElastic' },
+        plugins:{legend:{display:false},tooltip:{enabled:false}},
+        scales:{ x:{display:false}, y:{display:false} }
+      }
+    });
+  }
+
+  // ── Chart 5: Stock radar — out/low/ok segments ──
+  destroyKpiChart('stock');
+  const stockC = document.getElementById('kpi-chart-stock');
+  let sOut=0,sLow=0,sOk=0,sUnk=0;
+  sorted.forEach(item=>{
+    const s=getStockStatus(item.sku);
+    if(s==='out') sOut++; else if(s==='low') sLow++; else if(s==='ok') sOk++; else sUnk++;
+  });
+  if(stockC && isStockLoaded()){
+    _kpiCharts['stock'] = new Chart(stockC, {
+      type:'polarArea',
+      data:{ labels:['หมด','น้อย','พอ'], datasets:[{
+        data:[sOut||0.1, sLow||0.1, sOk||0.1],
+        backgroundColor:[`${RED}cc`,`${ORANGE}cc`,`${GREEN}cc`],
+        borderWidth:0
+      }]},
+      options:{ animation:{duration:900,easing:'easeOutBack'}, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{r:{display:false}} }
+    });
+  }
+
+  // Stock segmented bar
+  const stTotal = sOut+sLow+sOk+sUnk||1;
+  const barOut = document.getElementById('kpi-bar-out');
+  const barLow = document.getElementById('kpi-bar-low');
+  const barOk  = document.getElementById('kpi-bar-ok');
+  if(barOut) barOut.style.width = (sOut/stTotal*100)+'%';
+  if(barLow) barLow.style.width = (sLow/stTotal*100)+'%';
+  if(barOk)  barOk.style.width  = (sOk/stTotal*100)+'%';
+  const lblOut=document.getElementById('kpi-bar-lbl-out');
+  const lblLow=document.getElementById('kpi-bar-lbl-low');
+  const lblOk =document.getElementById('kpi-bar-lbl-ok');
+  if(lblOut&&sOut) lblOut.textContent=`🔴 หมด ${sOut}`;
+  if(lblLow&&sLow) lblLow.textContent=`🟡 น้อย ${sLow}`;
+  if(lblOk &&sOk)  lblOk.textContent =`🟢 มี ${sOk}`;
+}
 
 window.riskThreshold = 60;
 let riskSortKey = 'stockoutScore', riskSortDir = 'desc';
