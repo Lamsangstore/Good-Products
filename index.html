@@ -1496,6 +1496,13 @@ html, body {
 .order-hist-body.open > div {
   opacity: 1;
 }
+
+@media (max-width: 768px) {
+  /* Hide desktop filter/col/search row */
+  .desktop-tools { display: none !important; }
+  /* Also hide filter+col+srch buttons inside panel-hdr */
+  #filterBtn, #colBtn, .srch-wrap:not(.mob-tbl-toolbar .srch-wrap) { display: none !important; }
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -1763,7 +1770,7 @@ html, body {
         <div class="panel-ttl">ตารางวิเคราะห์</div>
         <div class="panel-sub" id="tbl-sort-label">เรียงตาม True Star Score สูงสุด</div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <div class="desktop-tools" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <!-- Stock file upload -->
         <label id="stock-upload-btn" class="btn" style="cursor:pointer;color:var(--muted);gap:6px" title="อัพโหลดไฟล์สต๊อก (.xlsx/.csv)">
           <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -1909,16 +1916,20 @@ html, body {
         </tbody>
       </table>
     </div>
-    <!-- Mobile toolbar -->
+    <!-- Mobile toolbar (SINGLE — no duplicate) -->
     <div class="mob-tbl-toolbar" id="mob-tbl-toolbar">
-      <button class="btn" onclick="toggleFilterPopup()" style="font-size:13px;padding:7px 14px;gap:5px">
+      <button class="btn" onclick="toggleFilterPopup()" style="font-size:13px;padding:7px 12px;gap:5px;flex-shrink:0">
         <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-        ฟิลเตอร์<span id="mob-filter-badge"></span>
+        ฟิลเตอร์<span id="mob-filter-badge" style="display:none;background:var(--blue);color:#fff;font-size:9px;font-weight:800;border-radius:8px;padding:0 5px;margin-left:2px"></span>
       </button>
       <div class="srch-wrap" style="flex:1;position:relative">
         <svg viewBox="0 0 24 24" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);width:13px;height:13px;stroke:var(--faint);fill:none;stroke-width:2.2;pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input class="srch" id="mob-srch" placeholder="ค้นหา SKU / ชื่อ…" oninput="document.getElementById('srch').value=this.value;renderAll(getFilteredData())">
       </div>
+      <button class="btn" onclick="openMobCardConfigGlobal()" style="font-size:13px;padding:7px 12px;gap:5px;flex-shrink:0" title="ตั้งค่าการ์ด">
+        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        การ์ด
+      </button>
     </div>
     <!-- Mobile Card List -->
     <div id="mob-card-list" class="mob-card-list" style="padding:0 14px 16px"></div>
@@ -5555,7 +5566,7 @@ function renderMobileCards(sorted, months){
             <span style="font-size:10px;color:var(--faint)">${(item.category||'').replace('กางเกง ','')}</span>
           </div>
         </div>
-        <div class="mob-card-right" onclick="event.stopPropagation();openMobCardConfig('right')" style="cursor:pointer">
+        <div class="mob-card-right">
           <div class="mob-card-vel">${rightSlot.val}</div>
           <div class="mob-card-vel-lbl">${rightSlot.name}</div>
         </div>
@@ -5563,9 +5574,9 @@ function renderMobileCards(sorted, months){
           <svg viewBox="0 0 10 10" style="width:10px;height:10px;stroke:var(--muted);fill:none;stroke-width:2.5;transition:transform .2s"><polyline points="2 3 5 7 8 3"/></svg>
         </div>
       </div>
-      <div class="mob-card-pills" onclick="event.stopPropagation();openMobCardConfig('pills')">
+      <div class="mob-card-pills">
         ${pills}
-        <span class="mob-pill mob-pill-config" title="ตั้งค่า pill">⚙</span>
+
       </div>
       <div class="mob-card-expand">
         ${expandStats}
@@ -5639,6 +5650,11 @@ const SLOT_ICON = {
   starScore:'⭐', vel7:'📆'
 };
 
+function openMobCardConfigGlobal(){
+  // Open global config — shows all 3 sections with confirm button
+  openMobCardConfig('global');
+}
+
 function openMobCardConfig(type){
   let modal = document.getElementById('mob-config-modal');
   if(!modal){
@@ -5661,26 +5677,54 @@ function openMobCardConfig(type){
     </div>`;
   }).join('');
 
-  const titles = {pills:'เลือก 3 Pill', expand:'เลือก 6 ข้อมูล', right:'เลือกค่าหลัก'};
+  const isGlobal = type === 'global';
+  const titles = {pills:'Pill บน Card (เลือก 3)', expand:'ข้อมูลใน Card (เลือก 6)', right:'ค่าหลักขวา (เลือก 1)', global:'ตั้งค่าการ์ด'};
+
+  // For global: show all 3 sections
+  const buildSection = (t, lmt) => {
+    const c = t==='pills'?getMobPillConfig():t==='expand'?getMobExpandConfig():[getMobRightConfig()];
+    return Object.entries(ALL_SLOT_NAMES).map(([key,name])=>{
+      const isActive = c.includes(key);
+      const icon = SLOT_ICON[key]||'📌';
+      return `<div class="mob-cfg-card ${isActive?'active':''}" data-type="${t}" data-key="${key}" data-limit="${lmt}" onclick="toggleMobCfgSlotV2(this)" style="animation:cardIn .2s ease both;animation-delay:${Object.keys(ALL_SLOT_NAMES).indexOf(key)*0.02}s">
+        <div class="mob-cfg-icon">${icon}</div>
+        <div class="mob-cfg-name">${name}</div>
+        <div class="mob-cfg-check">${isActive?'✓':''}</div>
+      </div>`;
+    }).join('');
+  };
 
   modal.innerHTML = `
-    <div class="mob-cfg-backdrop" onclick="closeMobCardConfig()" style="position:absolute;inset:0;background:rgba(0,0,0,.45)"></div>
-    <div class="mob-cfg-sheet" style="position:relative;background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-height:80vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom);animation:slideUpSheet .25s ease">
-      <div style="width:40px;height:4px;background:var(--faint);border-radius:2px;margin:12px auto 4px"></div>
-      <div style="padding:12px 20px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(217,119,6,.1)">
-        <div>
-          <div style="font-size:16px;font-weight:800;color:var(--text)">${titles[type]}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">กดเลือกข้อมูลที่ต้องการแสดง · เลือกได้ ${limit} อย่าง</div>
+    <div class="mob-cfg-backdrop" onclick="closeMobCardConfig()" style="position:absolute;inset:0;background:rgba(0,0,0,.5)"></div>
+    <div class="mob-cfg-sheet" style="position:relative;background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;padding-bottom:0;animation:slideUpSheet .25s ease">
+      <div style="width:40px;height:4px;background:var(--faint);border-radius:2px;margin:12px auto 4px;flex-shrink:0"></div>
+      <div style="padding:10px 20px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(217,119,6,.1);flex-shrink:0">
+        <div style="font-size:16px;font-weight:800;color:var(--text)">⚙️ ตั้งค่าการ์ด</div>
+        <button onclick="closeMobCardConfig()" style="width:32px;height:32px;border-radius:50%;background:var(--bg-dark);border:1px solid rgba(217,119,6,.15);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
+      </div>
+      <!-- Scrollable content -->
+      <div style="flex:1;overflow-y:auto;padding:12px 20px 8px">
+        <!-- Section 1: Pills -->
+        <div style="font-size:12px;font-weight:800;color:var(--blue);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">📌 Pill แสดงบนการ์ด <span style="font-weight:400;color:var(--muted)">(เลือกได้ 3)</span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:16px" id="cfg-sec-pills">
+          ${buildSection('pills',3)}
         </div>
-        <button onclick="closeMobCardConfig()" style="width:32px;height:32px;border-radius:50%;background:var(--bg-dark);border:1px solid rgba(217,119,6,.15);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+        <!-- Section 2: Right value -->
+        <div style="font-size:12px;font-weight:800;color:var(--blue);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">📊 ค่าหลักขวาบนการ์ด <span style="font-weight:400;color:var(--muted)">(เลือก 1)</span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:16px" id="cfg-sec-right">
+          ${buildSection('right',1)}
+        </div>
+        <!-- Section 3: Expand stats -->
+        <div style="font-size:12px;font-weight:800;color:var(--blue);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">📋 ข้อมูลเพิ่มเติม (กดขยาย) <span style="font-weight:400;color:var(--muted)">(เลือกได้ 6)</span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:8px" id="cfg-sec-expand">
+          ${buildSection('expand',6)}
+        </div>
       </div>
-      <!-- Preview Card -->
-      <div style="padding:12px 20px;background:var(--bg-dark);margin:12px;border-radius:16px;border:1px solid rgba(217,119,6,.1)">
-        <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">ตัวอย่างการ์ด</div>
-        <div id="mob-cfg-preview" style="font-size:13px;color:var(--mid)">—</div>
-      </div>
-      <div style="padding:0 20px 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px" id="mob-cfg-grid">
-        ${slotsHtml}
+      <!-- Confirm button — sticky bottom -->
+      <div style="padding:12px 20px calc(12px + env(safe-area-inset-bottom));border-top:1px solid rgba(217,119,6,.1);flex-shrink:0;background:var(--surface)">
+        <button onclick="confirmMobCardConfig()" style="width:100%;padding:14px;border-radius:16px;background:linear-gradient(135deg,#fbbf24,#d97706);color:#fff;border:none;font-size:16px;font-weight:800;font-family:'Anuphan',sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(217,119,6,.3);transition:transform .1s,box-shadow .1s;letter-spacing:.2px" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''">
+          ✅ ยืนยัน
+        </button>
       </div>
     </div>`;
 
@@ -5689,6 +5733,52 @@ function openMobCardConfig(type){
   document.body.style.overflow='hidden';
   window._mobCfgType = type;
   window._mobCfgCur = [...cur];
+}
+
+function toggleMobCfgSlotV2(el){
+  const type  = el.getAttribute('data-type');
+  const key   = el.getAttribute('data-key');
+  const limit = parseInt(el.getAttribute('data-limit'));
+  const section = document.getElementById('cfg-sec-'+type);
+  if(!section) return;
+  const allCards = [...section.querySelectorAll('.mob-cfg-card')];
+  const activeCards = allCards.filter(c=>c.classList.contains('active'));
+
+  if(el.classList.contains('active')){
+    // Deselect (allow if type !== right or more than 1 active)
+    if(type==='right') return; // always need 1
+    el.classList.remove('active');
+    el.querySelector('.mob-cfg-check').textContent='';
+  } else {
+    if(activeCards.length >= limit){
+      // Remove oldest (first active)
+      activeCards[0].classList.remove('active');
+      activeCards[0].querySelector('.mob-cfg-check').textContent='';
+    }
+    el.classList.add('active');
+    el.querySelector('.mob-cfg-check').textContent='✓';
+    // Bounce
+    el.style.transform='scale(0.92)';
+    setTimeout(()=>{el.style.transform='';},140);
+  }
+}
+
+function confirmMobCardConfig(){
+  // Collect selections from all 3 sections
+  const getKeys = (secId) => [...document.querySelectorAll(`#${secId} .mob-cfg-card.active`)].map(c=>c.getAttribute('data-key'));
+  const pills  = getKeys('cfg-sec-pills');
+  const right  = getKeys('cfg-sec-right')[0] || MOB_RIGHT_DEF;
+  const expand = getKeys('cfg-sec-expand');
+
+  if(pills.length < 1)  { alert('กรุณาเลือก Pill อย่างน้อย 1 อย่าง'); return; }
+  if(expand.length < 1) { alert('กรุณาเลือกข้อมูลเพิ่มเติมอย่างน้อย 1 อย่าง'); return; }
+
+  localStorage.setItem(MOB_PILL_KEY,   JSON.stringify(pills));
+  localStorage.setItem(MOB_RIGHT_KEY,  right);
+  localStorage.setItem(MOB_EXPAND_KEY, JSON.stringify(expand));
+
+  closeMobCardConfig();
+  if(window._lastSorted) renderMobileCards(window._lastSorted, window._lastMonths||1);
 }
 
 function toggleMobCfgSlot(key, type, limit, el){
