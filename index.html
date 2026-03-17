@@ -893,6 +893,182 @@ body {
 }
 
 .mob-tbl-toolbar { display: none; }
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE POLISH — Phase 2
+   ═══════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+  /* ── KPI row — horizontal scroll pill strip ── */
+  .kpi-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    gap: 10px !important;
+    padding: 4px 14px 12px !important;
+    margin: 0 -14px 14px !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x mandatory !important;
+  }
+  .kpi-grid::-webkit-scrollbar { display: none !important; }
+  .kpi, .kpi.bento-wide {
+    grid-column: unset !important;
+    min-width: 150px !important;
+    max-width: 170px !important;
+    flex-shrink: 0 !important;
+    scroll-snap-align: start !important;
+    border-radius: 18px !important;
+    padding: 14px 16px !important;
+  }
+  .kpi.bento-wide {
+    min-width: 200px !important;
+    max-width: 220px !important;
+    flex-direction: row !important;
+    gap: 12px !important;
+  }
+  .kpi-val { font-size: 22px !important; }
+  .kpi-unit { font-size: 13px !important; }
+  .kpi-lbl { font-size: 10px !important; margin-bottom: 4px !important; }
+  .kpi-note { font-size: 11px !important; }
+  .kpi-ico { width: 32px !important; height: 32px !important; margin-bottom: 10px !important; }
+
+  /* ── Panel header mobile ── */
+  .panel-hdr {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 10px 14px !important;
+    align-items: center !important;
+  }
+  .panel-hdr > div:first-child { flex: 1; min-width: 0; }
+  .panel-ttl { font-size: 15px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ── f-strip compact ── */
+  .f-strip { padding: 6px 10px; margin: 0 0 8px; }
+  .f-lbl { font-size: 11px; }
+  .f-chip { font-size: 11px; padding: 3px 8px; }
+
+  /* ── Filter popup — bottom sheet ── */
+  #filterPopup {
+    position: fixed !important;
+    inset: auto 0 72px 0 !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 70vh !important;
+    overflow-y: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    animation: slideUpSheet .22s ease !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+  #colPopup {
+    position: fixed !important;
+    inset: auto 0 72px 0 !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 70vh !important;
+    overflow-y: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    animation: slideUpSheet .22s ease !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+  /* Handle bar on bottom sheets */
+  #filterPopup::before, #colPopup::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: var(--faint);
+    border-radius: 2px;
+    margin: 10px auto 4px;
+  }
+  @keyframes slideUpSheet {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  /* ── Mob toolbar styling ── */
+  .mob-tbl-toolbar {
+    padding: 0 14px 10px !important;
+    display: flex !important;
+    gap: 8px !important;
+    align-items: center !important;
+  }
+  .mob-tbl-toolbar .btn {
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+    border-radius: 12px !important;
+    white-space: nowrap;
+  }
+  .mob-tbl-toolbar .srch-wrap { flex: 1; }
+  .mob-tbl-toolbar .srch { width: 100% !important; font-size: 14px !important; }
+
+  /* ── Status bar in f-strip ── */
+  #fb-status-bar, #cache-status-bar, #stock-status-bar {
+    font-size: 11px !important;
+    padding: 4px 10px !important;
+  }
+
+  /* ── Cart FAB on mobile ── */
+  .cart-fab {
+    bottom: calc(78px + env(safe-area-inset-bottom)) !important;
+    right: 14px !important;
+  }
+  .cart-btn {
+    padding: 12px 18px !important;
+    font-size: 14px !important;
+    border-radius: 20px !important;
+  }
+
+  /* ── Topbar elevation on scroll ── */
+  .app-topbar.scrolled {
+    box-shadow: 0 2px 12px rgba(180,130,50,.12) !important;
+  }
+
+  /* ── Page first section ── */
+  .page { padding: 10px 0 0 !important; }
+  .tab-content.active { padding: 0 !important; }
+  .panel { margin: 0 10px 14px !important; border-radius: 16px !important; }
+  .f-strip { margin: 0 10px 8px !important; }
+  .kpi-grid { padding: 4px 10px 12px !important; margin: 0 0 0 0 !important; }
+
+  /* ── Card list padding ── */
+  #mob-card-list { padding: 0 10px 80px !important; }
+
+  /* ── Empty states ── */
+  .empty { padding: 32px 16px !important; }
+
+  /* ── Section scroll indicator (dots) ── */
+  .kpi-dots {
+    display: flex !important;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px 0 8px;
+  }
+  .kpi-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--faint);
+    transition: background .2s, width .2s;
+  }
+  .kpi-dot.active { background: var(--blue); width: 14px; border-radius: 3px; }
+}
+
+/* ── Desktop: hide mobile-only elements ── */
+@media (min-width: 769px) {
+  .mob-card-list { display: none !important; }
+  .mob-tbl-toolbar { display: none !important; }
+  .app-topbar { display: none !important; }
+  .bottom-nav { display: none !important; }
+  .kpi-dots { display: none !important; }
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -1562,6 +1738,58 @@ let _configCache = {};  // early init — full definition comes later
 // Re-render cards on resize (switching between mobile/desktop)
 window.addEventListener('resize', ()=>{
   if(window._lastSorted) renderMobileCards(window._lastSorted, window._lastMonths||1);
+});
+
+
+// ── Mobile KPI scroll dots ──────────────────────────
+function initKpiDots(){
+  const grid = document.querySelector('.kpi-grid');
+  if(!grid) return;
+  // Insert dots below kpi-grid
+  let dots = document.getElementById('kpi-dots-row');
+  if(!dots){
+    dots = document.createElement('div');
+    dots.className = 'kpi-dots';
+    dots.id = 'kpi-dots-row';
+    const cards = grid.querySelectorAll('.kpi');
+    for(let i=0; i<Math.min(cards.length,5); i++){
+      const d = document.createElement('div');
+      d.className = 'kpi-dot' + (i===0?' active':'');
+      dots.appendChild(d);
+    }
+    grid.parentNode.insertBefore(dots, grid.nextSibling);
+  }
+  grid.addEventListener('scroll', ()=>{
+    const w = grid.scrollWidth - grid.clientWidth;
+    const pct = w > 0 ? grid.scrollLeft/w : 0;
+    const dotEls = dots.querySelectorAll('.kpi-dot');
+    const active = Math.round(pct*(dotEls.length-1));
+    dotEls.forEach((d,i)=>d.classList.toggle('active', i===active));
+  }, {passive:true});
+}
+
+// ── Topbar scroll shadow ──────────────────────────
+function initTopbarScroll(){
+  const topbar = document.getElementById('app-topbar');
+  if(!topbar) return;
+  window.addEventListener('scroll', ()=>{
+    topbar.classList.toggle('scrolled', window.scrollY > 8);
+  }, {passive:true});
+}
+
+// ── Mobile: sync search between mob-srch and desktop srch ──
+function initMobSearch(){
+  const mob = document.getElementById('mob-srch');
+  const desk = document.getElementById('srch');
+  if(!mob||!desk) return;
+  mob.addEventListener('input', ()=>{ desk.value=mob.value; });
+  desk.addEventListener('input', ()=>{ mob.value=desk.value; });
+}
+
+window.addEventListener('load', ()=>{
+  initKpiDots();
+  initTopbarScroll();
+  initMobSearch();
 });
 
 // ── PWA Install Prompt ──────────────────────────────────
