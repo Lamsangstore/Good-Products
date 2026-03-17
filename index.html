@@ -54,8 +54,8 @@
 
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:'Anuphan',sans-serif;background:linear-gradient(160deg,#fdf8ee 0%,#f9f0d8 100%);color:var(--text);min-height:100vh;padding:32px 24px 80px;line-height:1.6}
-.page{max-width:1480px;margin:0 auto}
+body{font-family:'Anuphan',sans-serif;background:linear-gradient(160deg,#fdf8ee 0%,#f9f0d8 100%);color:var(--text);min-height:100vh;padding:32px 24px 80px;line-height:1.6;overflow-x:hidden}
+.page{max-width:1480px;margin:0 auto;overflow-x:hidden}
 
 /* ─── LOADING ─── */
 .loading{position:fixed;inset:0;background:rgba(18,22,28,.96);backdrop-filter:blur(16px);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:20px}
@@ -1068,6 +1068,188 @@ body {
   .app-topbar { display: none !important; }
   .bottom-nav { display: none !important; }
   .kpi-dots { display: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   OVERFLOW FIX — prevent horizontal scroll on mobile
+   ═══════════════════════════════════════════════════════ */
+
+/* Root overflow lock */
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
+@media (max-width: 768px) {
+
+  /* Lock all containers */
+  .page, .tab-content, .panel, .panel-hdr {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  /* body padding reset for mobile */
+  body { padding: 0 0 80px !important; }
+
+  /* Page padding */
+  .page {
+    padding: 10px 0 0 !important;
+    margin: 0 !important;
+  }
+
+  /* ALL panels full-bleed or with small margin */
+  .panel {
+    margin: 0 10px 12px !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+  }
+
+  /* Hide table entirely on mobile */
+  .tbl-wrap { display: none !important; }
+
+  /* f-strip */
+  .f-strip {
+    margin: 0 10px 8px !important;
+    overflow: hidden !important;
+  }
+
+  /* Formula body */
+  .f-body { width: 100% !important; overflow-x: auto !important; }
+
+  /* srch 100% width */
+  .srch { width: 100% !important; min-width: 0 !important; }
+  .srch-wrap { width: 100% !important; flex: 1 !important; }
+
+  /* Header buttons — hide text labels, show icons only */
+  .hdr-r .btn span,
+  .hdr-r .btn > *:last-child:not(svg) { display: none !important; }
+  .hdr-r { gap: 6px !important; }
+
+  /* Panel header — no overflow */
+  .panel-hdr {
+    flex-wrap: wrap !important;
+    overflow: hidden !important;
+    gap: 6px !important;
+    padding: 10px 12px !important;
+  }
+  .panel-hdr > div:last-child {
+    width: 100% !important;
+    overflow-x: auto !important;
+    display: flex !important;
+    gap: 6px !important;
+  }
+  .panel-hdr .btn {
+    flex-shrink: 0 !important;
+    padding: 7px 12px !important;
+    font-size: 12px !important;
+  }
+
+  /* KPI grid — horizontal pill scroll, no page overflow */
+  .kpi-grid {
+    width: 100vw !important;
+    margin: 0 !important;
+    padding: 4px 12px 10px !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    max-width: 100vw !important;
+  }
+
+  /* Card list */
+  #mob-card-list {
+    padding: 0 10px 80px !important;
+    overflow-x: hidden !important;
+  }
+  .mob-card {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+  .mob-card-pills {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding-bottom: 2px !important;
+  }
+  .mob-card-pills::-webkit-scrollbar { display: none !important; }
+
+  /* mob-card-expand stats grid */
+  .mob-card-expand {
+    grid-template-columns: 1fr 1fr !important;
+    padding: 10px 12px !important;
+    gap: 7px !important;
+  }
+  .mob-stat { padding: 7px 9px !important; }
+  .mob-stat-val { font-size: 14px !important; }
+
+  /* History table */
+  #history-content table {
+    min-width: unset !important;
+    font-size: 12px !important;
+  }
+  #history-content {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Order tab */
+  #order-content {
+    overflow-x: hidden !important;
+  }
+  .lot-card, .belt-card {
+    margin: 0 0 10px !important;
+    max-width: 100% !important;
+  }
+  .lot-card-hdr, .belt-card-hdr {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .lot-vis-colors {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding-bottom: 4px !important;
+    gap: 8px !important;
+  }
+  .lot-vis-colors::-webkit-scrollbar { display: none !important; }
+
+  /* App topbar full width */
+  .app-topbar {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    left: 0 !important; right: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Bottom nav full width */
+  .bottom-nav {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    left: 0 !important; right: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* History order detail table — allow scroll inside container only */
+  .order-hist-body {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    max-width: 100% !important;
+  }
+  .order-hist-body table {
+    min-width: unset !important;
+    width: 100% !important;
+  }
+
+  /* Cart modal — full screen */
+  .cart-modal-panel {
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+
+  /* Hide desktop-only elements */
+  .header { display: none !important; }
+  .tab-bar { display: none !important; }
+  #tab-risk, #tab-insight { display: none !important; }
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -3214,7 +3396,7 @@ function renderHistDetail(order){
     <span style="font-size:22px;font-weight:800;color:var(--text)">📅 ${dateStr}</span>
     <button class="btn" onclick="editOrderDate('${order.key}',${order.createdAt})" style="font-size:12px;padding:3px 10px;color:var(--muted);margin-left:10px;vertical-align:middle">✏️ แก้ไขวันที่</button>
   </div>`;
-  html+=`<table style="width:100%;border-collapse:collapse;font-size:14px;min-width:500px">
+  html+=`<table style="width:100%;border-collapse:collapse;font-size:14px;min-width:360px;max-width:100%">
     <colgroup>
       <col style="width:160px"><col style="width:100px"><col style="width:12px">
       ${usedSizes.map(()=>'<col style="width:52px">').join('')}
