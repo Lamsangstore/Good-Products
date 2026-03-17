@@ -8,6 +8,16 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lamsang Store Analytics</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8IS0tIEJhY2tncm91bmQgcm91bmRlZCByZWN0IC0tPgogIDxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iMTEwIiBmaWxsPSIjZDk3NzA2Ii8+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTAiIGZpbGw9InVybCgjZ3JhZCkiLz4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZmJiZjI0Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2I0NTMwOSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPCEtLSBTaG9wcGluZyBiYWcgLS0+CiAgPHBhdGggZD0iTTE2MCAyMDAgTDM1MiAyMDAgTDM3NiAzODAgTDEzNiAzODAgWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIyIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTIwMCAyMDAgQzIwMCAxNTYgMjIwIDEyOCAyNTYgMTI4IEMyOTIgMTI4IDMxMiAxNTYgMzEyIDIwMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8IS0tIENoYXJ0IGxpbmUgYWNjZW50IC0tPgogIDxwYXRoIGQ9Ik0xNzYgMzAwIEwyMjAgMjY1IEwyNTYgMjg1IEwzMTAgMjQ1IEwzMzYgMjU1IiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsLjYpIiBzdHJva2Utd2lkdGg9IjE0IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+">
+<link rel="apple-touch-icon" id="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8IS0tIEJhY2tncm91bmQgcm91bmRlZCByZWN0IC0tPgogIDxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iMTEwIiBmaWxsPSIjZDk3NzA2Ii8+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTAiIGZpbGw9InVybCgjZ3JhZCkiLz4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZmJiZjI0Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2I0NTMwOSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPCEtLSBTaG9wcGluZyBiYWcgLS0+CiAgPHBhdGggZD0iTTE2MCAyMDAgTDM1MiAyMDAgTDM3NiAzODAgTDEzNiAzODAgWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIyIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTIwMCAyMDAgQzIwMCAxNTYgMjIwIDEyOCAyNTYgMTI4IEMyOTIgMTI4IDMxMiAxNTYgMzEyIDIwMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8IS0tIENoYXJ0IGxpbmUgYWNjZW50IC0tPgogIDxwYXRoIGQ9Ik0xNzYgMzAwIEwyMjAgMjY1IEwyNTYgMjg1IEwzMTAgMjQ1IEwzMzYgMjU1IiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsLjYpIiBzdHJva2Utd2lkdGg9IjE0IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+">
+<link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkxhbXNhbmcgQW5hbHl0aWNzIiwKICAic2hvcnRfbmFtZSI6ICJMYW1zYW5nIiwKICAiZGVzY3JpcHRpb24iOiAiNy1EaW1lbnNpb24gU2FsZXMgSW50ZWxsaWdlbmNlICYgU3RvY2sgUmVjb21tZW5kYXRpb24iLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZkZjhlZSIsCiAgInRoZW1lX2NvbG9yIjogIiNkOTc3MDYiLAogICJvcmllbnRhdGlvbiI6ICJwb3J0cmFpdC1wcmltYXJ5IiwKICAiaWNvbnMiOiBbCiAgICB7InNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUI0Yld4dWN6MGlhSFIwY0RvdkwzZDNkeTUzTXk1dmNtY3ZNakF3TUM5emRtY2lJSFpwWlhkQ2IzZzlJakFnTUNBMU1USWdOVEV5SWo0S0lDQThJUzB0SUVKaFkydG5jbTkxYm1RZ2NtOTFibVJsWkNCeVpXTjBJQzB0UGdvZ0lEeHlaV04wSUhkcFpIUm9QU0kxTVRJaUlHaGxhV2RvZEQwaU5URXlJaUJ5ZUQwaU1URXdJaUJtYVd4c1BTSWpaRGszTnpBMklpOCtDaUFnUEhKbFkzUWdkMmxrZEdnOUlqVXhNaUlnYUdWcFoyaDBQU0kxTVRJaUlISjRQU0l4TVRBaUlHWnBiR3c5SW5WeWJDZ2paM0poWkNraUx6NEtJQ0E4WkdWbWN6NEtJQ0FnSUR4c2FXNWxZWEpIY21Ga2FXVnVkQ0JwWkQwaVozSmhaQ0lnZURFOUlqQWlJSGt4UFNJd0lpQjRNajBpTVNJZ2VUSTlJakVpUGdvZ0lDQWdJQ0E4YzNSdmNDQnZabVp6WlhROUlqQWxJaUJ6ZEc5d0xXTnZiRzl5UFNJalptSmlaakkwSWk4K0NpQWdJQ0FnSUR4emRHOXdJRzltWm5ObGREMGlNVEF3SlNJZ2MzUnZjQzFqYjJ4dmNqMGlJMkkwTlRNd09TSXZQZ29nSUNBZ1BDOXNhVzVsWVhKSGNtRmthV1Z1ZEQ0S0lDQThMMlJsWm5NK0NpQWdQQ0V0TFNCVGFHOXdjR2x1WnlCaVlXY2dMUzArQ2lBZ1BIQmhkR2dnWkQwaVRURTJNQ0F5TURBZ1RETTFNaUF5TURBZ1RETTNOaUF6T0RBZ1RERXpOaUF6T0RBZ1dpSWdabWxzYkQwaWJtOXVaU0lnYzNSeWIydGxQU0lqWm1abUlpQnpkSEp2YTJVdGQybGtkR2c5SWpJeUlpQnpkSEp2YTJVdGJHbHVaV3B2YVc0OUluSnZkVzVrSWk4K0NpQWdQSEJoZEdnZ1pEMGlUVEl3TUNBeU1EQWdRekl3TUNBeE5UWWdNakl3SURFeU9DQXlOVFlnTVRJNElFTXlPVElnTVRJNElETXhNaUF4TlRZZ016RXlJREl3TUNJZ1ptbHNiRDBpYm05dVpTSWdjM1J5YjJ0bFBTSWpabVptSWlCemRISnZhMlV0ZDJsa2RHZzlJakl5SWlCemRISnZhMlV0YkdsdVpXTmhjRDBpY205MWJtUWlMejRLSUNBOElTMHRJRU5vWVhKMElHeHBibVVnWVdOalpXNTBJQzB0UGdvZ0lEeHdZWFJvSUdROUlrMHhOellnTXpBd0lFd3lNakFnTWpZMUlFd3lOVFlnTWpnMUlFd3pNVEFnTWpRMUlFd3pNellnTWpVMUlpQm1hV3hzUFNKdWIyNWxJaUJ6ZEhKdmEyVTlJbkpuWW1Fb01qVTFMREkxTlN3eU5UVXNMallwSWlCemRISnZhMlV0ZDJsa2RHZzlJakUwSWlCemRISnZhMlV0YkdsdVpXTmhjRDBpY205MWJtUWlJSE4wY205clpTMXNhVzVsYW05cGJqMGljbTkxYm1RaUx6NEtQQzl6ZG1jKyIsICJzaXplcyI6ICIxOTJ4MTkyIiwgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIsICJwdXJwb3NlIjogImFueSBtYXNrYWJsZSJ9LAogICAgeyJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCNGJXeHVjejBpYUhSMGNEb3ZMM2QzZHk1M015NXZjbWN2TWpBd01DOXpkbWNpSUhacFpYZENiM2c5SWpBZ01DQTFNVElnTlRFeUlqNEtJQ0E4SVMwdElFSmhZMnRuY205MWJtUWdjbTkxYm1SbFpDQnlaV04wSUMwdFBnb2dJRHh5WldOMElIZHBaSFJvUFNJMU1USWlJR2hsYVdkb2REMGlOVEV5SWlCeWVEMGlNVEV3SWlCbWFXeHNQU0lqWkRrM056QTJJaTgrQ2lBZ1BISmxZM1FnZDJsa2RHZzlJalV4TWlJZ2FHVnBaMmgwUFNJMU1USWlJSEo0UFNJeE1UQWlJR1pwYkd3OUluVnliQ2dqWjNKaFpDa2lMejRLSUNBOFpHVm1jejRLSUNBZ0lEeHNhVzVsWVhKSGNtRmthV1Z1ZENCcFpEMGlaM0poWkNJZ2VERTlJakFpSUhreFBTSXdJaUI0TWowaU1TSWdlVEk5SWpFaVBnb2dJQ0FnSUNBOGMzUnZjQ0J2Wm1aelpYUTlJakFsSWlCemRHOXdMV052Ykc5eVBTSWpabUppWmpJMElpOCtDaUFnSUNBZ0lEeHpkRzl3SUc5bVpuTmxkRDBpTVRBd0pTSWdjM1J2Y0MxamIyeHZjajBpSTJJME5UTXdPU0l2UGdvZ0lDQWdQQzlzYVc1bFlYSkhjbUZrYVdWdWRENEtJQ0E4TDJSbFpuTStDaUFnUENFdExTQlRhRzl3Y0dsdVp5QmlZV2NnTFMwK0NpQWdQSEJoZEdnZ1pEMGlUVEUyTUNBeU1EQWdURE0xTWlBeU1EQWdURE0zTmlBek9EQWdUREV6TmlBek9EQWdXaUlnWm1sc2JEMGlibTl1WlNJZ2MzUnliMnRsUFNJalptWm1JaUJ6ZEhKdmEyVXRkMmxrZEdnOUlqSXlJaUJ6ZEhKdmEyVXRiR2x1WldwdmFXNDlJbkp2ZFc1a0lpOCtDaUFnUEhCaGRHZ2daRDBpVFRJd01DQXlNREFnUXpJd01DQXhOVFlnTWpJd0lERXlPQ0F5TlRZZ01USTRJRU15T1RJZ01USTRJRE14TWlBeE5UWWdNekV5SURJd01DSWdabWxzYkQwaWJtOXVaU0lnYzNSeWIydGxQU0lqWm1abUlpQnpkSEp2YTJVdGQybGtkR2c5SWpJeUlpQnpkSEp2YTJVdGJHbHVaV05oY0QwaWNtOTFibVFpTHo0S0lDQThJUzB0SUVOb1lYSjBJR3hwYm1VZ1lXTmpaVzUwSUMwdFBnb2dJRHh3WVhSb0lHUTlJazB4TnpZZ016QXdJRXd5TWpBZ01qWTFJRXd5TlRZZ01qZzFJRXd6TVRBZ01qUTFJRXd6TXpZZ01qVTFJaUJtYVd4c1BTSnViMjVsSWlCemRISnZhMlU5SW5KblltRW9NalUxTERJMU5Td3lOVFVzTGpZcElpQnpkSEp2YTJVdGQybGtkR2c5SWpFMElpQnpkSEp2YTJVdGJHbHVaV05oY0QwaWNtOTFibVFpSUhOMGNtOXJaUzFzYVc1bGFtOXBiajBpY205MWJtUWlMejRLUEM5emRtYysiLCAic2l6ZXMiOiAiNTEyeDUxMiIsICJ0eXBlIjogImltYWdlL3N2Zyt4bWwiLCAicHVycG9zZSI6ICJhbnkgbWFza2FibGUifQogIF0KfQ==">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Lamsang">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#d97706">
+<meta name="msapplication-TileColor" content="#d97706">
+
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -625,6 +635,10 @@ button.fchip.on { background: rgba(217,119,6,.15); border-color: var(--blue); co
       <svg viewBox="0 0 24 24"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
       ซิงก์ข้อมูล
     </button>
+    <button id="pwa-install-btn" class="btn" onclick="pwaInstall()" style="display:none;gap:7px;background:linear-gradient(135deg,#fbbf24,#d97706);color:#fff;border:none;box-shadow:0 3px 12px rgba(217,119,6,.35)">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      ติดตั้งแอป
+    </button>
     <!-- Stock file upload -->
     <input type="file" id="stock-upload-input" accept=".xlsx,.xls,.csv" onchange="handleStockUpload(this)">
     <button class="btn stock-upload-btn" onclick="$('stock-upload-input').click()" id="stock-hdr-btn"
@@ -1145,6 +1159,69 @@ button.fchip.on { background: rgba(217,119,6,.15); border-color: var(--blue); co
 
 <script>
 let _configCache = {};  // early init — full definition comes later
+
+// ── PWA Install Prompt ──────────────────────────────────
+let _pwaPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _pwaPrompt = e;
+  const btn = document.getElementById('pwa-install-btn');
+  if(btn) btn.style.display = 'flex';
+});
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('pwa-install-btn');
+  if(btn) btn.style.display = 'none';
+  _pwaPrompt = null;
+  console.log('[PWA] App installed');
+});
+function pwaInstall(){
+  if(_pwaPrompt){
+    _pwaPrompt.prompt();
+    _pwaPrompt.userChoice.then(r=>{
+      if(r.outcome==='accepted') console.log('[PWA] Accepted');
+      _pwaPrompt = null;
+    });
+  } else {
+    // iOS — show instructions
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if(isIOS){
+      alert('เพื่อติดตั้งบน iPhone:\n1. กดปุ่ม Share (สี่เหลี่ยมลูกศรขึ้น) ด้านล่าง\n2. เลือก "Add to Home Screen"\n3. กด "Add"');
+    } else {
+      alert('กดปุ่ม ⋮ หรือ ... ในเบราว์เซอร์ แล้วเลือก "Install App" หรือ "Add to Home Screen"');
+    }
+  }
+}
+
+// Generate PNG apple-touch-icon via canvas
+(function generateAppleIcon(){
+  try {
+    const c = document.createElement('canvas');
+    c.width = c.height = 180;
+    const ctx = c.getContext('2d');
+    // Background gradient
+    const g = ctx.createLinearGradient(0,0,180,180);
+    g.addColorStop(0,'#fbbf24'); g.addColorStop(1,'#b45309');
+    // Rounded rect
+    ctx.beginPath();
+    const r=36; ctx.moveTo(r,0); ctx.lineTo(180-r,0); ctx.arcTo(180,0,180,r,r);
+    ctx.lineTo(180,180-r); ctx.arcTo(180,180,180-r,180,r);
+    ctx.lineTo(r,180); ctx.arcTo(0,180,0,180-r,r);
+    ctx.lineTo(0,r); ctx.arcTo(0,0,r,0,r); ctx.closePath();
+    ctx.fillStyle=g; ctx.fill();
+    // Bag body
+    ctx.strokeStyle='#fff'; ctx.lineWidth=8; ctx.lineJoin='round';
+    ctx.beginPath(); ctx.moveTo(55,72); ctx.lineTo(125,72); ctx.lineTo(134,136); ctx.lineTo(46,136); ctx.closePath(); ctx.stroke();
+    // Bag handle
+    ctx.beginPath(); ctx.moveTo(71,72); ctx.bezierCurveTo(71,50,109,50,109,72); ctx.stroke();
+    // Chart line
+    ctx.strokeStyle='rgba(255,255,255,.65)'; ctx.lineWidth=5; ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(58,112); ctx.lineTo(74,98); ctx.lineTo(90,106); ctx.lineTo(108,90); ctx.lineTo(122,95); ctx.stroke();
+    const png = c.toDataURL('image/png');
+    const link = document.getElementById('apple-touch-icon');
+    if(link) link.href = png;
+  } catch(e){}
+})();
+
 // ── STOCK FILE (xlsx upload) — see loadStockFile / applyStockMap below ──
 // Alias so header button works with existing system
 function handleStockUpload(input){ loadStockFile(input); }
