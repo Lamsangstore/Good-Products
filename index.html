@@ -1608,9 +1608,9 @@ html, body {
   transition: border-color .15s;
   align-items: center;
 }
-.lot-size-cell.cell-ok  { border-color: rgba(22,163,74,.25); }
-.lot-size-cell.cell-oos { border-color: rgba(239,68,68,.25); }
-.lot-size-cell.cell-low { border-color: rgba(234,88,12,.25); }
+.lot-size-cell.cell-ok  { background: #f0faf4 !important; border-color: #86efac !important; }
+.lot-size-cell.cell-oos { background: #fff1f2 !important; border-color: #fca5a5 !important; }
+.lot-size-cell.cell-low { background: #fff8f0 !important; border-color: #fdba74 !important; }
 
 /* Left: info stack */
 .lsc-left { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -1631,6 +1631,35 @@ html, body {
 }
 .lsc-lot input:focus { color: var(--text); }
 .lsc-lot-lbl { font-size: 9px; color: var(--faint); letter-spacing: .4px; text-transform: uppercase; }
+
+/* ── Cart select button — prominent with cart icon ── */
+.cart-select-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 6px 12px !important;
+  border-radius: 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  font-family: 'Anuphan', sans-serif !important;
+  cursor: pointer !important;
+  border: 1.5px solid rgba(217,119,6,.25) !important;
+  background: rgba(217,119,6,.08) !important;
+  color: var(--blue) !important;
+  transition: all .15s !important;
+  white-space: nowrap !important;
+}
+.cart-select-btn:hover {
+  background: rgba(217,119,6,.18) !important;
+  border-color: var(--blue) !important;
+  transform: scale(1.04) !important;
+}
+.cart-select-btn.selected {
+  background: rgba(22,163,74,.12) !important;
+  border-color: #16a34a !important;
+  color: #15803d !important;
+}
+.cart-select-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -3309,11 +3338,12 @@ function renderPantsCard(g, days){
           <span style="font-size:13px;font-weight:800;color:var(--text)">ไม้ ${ri+1}</span>
           <span style="font-size:12px;color:var(--blue);font-weight:700;font-family:'IBM Plex Mono',monospace">${rollPieces}ตัว</span>
           ${hasExtra?`<span style="font-size:10px;color:var(--orange);font-weight:700">+เกิน</span>`:''}
-          <button class="cart-select-btn ${rollInCart?'selected':''}" style="margin-left:auto;font-size:11px;padding:3px 9px"
+          <button class="cart-select-btn ${rollInCart?'selected':''}" style="margin-left:auto"
             data-psku="${g.parentSku}" data-name="${escName2}" data-col="${escCol2}"
             data-ri="${ri}" data-rd="${rollDataB64}" data-ppl="${piecesPerLot}" data-incart="${rollInCart?1:0}"
             onclick="event.stopPropagation();rollCartToggle(this)">
-            ${rollInCart?'✓':'+ เลือก'}
+            <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            ${rollInCart?'✓ เลือกแล้ว':'ใส่ตะกร้า'}
           </button>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:5px">${rows}</div>
@@ -3449,11 +3479,12 @@ function renderBeltCard(g, days){
             onclick="event.stopPropagation();beltDiscToggle('${esc}',this)" data-color="${(item.color||'').replace(/"/g,'')}"
             title="ไม่เติมสีนี้แล้ว">ยังเติมอยู่</button>
         </div>
-          <button class="cart-select-btn${beltInCart?' selected':''}" style="font-size:11px;padding:2px 8px;margin-left:auto"
+          <button class="cart-select-btn${beltInCart?' selected':''}"
             data-psku="${esc}" data-name="${g.name.replace(/"/g,'&quot;')}" data-sku="${item.sku}"
             data-label="${colLabel.replace(/"/g,'&quot;')}" data-qty="${saved}" data-incart="${beltInCart?1:0}"
             onclick="event.stopPropagation();beltCartToggle(this)">
-            ${beltInCart?'✓ เลือก':'+ เลือก'}
+            <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            ${beltInCart?'✓ ใส่แล้ว':'ใส่ตะกร้า'}
           </button>
         <div style="font-size:11px;color:var(--faint);font-family:'IBM Plex Mono',monospace;margin-top:1px">${(item.sku||'').slice(-8)}</div>
         <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
