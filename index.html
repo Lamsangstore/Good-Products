@@ -1782,6 +1782,51 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
 }
 .badge-status { font-size: 11px; font-weight: 700; }
 .badge-count  { font-size: 13px; font-weight: 800; }
+
+/* ── History sub-tabs ── */
+.hist-stab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Anuphan', sans-serif;
+  cursor: pointer;
+  border: 1.5px solid rgba(217,119,6,.18);
+  background: var(--bg-dark);
+  color: var(--mid);
+  transition: all .15s;
+  white-space: nowrap;
+}
+.hist-stab:hover { background: rgba(217,119,6,.1); border-color: #d97706; }
+.hist-stab.active {
+  background: linear-gradient(135deg,#fbbf24,#d97706);
+  border-color: #d97706;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(217,119,6,.25);
+}
+.hist-stab.active .hist-stab-badge { background: rgba(255,255,255,.3) !important; color: #fff; }
+.hist-stab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(217,119,6,.2);
+  color: var(--mid);
+}
+/* Cancelled card style */
+.order-hist-card.cancelled {
+  opacity: .6;
+  border-left-color: #94a3b8 !important;
+  background: rgba(100,116,139,.03) !important;
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -2443,7 +2488,22 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
         </button>
       </div>
     </div>
-    <div id="history-content" style="padding:16px 24px;min-height:200px">
+    <!-- Status sub-tabs -->
+    <div id="history-subtabs" style="display:flex;gap:6px;padding:0 20px 14px;flex-wrap:wrap">
+      <button class="hist-stab active" data-stab="all" onclick="setHistoryTab('all',this)">
+        ทั้งหมด <span id="hist-cnt-all" class="hist-stab-badge">0</span>
+      </button>
+      <button class="hist-stab" data-stab="pending" onclick="setHistoryTab('pending',this)">
+        🚚 กำลังสั่งซื้อ <span id="hist-cnt-pending" class="hist-stab-badge" style="background:#d97706">0</span>
+      </button>
+      <button class="hist-stab" data-stab="received" onclick="setHistoryTab('received',this)">
+        ✅ ได้รับแล้ว <span id="hist-cnt-received" class="hist-stab-badge" style="background:#16a34a">0</span>
+      </button>
+      <button class="hist-stab" data-stab="cancelled" onclick="setHistoryTab('cancelled',this)">
+        🚫 ยกเลิก <span id="hist-cnt-cancelled" class="hist-stab-badge" style="background:#64748b">0</span>
+      </button>
+    </div>
+    <div id="history-content" style="padding:0 20px 20px;min-height:200px">
       <div class="empty" style="padding:60px">กำลังโหลดประวัติ…</div>
     </div>
   </div>
@@ -3045,7 +3105,8 @@ function getNextRestockInfo(sku){
 
   let best = null;
   orderHistory.forEach(order=>{
-    // Skip fully-received orders (either flag or all items ticked)
+    // Skip cancelled or fully-received orders
+    if(order.cancelled === true) return;
     if(order.received === true) return;
     if(isOrderFullyReceived(order)) return;
     const rcv = order.receivedItems||{};
@@ -4069,6 +4130,36 @@ function showOrderSummaryFromCart(order, days){
 // ORDER HISTORY
 // ══════════════════════════════════════════════════════
 let orderHistory = [];  // loaded from Firebase
+let _histTab = 'all';  // current sub-tab: all | pending | received | cancelled
+
+function setHistoryTab(tab, btn){
+  _histTab = tab;
+  document.querySelectorAll('.hist-stab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderOrderHistory();
+}
+
+function _histTabFilter(order){
+  if(_histTab==='all') return true;
+  const isCancelled = order.cancelled===true;
+  const isReceived  = isOrderFullyReceived(order);
+  if(_histTab==='cancelled') return isCancelled;
+  if(_histTab==='received')  return !isCancelled && isReceived;
+  if(_histTab==='pending')   return !isCancelled && !isReceived;
+  return true;
+}
+
+async function toggleCancelOrder(key, cancel){
+  const db=getRtdb(); if(!db) return;
+  const order=orderHistory.find(o=>o.key===key); if(!order) return;
+  try {
+    await db.ref('order_history/'+key).update({ cancelled: cancel||null, cancelledAt: cancel?Date.now():null });
+    order.cancelled = cancel;
+    order.cancelledAt = cancel?Date.now():null;
+    renderOrderHistory();
+    try { renderAll(getFilteredData()); } catch(e){}
+  } catch(e){ console.warn('toggleCancel:', e); }
+}
 
 async function loadOrderHistory(){
   const db=getRtdb();
@@ -4122,7 +4213,25 @@ function isOrderFullyReceived(order){
 function renderOrderHistory(){
   const area=$('history-content'); if(!area) return;
   if(!orderHistory.length){ area.innerHTML='<div class="empty" style="padding:40px">ยังไม่มีประวัติ</div>'; return; }
-  const html = orderHistory.map((order,idx)=>{
+
+  // Update badge counts
+  const pending   = orderHistory.filter(o=>!o.cancelled&&!isOrderFullyReceived(o)).length;
+  const received  = orderHistory.filter(o=>!o.cancelled&&isOrderFullyReceived(o)).length;
+  const cancelled = orderHistory.filter(o=>o.cancelled===true).length;
+  const setCnt = (id,n)=>{ const el=document.getElementById(id); if(el) el.textContent=n; };
+  setCnt('hist-cnt-all',      orderHistory.length);
+  setCnt('hist-cnt-pending',  pending);
+  setCnt('hist-cnt-received', received);
+  setCnt('hist-cnt-cancelled',cancelled);
+
+  const filtered = orderHistory.filter(_histTabFilter);
+  if(!filtered.length){
+    area.innerHTML='<div class="empty" style="padding:40px">ไม่มีรายการในหมวดนี้</div>';
+    return;
+  }
+
+  const html = filtered.map((order,idx)=>{
+    const _globalIdx = orderHistory.indexOf(order);
     const d = new Date(order.createdAt);
     const dateStr = d.toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'});
     const timeStr = d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
@@ -4131,7 +4240,7 @@ function renderOrderHistory(){
     const itemCount  = (order.items||[]).length;
     const nameSummary = order.customName || getOrderNameSummary(order);
     const isReceived = isOrderFullyReceived(order);
-    const num = orderHistory.length - idx;
+    const num = orderHistory.length - _globalIdx;
 
     // Status pill
     const statusPill = isReceived
@@ -4143,7 +4252,7 @@ function renderOrderHistory(){
       ? 'border-left: 3px solid #16a34a; background: rgba(22,163,74,.03);'
       : 'border-left: 3px solid #d97706;';
 
-    return`<div class="order-hist-card" id="hist-${order.key}" style="${cardStyle}animation:cardIn .3s ease both;animation-delay:${Math.min(idx*0.05,0.4)}s">
+    return`<div class="order-hist-card${order.cancelled?' cancelled':''}" id="hist-${order.key}" style="${cardStyle}animation:cardIn .3s ease both;animation-delay:${Math.min(_globalIdx*0.05,0.4)}s">
       <div class="order-hist-hdr" onclick="toggleHistDetail('${order.key}')">
         <div style="flex:1;min-width:0">
           <!-- Row 1: number + status + date -->
