@@ -1378,37 +1378,48 @@ function getPantsCfg(p){ if(!orderConfig[p]) orderConfig[p]={}; return orderConf
 function getNextRestockInfo(sku){
   if(!orderHistory||!orderHistory.length) return null;
   const today = Date.now();
-  // Find pending orders (not fully received) that contain this SKU
+  // Get parentSku from _productDict for this sku
+  const pdInfo = (window._productDict||{})[sku];
+  const parentSku = pdInfo?.parentSku || sku;
+
   let best = null;
   orderHistory.forEach(order=>{
-    if(order.received) return; // fully received — skip
+    // Skip if all items received
+    const rcv = order.receivedItems||{};
     const items = order.items||[];
+    if(!items.length) return;
+
+    // Check if any un-received item in this order matches this SKU's parentSku
     const hasItem = items.some(item=>{
-      if(item.type==='pants'){
-        // check if this parentSku has a roll containing this sku via color match
-        return item.parentSku && sku.includes(item.parentSku.slice(-8));
-      }
-      return item.skuKey===sku || item.sku===sku;
+      // Check if already received at item level
+      const itemKey = item.itemKey || (item.parentSku+'__'+(item.color||'')+'__'+(item.rollIndex??''));
+      if(rcv[itemKey]===true) return false; // this item already received
+      // Match by parentSku
+      if(item.parentSku === parentSku) return true;
+      // Belt: match by skuKey or direct sku
+      if(item.skuKey===sku||item.sku===sku) return true;
+      return false;
     });
     if(!hasItem) return;
-    // Compute expected delivery date
+
+    // Compute expected delivery — extend 7d if overdue
     let deliveryTs = order.createdAt + 15*24*60*60*1000;
-    // If overdue → extend by 7 days per overdue period
     while(deliveryTs <= today){
       deliveryTs += 7*24*60*60*1000;
     }
     if(!best || deliveryTs < best.ts){
-      best = { ts: deliveryTs, orderKey: order.key, createdAt: order.createdAt };
+      best = { ts: deliveryTs, orderKey: order.key };
     }
   });
+
   if(!best) return null;
   const dd = new Date(best.ts);
-  const isExpected = best.ts - today < 3*24*60*60*1000; // within 3 days
+  const daysAway = Math.ceil((best.ts - today)/(1000*60*60*24));
   return {
     dateTs: best.ts,
     label: `${dd.getDate()}/${dd.getMonth()+1}/${dd.getFullYear()}`,
-    isExpected,
-    isOverdue: best.ts > (order?.createdAt||0) + 15*24*60*60*1000
+    daysAway,
+    isExpected: daysAway <= 3
   };
 }
 function getFactoryName(parentSku){ return (orderConfig[parentSku]||{}).factoryName||''; }
@@ -3979,8 +3990,7 @@ function renderAll(data){
         ${(()=>{
           const ri = item._restockInfo;
           if(!ri) return td('nextrestock','<span style="font-size:12px;color:var(--faint)">ยังไม่มีกำหนด</span>','tc');
-          const today = Date.now();
-          const daysAway = Math.ceil((ri.dateTs - today)/(1000*60*60*24));
+          const daysAway = ri.daysAway ?? Math.ceil((ri.dateTs - Date.now())/(1000*60*60*24));
           const color = daysAway<=3?'var(--red)':daysAway<=7?'var(--orange)':'var(--green)';
           const label = daysAway<=0?'วันนี้':daysAway===1?'พรุ่งนี้':`${daysAway} วัน`;
           return td('nextrestock',`<div style="text-align:center"><div style="font-size:14px;font-weight:700;color:${color}">${label}</div><div style="font-size:11px;color:var(--faint)">${ri.label}</div></div>`,'tc');
