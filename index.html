@@ -1389,14 +1389,15 @@ function getNextRestockInfo(sku){
     const items = order.items||[];
     if(!items.length) return;
 
-    // Check if any un-received item in this order matches this SKU's parentSku
+    // Check if any un-received item in this order contains this SKU
     const hasItem = items.some(item=>{
-      // Check if already received at item level
       const itemKey = item.itemKey || (item.parentSku+'__'+(item.color||'')+'__'+(item.rollIndex??''));
-      if(rcv[itemKey]===true) return false; // this item already received
-      // Match by parentSku
+      if(rcv[itemKey]===true) return false; // already received
+      // Direct SKU match via skuList
+      if(item.skuList && item.skuList.includes(sku)) return true;
+      // Fallback: parentSku match
       if(item.parentSku === parentSku) return true;
-      // Belt: match by skuKey or direct sku
+      // Belt: skuKey match
       if(item.skuKey===sku||item.sku===sku) return true;
       return false;
     });
@@ -2085,6 +2086,18 @@ function cartAddRoll(parentSku, name, color, rollIndex, rollData, piecesPerLot){
   const extraSummary = Object.entries(rollData.extraCounts||{})
     .filter(([,v])=>v>0).map(([sz,n])=>`+${sz}×${n}`).join(' ');
   const pieces = rollData.totalLots * piecesPerLot;
+  // Build SKU map: size → sku from _productDict
+  const skuMap = {};
+  const pd = window._productDict||{};
+  Object.values(pd).forEach(info=>{
+    if(info.parentSku===parentSku && (info.color||'')===(color||'')){
+      const sz = (info.size||'').toUpperCase().trim();
+      if(sz && info.sku) skuMap[sz] = info.sku;
+    }
+  });
+  // Flatten all SKUs in this roll
+  const skuList = [...new Set(Object.keys({...rollData.counts||{},...rollData.extraCounts||{}}).map(sz=>skuMap[sz]).filter(Boolean))];
+
   cart[id] = {
     type:'pants', parentSku, name, color,
     factoryName: getFactoryName(parentSku)||name,
@@ -2092,7 +2105,9 @@ function cartAddRoll(parentSku, name, color, rollIndex, rollData, piecesPerLot){
     szSummary, extraSummary, pieces,
     lots: rollData.totalLots,
     counts: rollData.counts||{},
-    extraCounts: rollData.extraCounts||{}
+    extraCounts: rollData.extraCounts||{},
+    skuMap,   // size→sku
+    skuList   // all SKUs in this roll
   };
   updateCartFab();
   renderCartModal();
@@ -2107,7 +2122,7 @@ function cartRemoveRoll(parentSku, color, rollIndex){
 // ── Add belt/other color to cart ──
 function cartAddBelt(parentSku, name, skuKey, color, qty){
   const id = cartId(parentSku, skuKey);
-  cart[id] = { type:'belt', parentSku, name, color, skuKey, qty };
+  cart[id] = { type:'belt', parentSku, name, color, skuKey, qty, skuList:[skuKey] };
   updateCartFab();
   renderCartModal();
 }
