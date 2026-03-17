@@ -2232,150 +2232,131 @@ function renderOrderHistory(){
 
 function renderHistDetail(order){
   const allSizes = [...SIZE_ORDER];
-
-  // Group by parentSku
   const groups = {};
   const groupOrder = [];
   (order.items||[]).forEach(item=>{
     const key = item.parentSku;
     if(!groups[key]){
       groupOrder.push(key);
-      const cat = item.category || ((window._productDict||{})[key]?.category) || '';
-      groups[key] = {
-        name: item.name, factoryName: item.factoryName||getFactoryName(key)||item.name,
-        category: cat, type: item.type||'pants',
-        colorRolls: {}, beltItems: []
-      };
+      const cat = item.category||((window._productDict||{})[key]?.category)||'';
+      groups[key]={name:item.name, factoryName:item.factoryName||getFactoryName(key)||item.name,
+        category:cat, type:item.type||'pants', colorRolls:{}, beltItems:[]};
     }
-    const g = groups[key];
+    const g=groups[key];
     if(item.type==='belt') g.beltItems.push(item);
     else {
       if(!g.colorRolls[item.color]) g.colorRolls[item.color]=[];
       g.colorRolls[item.color].push({
         rollLabel:item.rollLabel, counts:item.counts||{},
-        extraCounts:item.extraCounts||{}, pieces:item.pieces
+        extraCounts:item.extraCounts||{}, pieces:item.pieces,
+        itemKey: item.parentSku+'__'+item.color+'__'+(item.rollIndex??'')
       });
     }
   });
 
-  // Sizes used
-  const usedSizes = allSizes.filter(sz=>
-    Object.values(groups).some(g=>
-      Object.values(g.colorRolls).some(rolls=>
-        rolls.some(r=>(r.counts[sz]||0)+(r.extraCounts?.[sz]||0)>0)
-      )
-    )
+  const usedSizes=allSizes.filter(sz=>
+    Object.values(groups).some(g=>Object.values(g.colorRolls).some(rolls=>rolls.some(r=>(r.counts[sz]||0)+(r.extraCounts?.[sz]||0)>0)))
   );
-  const nSz = usedSizes.length;
-  const colSpanAll = 3 + nSz + 1; // name | color/roll | gap | sizes... | date
+  const nSz=usedSizes.length;
+  const colSpanAll=3+nSz+2; // name|color|gap|sizes...|date|rcv
 
-  const deliveryDate = new Date(order.createdAt + 15*24*60*60*1000);
-  const deliveryStr = `${deliveryDate.getDate()}/${deliveryDate.getMonth()+1}/${deliveryDate.getFullYear()}`;
-  const d = new Date(order.createdAt);
-  const dateStr = `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
-  const isReceived = order.received===true;
+  const deliveryDate=new Date(order.createdAt+15*24*60*60*1000);
+  const deliveryStr=`${deliveryDate.getDate()}/${deliveryDate.getMonth()+1}/${deliveryDate.getFullYear()}`;
+  const d=new Date(order.createdAt);
+  const dateStr=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
 
-  // Color palette per group index
-  const palettes = [
-    {bg:'rgba(0,160,160,.13)',   hdr:'rgba(0,160,150,.45)',   text:'#7ff4f4'},
-    {bg:'rgba(190,150,20,.13)',  hdr:'rgba(190,140,10,.50)',  text:'#f0c040'},
-    {bg:'rgba(120,80,220,.13)',  hdr:'rgba(110,70,210,.45)',  text:'#c4a0ff'},
-    {bg:'rgba(220,80,80,.13)',   hdr:'rgba(200,60,60,.45)',   text:'#ff9090'},
-    {bg:'rgba(40,160,100,.13)',  hdr:'rgba(30,150,90,.45)',   text:'#80e8b0'},
-    {bg:'rgba(220,120,30,.13)',  hdr:'rgba(200,100,20,.45)',  text:'#ffb060'},
-    {bg:'rgba(60,120,220,.13)',  hdr:'rgba(50,100,200,.45)',  text:'#90c0ff'},
-    {bg:'rgba(160,40,160,.13)',  hdr:'rgba(140,30,140,.45)',  text:'#e890e8'},
+  const rcvItems = order.receivedItems||{}; // { itemKey: true/false }
+
+  const palettes=[
+    {bg:'rgba(0,160,160,.13)',  hdr:'rgba(0,160,150,.45)'},
+    {bg:'rgba(190,150,20,.13)', hdr:'rgba(190,140,10,.50)'},
+    {bg:'rgba(120,80,220,.13)', hdr:'rgba(110,70,210,.45)'},
+    {bg:'rgba(220,80,80,.13)',  hdr:'rgba(200,60,60,.45)'},
+    {bg:'rgba(40,160,100,.13)', hdr:'rgba(30,150,90,.45)'},
+    {bg:'rgba(220,120,30,.13)', hdr:'rgba(200,100,20,.45)'},
+    {bg:'rgba(60,120,220,.13)', hdr:'rgba(50,100,200,.45)'},
+    {bg:'rgba(160,40,160,.13)', hdr:'rgba(140,30,140,.45)'},
   ];
-  const beltPalette = {bg:'rgba(80,90,110,.18)', hdr:'rgba(80,90,120,.50)', text:'#a0b0d0'};
 
-  let html = `<div style="padding:12px;background:var(--bg-dark);border-top:1px solid rgba(255,255,255,.06);overflow-x:auto">`;
-
-  // Date header
-  html += `<div style="text-align:center;padding:4px 0 12px">
-    <span style="font-size:20px;font-weight:800;color:var(--text)">📅 ${dateStr}</span>
-  </div>`;
-
-  html += `<table style="width:100%;border-collapse:collapse;font-size:12px;min-width:500px">
+  let html=`<div style="padding:12px;background:var(--bg-dark);border-top:1px solid rgba(255,255,255,.06);overflow-x:auto">`;
+  html+=`<div style="text-align:center;padding:4px 0 12px"><span style="font-size:20px;font-weight:800;color:var(--text)">📅 ${dateStr}</span></div>`;
+  html+=`<table style="width:100%;border-collapse:collapse;font-size:12px;min-width:500px">
     <colgroup>
-      <col style="width:160px">
-      <col style="width:100px">
-      <col style="width:12px">
+      <col style="width:160px"><col style="width:100px"><col style="width:12px">
       ${usedSizes.map(()=>'<col style="width:52px">').join('')}
-      <col style="width:100px">
+      <col style="width:90px"><col style="width:70px">
     </colgroup>`;
 
-  // Column header row (only sizes + date)
-  html += `<tr style="height:8px"><td colspan="${colSpanAll}"></td></tr>`;
-
-  let pi = 0;
+  let pi=0;
   groupOrder.forEach(key=>{
-    const g = groups[key];
-    const isPants = Object.keys(g.colorRolls).length > 0;
-    const pal = palettes[pi++ % palettes.length];
+    const g=groups[key];
+    const isPants=Object.keys(g.colorRolls).length>0;
+    const pal=palettes[pi++%palettes.length];
 
     if(!isPants){
-      // Belt — header
-      html += `<tr>
-        <td colspan="${colSpanAll}" style="background:${pal.hdr};color:#fff;font-weight:800;text-align:center;padding:7px 12px;border-radius:6px;font-size:13px">${g.factoryName}</td>
-      </tr>`;
-      g.beltItems.forEach((item,ii)=>{
-        const isLast = ii===g.beltItems.length-1;
-        html += `<tr style="background:${pal.bg}">
+      html+=`<tr><td colspan="${colSpanAll}" style="background:${pal.hdr};color:#fff;font-weight:800;text-align:center;padding:7px 12px;border-radius:6px;font-size:13px">${g.factoryName}</td></tr>`;
+      g.beltItems.forEach(item=>{
+        const ik=item.parentSku+'__'+(item.skuKey||item.sku||item.color);
+        const rcvd=rcvItems[ik]===true;
+        html+=`<tr style="background:${pal.bg}${rcvd?';opacity:.6':''}">
           <td style="padding:6px 12px;font-weight:700;color:var(--text);font-size:12px">${item.name}</td>
           <td style="padding:6px 0 6px 16px;color:var(--text);font-size:12px">${item.color}</td>
           <td></td>
           <td colspan="${nSz}" style="padding:6px 8px;font-weight:700;color:var(--orange);font-size:13px">${item.qty} ชิ้น</td>
           <td style="padding:6px 10px;font-size:10px;color:var(--green);text-align:right;white-space:nowrap">🚚 ${deliveryStr}</td>
+          <td style="padding:6px 8px;text-align:center">
+            <label title="ได้รับแล้ว" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;font-size:10px;color:${rcvd?'var(--green)':'var(--muted)'}">
+              <input type="checkbox" ${rcvd?'checked':''} style="width:14px;height:14px;accent-color:var(--green);cursor:pointer"
+                onchange="toggleItemReceived('${order.key}','${ik}',this.checked)">
+              ${rcvd?'✓':''}
+            </label>
+          </td>
         </tr>`;
       });
-      html += `<tr><td colspan="${colSpanAll}" style="padding:4px"></td></tr>`;
+      html+=`<tr><td colspan="${colSpanAll}" style="padding:4px"></td></tr>`;
       return;
     }
 
-    // Pants — header row
-    html += `<tr>
+    // Pants header
+    html+=`<tr>
       <td colspan="2" style="background:${pal.hdr};color:#fff;font-weight:800;text-align:center;padding:7px 12px;border-radius:6px 0 0 6px;font-size:13px">${g.factoryName}</td>
       <td style="background:${pal.hdr}"></td>
       ${usedSizes.map(sz=>`<td style="background:${pal.hdr};color:#fff;font-weight:800;text-align:center;padding:7px 8px;font-size:13px">${sz}</td>`).join('')}
-      <td style="background:${pal.hdr};color:rgba(255,255,255,.6);font-size:10px;text-align:center;border-radius:0 6px 6px 0;padding:7px 8px">รับ/วัน</td>
+      <td style="background:${pal.hdr};color:rgba(255,255,255,.6);font-size:10px;text-align:center;padding:7px 8px">วันรับ</td>
+      <td style="background:${pal.hdr};color:rgba(255,255,255,.6);font-size:10px;text-align:center;border-radius:0 6px 6px 0;padding:7px 8px">รับแล้ว</td>
     </tr>`;
 
-    const colorKeys = Object.keys(g.colorRolls);
+    const colorKeys=Object.keys(g.colorRolls);
     colorKeys.forEach((color,ci)=>{
-      const rolls = g.colorRolls[color];
-      rolls.forEach((roll,ri)=>{
-        const isLastRow = ci===colorKeys.length-1 && ri===rolls.length-1;
-        html += `<tr style="background:${pal.bg}">
+      g.colorRolls[color].forEach((roll,ri)=>{
+        const isLastRow=ci===colorKeys.length-1&&ri===g.colorRolls[color].length-1;
+        const ik=roll.itemKey||key+'__'+color+'__'+ri;
+        const rcvd=rcvItems[ik]===true;
+        html+=`<tr style="background:${pal.bg}${rcvd?';opacity:.55':''}">
           <td style="padding:6px 12px;font-weight:700;color:var(--text);font-size:12px;white-space:nowrap">${g.name}</td>
           <td style="padding:6px 0 6px 16px;color:var(--text);font-weight:600;font-size:12px;white-space:nowrap">${color} / ${roll.rollLabel}</td>
-          <td style="padding:2px"></td>
+          <td></td>
           ${usedSizes.map(sz=>{
             const total=(roll.counts[sz]||0)+(roll.extraCounts?.[sz]||0);
             return total
-              ? `<td style="text-align:center;font-weight:800;font-size:14px;color:var(--text);padding:6px 4px">${total}</td>`
-              : `<td style="text-align:center;color:var(--faint);padding:6px 4px;font-size:12px">-</td>`;
+              ?`<td style="text-align:center;font-weight:800;font-size:14px;color:var(--text);padding:6px 4px">${total}</td>`
+              :`<td style="text-align:center;color:var(--faint);padding:6px 4px;font-size:12px">-</td>`;
           }).join('')}
           <td style="padding:6px 10px;font-size:10px;color:var(--green);text-align:right;white-space:nowrap">${isLastRow?`🚚 ${deliveryStr}`:''}</td>
+          <td style="padding:6px 8px;text-align:center">
+            <label title="${color} ${roll.rollLabel}" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;font-size:10px;color:${rcvd?'var(--green)':'var(--muted)'}">
+              <input type="checkbox" ${rcvd?'checked':''} style="width:14px;height:14px;accent-color:var(--green);cursor:pointer"
+                onchange="toggleItemReceived('${order.key}','${ik}',this.checked)">
+              ${rcvd?'✓':''}
+            </label>
+          </td>
         </tr>`;
       });
     });
-    html += `<tr><td colspan="${colSpanAll}" style="padding:4px"></td></tr>`;
+    html+=`<tr><td colspan="${colSpanAll}" style="padding:4px"></td></tr>`;
   });
 
-  html += `</table>`;
-
-  // Received checkbox
-  const rcvKey = 'rcv_'+order.key;
-  html += `<div style="padding:10px 4px;display:flex;align-items:center;gap:10px;border-top:1px solid rgba(255,255,255,.06);margin-top:6px">
-    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;color:${isReceived?'var(--green)':'var(--muted)'}">
-      <input type="checkbox" id="${rcvKey}" ${isReceived?'checked':''} onchange="toggleOrderReceived('${order.key}',this.checked)"
-        style="width:16px;height:16px;accent-color:var(--green);cursor:pointer">
-      ${isReceived?'✅ ได้รับสินค้าแล้ว':'ยืนยันว่าได้รับสินค้าแล้ว'}
-    </label>
-    ${isReceived&&order.receivedAt?`<span style="font-size:11px;color:var(--faint)">รับวันที่ ${new Date(order.receivedAt).toLocaleDateString('th-TH')}</span>`:''}
-  </div>`;
-
-  html += `</div>`;
+  html+=`</table></div>`;
   return html;
 }
 
@@ -2387,6 +2368,16 @@ function toggleHistDetail(key){
   const card=$(`hist-${key}`);
   const arrow=card?.querySelector('.order-hist-hdr span:last-child');
   if(arrow) arrow.textContent=body.style.display==='block'?'▴':'▾';
+}
+
+async function toggleItemReceived(orderKey, itemKey, checked){
+  const db=getRtdb(); if(!db) return;
+  try {
+    await db.ref('order_history/'+orderKey+'/receivedItems/'+itemKey).set(checked||null);
+    const order=orderHistory.find(o=>o.key===orderKey);
+    if(order){ if(!order.receivedItems) order.receivedItems={}; order.receivedItems[itemKey]=checked; }
+    renderOrderHistory();
+  } catch(e){ console.warn('[Order] toggleItemReceived:', e); }
 }
 
 async function toggleOrderReceived(key, checked){
