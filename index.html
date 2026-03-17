@@ -6502,7 +6502,23 @@ function openChart(sku){
   // ── สร้าง daily series จาก item.dailySales ──
   const ds = item.dailySales || {};
   const dates = Object.keys(ds).sort((a,b)=>parseDate(a)-parseDate(b));
-  if(!dates.length){ alert('ไม่มีข้อมูลยอดขายรายวัน'); return; }
+  if(!dates.length){
+    // Show modal with no-data message instead of blocking alert
+    $('chartStats').innerHTML = `<div style="padding:40px;text-align:center;color:var(--muted)">
+      <div style="font-size:40px;margin-bottom:12px">📊</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">ไม่มีข้อมูลยอดขายรายวัน</div>
+      <div style="font-size:13px">สินค้านี้ยังไม่มีประวัติการขายในระบบ</div>
+    </div>`;
+    $('segLegend').innerHTML = '';
+    $('stockoutBanner').style.display = 'none';
+    $('selPanel').classList.remove('on');
+    // Clear old chart
+    if(window._salesChart){ try{window._salesChart.destroy();}catch(e){} window._salesChart=null; }
+    document.getElementById('salesChart').style.display = 'none';
+    modal.classList.add('on');
+    return;
+  }
+  document.getElementById('salesChart').style.display = '';
 
   const values = dates.map(d=>ds[d]);
   const labels = dates.map(d=>{
