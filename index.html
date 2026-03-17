@@ -677,22 +677,49 @@ canvas{display:block;width:100%!important}
             <span id="filter-badge" style="display:none;background:var(--blue);color:#fff;font-size:11px;font-weight:800;border-radius:8px;padding:0 5px;margin-left:2px"></span>
           </button>
           <!-- Filter Popup -->
-          <div id="filterPopup" style="display:none;position:absolute;top:calc(100% + 8px);right:0;z-index:500;background:var(--bg);box-shadow:10px 10px 26px #07090d,-5px -5px 16px #252c36;border-radius:18px;padding:18px 20px;min-width:320px;max-width:420px;animation:modalIn .2s ease">
-            <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
-              🔍 ฟิลเตอร์สินค้า
+          <div id="filterPopup" style="display:none;position:absolute;top:calc(100% + 8px);right:0;z-index:500;background:var(--bg);box-shadow:10px 10px 26px #07090d,-5px -5px 16px #252c36;border-radius:18px;padding:16px 18px;min-width:280px;max-width:340px;animation:modalIn .2s ease">
+            <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+              🔍 ฟิลเตอร์
               <button onclick="clearAllFilters()" style="font-size:12px;font-weight:700;color:var(--red);background:none;border:none;cursor:pointer;font-family:Anuphan,sans-serif">ล้างทั้งหมด</button>
             </div>
-            <div style="margin-bottom:12px">
-              <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px">ชื่อสินค้า</div>
-              <div id="fp-name" style="display:flex;flex-wrap:wrap;gap:5px;max-height:100px;overflow-y:auto"></div>
+            <!-- Name dropdown -->
+            <div style="margin-bottom:10px">
+              <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:5px">ชื่อสินค้า</div>
+              <div id="fp-name-dd" style="position:relative">
+                <button class="btn" onclick="toggleFpDd('fp-name-list')" style="width:100%;justify-content:space-between;font-size:13px" id="fp-name-btn">
+                  <span id="fp-name-lbl">ทั้งหมด</span>
+                  <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div id="fp-name-list" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:600;background:var(--bg);box-shadow:6px 6px 18px #07090d;border-radius:12px;padding:6px;max-height:220px;overflow-y:auto">
+                  <div id="fp-name"></div>
+                </div>
+              </div>
             </div>
-            <div style="margin-bottom:12px">
-              <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px">🎨 สี</div>
-              <div id="fp-color" style="display:flex;flex-wrap:wrap;gap:5px;max-height:80px;overflow-y:auto"></div>
+            <!-- Color dropdown -->
+            <div style="margin-bottom:10px">
+              <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:5px">🎨 สี</div>
+              <div id="fp-color-dd" style="position:relative">
+                <button class="btn" onclick="toggleFpDd('fp-color-list')" style="width:100%;justify-content:space-between;font-size:13px" id="fp-color-btn">
+                  <span id="fp-color-lbl">ทั้งหมด</span>
+                  <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div id="fp-color-list" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:600;background:var(--bg);box-shadow:6px 6px 18px #07090d;border-radius:12px;padding:6px;max-height:180px;overflow-y:auto">
+                  <div id="fp-color"></div>
+                </div>
+              </div>
             </div>
+            <!-- Size dropdown -->
             <div>
-              <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px">📐 ไซส์</div>
-              <div id="fp-size" style="display:flex;flex-wrap:wrap;gap:5px;max-height:80px;overflow-y:auto"></div>
+              <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:5px">📐 ไซส์</div>
+              <div id="fp-size-dd" style="position:relative">
+                <button class="btn" onclick="toggleFpDd('fp-size-list')" style="width:100%;justify-content:space-between;font-size:13px" id="fp-size-btn">
+                  <span id="fp-size-lbl">ทั้งหมด</span>
+                  <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div id="fp-size-list" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:600;background:var(--bg);box-shadow:6px 6px 18px #07090d;border-radius:12px;padding:6px;max-height:180px;overflow-y:auto">
+                  <div id="fp-size"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -3515,8 +3542,16 @@ function rerender(){
 }
 
 function toggleFilterChip(type, val, el){
-  activeFilters[type].has(val) ? activeFilters[type].delete(val) : activeFilters[type].add(val);
-  el.classList.toggle('on', activeFilters[type].has(val));
+  const isCheck = el.type==='checkbox';
+  if(isCheck) {
+    isCheck&&el.checked ? activeFilters[type].add(val) : activeFilters[type].delete(val);
+  } else {
+    activeFilters[type].has(val) ? activeFilters[type].delete(val) : activeFilters[type].add(val);
+    el.classList.toggle('on', activeFilters[type].has(val));
+  }
+  // Update label
+  const map={names:'fp-name-lbl',colors:'fp-color-lbl',sizes:'fp-size-lbl'};
+  const lbl=$(map[type]); if(lbl){ const s=activeFilters[type]; lbl.textContent=s.size===0?'ทั้งหมด':s.size===1?[...s][0]:`${s.size} รายการ`; }
   rerender();
 }
 
@@ -3572,19 +3607,80 @@ function enrichAppData(){
 
 function buildFilterOptions(){
   if(!appData.length) return;
-  // build unique sorted lists
-  const names  = [...new Set(appData.map(d=>d.name))].sort((a,b)=>a.localeCompare(b,'th'));
-  const colors = [...new Set(appData.map(d=>d.color||'').filter(Boolean))].sort((a,b)=>a.localeCompare(b,'th'));
-  const sizes  = [...new Set(appData.map(d=>d.size||'').filter(Boolean))].sort((a,b)=>a.localeCompare(b,'th'));
+  rebuildFilterLists();
+}
 
-  function makeChips(container, arr, type){
-    const el = $(container);
-    if(!el) return;
-    el.innerHTML = arr.map(v=>`<button class="fchip${activeFilters[type].has(v)?' on':''}" data-ftype="${type}" data-fval="${v.replace(/"/g,'&quot;')}" onclick="toggleFilterChip('${type}','${v.replace(/'/g,"\'")}',this)">${v}</button>`).join('');
-  }
-  makeChips('fp-name',  names,  'names');
-  makeChips('fp-color', colors, 'colors');
-  makeChips('fp-size',  sizes,  'sizes');
+// Cascading filter: recompute available options based on current selections
+function rebuildFilterLists(){
+  const selNames  = activeFilters.names;
+  const selColors = activeFilters.colors;
+  const selSizes  = activeFilters.sizes;
+
+  // Available items given OTHER filters (not self)
+  const byNames  = appData.filter(d=> (selColors.size===0||selColors.has(d.color||'')) && (selSizes.size===0||selSizes.has(d.size||'')));
+  const byColors = appData.filter(d=> (selNames.size===0||selNames.has(d.name))         && (selSizes.size===0||selSizes.has(d.size||'')));
+  const bySizes  = appData.filter(d=> (selNames.size===0||selNames.has(d.name))         && (selColors.size===0||selColors.has(d.color||'')));
+
+  const names  = [...new Set(byNames.map(d=>d.name))].sort((a,b)=>a.localeCompare(b,'th'));
+  const colors = [...new Set(byColors.map(d=>d.color||'').filter(Boolean))].sort((a,b)=>a.localeCompare(b,'th'));
+  const sizes  = [...new Set(bySizes.map(d=>d.size||'').filter(Boolean))].sort((a,b)=>SIZE_ORDER.indexOf(a)-SIZE_ORDER.indexOf(b)||a.localeCompare(b));
+
+  makeCheckList('fp-name',  names,  'names');
+  makeCheckList('fp-color', colors, 'colors');
+  makeCheckList('fp-size',  sizes,  'sizes');
+}
+
+function makeCheckList(container, arr, type){
+  const el=$(container); if(!el) return;
+  el.innerHTML = arr.map(v=>{
+    const checked = activeFilters[type].has(v);
+    const esc = v.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return`<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text);transition:background .1s" onmouseover="this.style.background='rgba(77,143,255,.1)'" onmouseout="this.style.background=''">
+      <input type="checkbox" ${checked?'checked':''} style="width:14px;height:14px;accent-color:var(--blue);cursor:pointer"
+        onchange="onFilterCheck('${type}','${esc}',this.checked)">
+      ${v}
+    </label>`;
+  }).join('') || '<div style="padding:8px;font-size:12px;color:var(--faint)">ไม่มีตัวเลือก</div>';
+  updateFpLabel(type);
+}
+
+function onFilterCheck(type, val, checked){
+  checked ? activeFilters[type].add(val) : activeFilters[type].delete(val);
+  rebuildFilterLists(); // cascade update
+  updateActiveFilerChips();
+  renderAll(getFilteredData());
+}
+
+function updateFpLabel(type){
+  const map={names:'fp-name-lbl',colors:'fp-color-lbl',sizes:'fp-size-lbl'};
+  const el=$(map[type]); if(!el) return;
+  const s=activeFilters[type];
+  el.textContent = s.size===0?'ทั้งหมด':s.size===1?[...s][0]:`${s.size} รายการ`;
+}
+
+function toggleFpDd(listId){
+  ['fp-name-list','fp-color-list','fp-size-list'].forEach(id=>{
+    if(id!==listId){ const el=$(id); if(el) el.style.display='none'; }
+  });
+  const el=$(listId); if(!el) return;
+  el.style.display = el.style.display==='none'?'block':'none';
+  if(el.style.display==='block') rebuildFilterLists(); // refresh on open
+}
+
+
+function updateFpLabel(type){
+  const map={names:'fp-name-lbl',colors:'fp-color-lbl',sizes:'fp-size-lbl'};
+  const el=$(map[type]); if(!el) return;
+  const s=activeFilters[type];
+  el.textContent=s.size===0?'ทั้งหมด':s.size===1?[...s][0]:`${s.size} รายการ`;
+}
+
+function toggleFpDd(listId){
+  ['fp-name-list','fp-color-list','fp-size-list'].forEach(id=>{
+    if(id!==listId){ const el=$(id); if(el) el.style.display='none'; }
+  });
+  const el=$(listId); if(!el) return;
+  el.style.display = el.style.display==='none'?'block':'none';
 }
 
 // ── Popup toggles ──
@@ -3604,7 +3700,13 @@ function closeAllPopups(){
   ['filterPopup','colPopup'].forEach(id=>{ const el=$(id); if(el) el.style.display='none'; });
 }
 document.addEventListener('click', e=>{
-  if(!e.target.closest('#filterPopup')&&!e.target.closest('#filterBtn')) $('filterPopup') && ($('filterPopup').style.display='none');
+  if(!e.target.closest('#filterPopup')&&!e.target.closest('#filterBtn')){
+    $('filterPopup') && ($('filterPopup').style.display='none');
+  } else if(!e.target.closest('.fp-dd-list')){
+    ['fp-name-list','fp-color-list','fp-size-list'].forEach(id=>{
+      const el=$(id); if(el&&!e.target.closest(`#${id}`)&&!e.target.closest(`button[onclick*="${id}"]`)) el.style.display='none';
+    });
+  }
   if(!e.target.closest('#colPopup')  &&!e.target.closest('#colBtn'))    $('colPopup')    && ($('colPopup').style.display='none');
 });
 
