@@ -2326,7 +2326,7 @@ function renderOrderHistory(){
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <span style="font-size:15px;font-weight:800;color:var(--text)">📋 คำสั่งซื้อ #${orderHistory.length-idx}</span>
-            <span style="font-size:13px;color:var(--muted)">${dateStr} ${timeStr}</span>
+            <span style="font-size:13px;color:var(--muted);cursor:pointer" onclick="event.stopPropagation();editOrderDate('${order.key}',${order.createdAt})" title="แก้ไขวันที่">✏️ ${dateStr} ${timeStr}</span>
             <span style="font-size:12px;background:rgba(77,143,255,.12);color:var(--blue);padding:2px 8px;border-radius:6px">${itemCount} รายการ · ${order.days||15}วัน</span>
           </div>
           <div style="display:flex;gap:10px;margin-top:6px">
@@ -2397,7 +2397,10 @@ function renderHistDetail(order){
   ];
 
   let html=`<div style="padding:12px;background:var(--bg-dark);border-top:1px solid rgba(255,255,255,.06);overflow-x:auto">`;
-  html+=`<div style="text-align:center;padding:4px 0 12px"><span style="font-size:22px;font-weight:800;color:var(--text)">📅 ${dateStr}</span></div>`;
+  html+=`<div style="text-align:center;padding:4px 0 12px">
+    <span style="font-size:22px;font-weight:800;color:var(--text)">📅 ${dateStr}</span>
+    <button class="btn" onclick="editOrderDate('${order.key}',${order.createdAt})" style="font-size:12px;padding:3px 10px;color:var(--muted);margin-left:10px;vertical-align:middle">✏️ แก้ไขวันที่</button>
+  </div>`;
   html+=`<table style="width:100%;border-collapse:collapse;font-size:14px;min-width:500px">
     <colgroup>
       <col style="width:160px"><col style="width:100px"><col style="width:12px">
@@ -2537,6 +2540,39 @@ function autoDetectOrderReceived(newStockMap, oldStockMap){
       console.log('[Auto] Order', order.key, 'marked received (stock +8)');
     }
   });
+}
+
+async function editOrderDate(key, currentTs){
+  const current = new Date(currentTs);
+  // Format as YYYY-MM-DD for input[type=date]
+  const pad = n=>String(n).padStart(2,'0');
+  const currentVal = `${current.getFullYear()}-${pad(current.getMonth()+1)}-${pad(current.getDate())}`;
+
+  // Show inline date picker via prompt-style dialog
+  const newDateStr = prompt(
+    'แก้ไขวันที่คำสั่งซื้อ (รูปแบบ YYYY-MM-DD):',
+    currentVal
+  );
+  if(!newDateStr || newDateStr===currentVal) return;
+
+  // Validate format
+  const parsed = new Date(newDateStr);
+  if(isNaN(parsed.getTime())){ alert('รูปแบบวันที่ไม่ถูกต้อง กรุณาใส่ YYYY-MM-DD'); return; }
+
+  // Keep original time, only change date
+  const newTs = new Date(
+    parsed.getFullYear(), parsed.getMonth(), parsed.getDate(),
+    current.getHours(), current.getMinutes(), current.getSeconds()
+  ).getTime();
+
+  const db=getRtdb(); if(!db) return;
+  try {
+    await db.ref('order_history/'+key+'/createdAt').set(newTs);
+    const order=orderHistory.find(o=>o.key===key);
+    if(order) order.createdAt=newTs;
+    renderOrderHistory();
+    console.log('[Order] Date updated:', key, newDateStr);
+  } catch(e){ alert('แก้ไขวันที่ไม่สำเร็จ: '+e.message); }
 }
 
 async function deleteOrderHistory(key){
