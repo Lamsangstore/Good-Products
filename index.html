@@ -22,10 +22,10 @@
 <style>
 :root {
   /* ── Pastel Yellow Light Theme ── */
-  --bg:        #fdf8ee;
-  --bg-light:  #fff9f0;
-  --bg-dark:   #f5edd8;
-  --bg-darker: #ede4cb;
+  --bg:        #fefbf3;
+  --bg-light:  #fffdf8;
+  --bg-dark:   #f5edd6;
+  --bg-darker: #ede3c6;
 
   /* Soft shadows for light neumorphism */
   --so:  5px 5px 14px #e4d9c0, -4px -4px 12px #ffffff;
@@ -1660,6 +1660,110 @@ html, body {
   color: #15803d !important;
 }
 .cart-select-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════════════
+   TABLE — STICKY COLS + RESIZE + PASTEL ROWS
+   ═══════════════════════════════════════════════════ */
+
+/* Sticky first 4 cols: #, ชื่อสินค้า, สี, ไซส์ */
+.tbl-wrap { overflow-x: auto; position: relative; }
+
+thead th, tbody td { white-space: nowrap; }
+
+/* Sticky header cells */
+thead th:nth-child(1),
+thead th:nth-child(2),
+thead th:nth-child(3),
+thead th:nth-child(4) {
+  position: sticky;
+  z-index: 4;
+  background: var(--bg-dark) !important;
+}
+thead th:nth-child(1) { left: 0;   min-width: 36px; max-width: 36px; }
+thead th:nth-child(2) { left: 36px;  min-width: 160px; }
+thead th:nth-child(3) { left: 196px; min-width: 72px; }
+thead th:nth-child(4) { left: 268px; min-width: 60px; box-shadow: 4px 0 8px rgba(180,130,50,.08); }
+
+/* Sticky body cells */
+tbody td:nth-child(1),
+tbody td:nth-child(2),
+tbody td:nth-child(3),
+tbody td:nth-child(4) {
+  position: sticky;
+  z-index: 2;
+}
+tbody td:nth-child(1) { left: 0; }
+tbody td:nth-child(2) { left: 36px; }
+tbody td:nth-child(3) { left: 196px; }
+tbody td:nth-child(4) { left: 268px; box-shadow: 4px 0 6px rgba(180,130,50,.07); }
+
+/* Match sticky cell bg to row bg */
+tbody tr:nth-child(odd)  td { background: #fdf8ee; }
+tbody tr:nth-child(even) td { background: #f7edd6; }
+
+tbody tr:nth-child(odd)  td:nth-child(1),
+tbody tr:nth-child(odd)  td:nth-child(2),
+tbody tr:nth-child(odd)  td:nth-child(3),
+tbody tr:nth-child(odd)  td:nth-child(4) { background: #fdf8ee; }
+
+tbody tr:nth-child(even) td:nth-child(1),
+tbody tr:nth-child(even) td:nth-child(2),
+tbody tr:nth-child(even) td:nth-child(3),
+tbody tr:nth-child(even) td:nth-child(4) { background: #f7edd6; }
+
+tbody tr:hover td { background: #fce8b8 !important; }
+
+/* Column resize handle */
+thead th { position: relative; user-select: none; }
+thead th .col-resize-handle {
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 5px;
+  cursor: col-resize;
+  z-index: 5;
+  background: transparent;
+  transition: background .15s;
+}
+thead th .col-resize-handle:hover,
+thead th.resizing .col-resize-handle {
+  background: rgba(217,119,6,.4);
+  border-radius: 2px;
+}
+
+/* ── Pastel accent overrides ── */
+:root {
+  --blue:   #c2620a;
+  --green:  #15803d;
+  --orange: #d97706;
+  --red:    #dc2626;
+  --purple: #7c3aed;
+  --gold:   #b45309;
+  --muted:  #92724a;
+  --faint:  #c8ae8a;
+  --mid:    #7a6040;
+  --text:   #2d1e0a;
+}
+.kpi.c-blue   .kpi-val { color: #d97706; }
+.kpi.c-gold   .kpi-val { color: #b45309; }
+.kpi.c-green  .kpi-val { color: #15803d; }
+.kpi.c-orange .kpi-val { color: #d97706; }
+.kpi.c-purple .kpi-val { color: #7c3aed; }
+/* Pastel badges */
+.badge.b-ok     { background: #f0fdf4; color: #15803d; border-color: #86efac; }
+.badge.b-warn   { background: #fff7ed; color: #c2410c; border-color: #fdba74; }
+.badge.b-danger { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+/* Pastel tab active */
+.tab-btn.active { background: linear-gradient(135deg,#f59e0b,#d97706) !important; }
+/* Pastel panel header */
+.panel-hdr { background: #f5edd6 !important; }
+/* Pastel KPI border accent */
+.kpi.c-blue   .kpi-accent { background: #d97706; }
+.kpi.c-green  .kpi-accent { background: #16a34a; }
+.kpi.c-orange .kpi-accent { background: #f59e0b; }
+.kpi.c-purple .kpi-accent { background: #8b5cf6; }
+.kpi.c-gold   .kpi-accent { background: #b45309; }
+/* Row border */
+tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -2069,8 +2173,8 @@ html, body {
       <table>
         <thead id="tbl-head">
           <tr>
-            <th>#</th>
-            <th class="sortable" data-key="name" onclick="sortBy(this)">ชื่อสินค้า<span class="sort-ico"></span></th>
+            <th style="min-width:36px;max-width:36px">#<span class="col-resize-handle" onmousedown="startColResize(event,this)"></span></th>
+            <th class="sortable" data-key="name" onclick="sortBy(this)" style="min-width:140px">ชื่อสินค้า<span class="sort-ico"></span><span class="col-resize-handle" onmousedown="startColResize(event,this)"></span></th>
             <th class="sortable" data-col="sku"      data-key="sku"          onclick="sortBy(this)">🔖 SKU<span class="sort-ico"></span></th>
             <th class="sortable" data-col="color"    data-key="color"        onclick="sortBy(this)">🎨 สี<span class="sort-ico"></span></th>
             <th class="sortable" data-col="size"     data-key="size"         onclick="sortBy(this)">📐 ไซส์<span class="sort-ico"></span></th>
@@ -2506,6 +2610,56 @@ window.addEventListener('load', ()=>{
     }
   });
 })();
+
+
+// ═══════════════════════════════════════════════
+// COLUMN RESIZE
+// ═══════════════════════════════════════════════
+(function initColResize(){
+  // Add resize handles to all th elements dynamically
+  function addHandles(){
+    document.querySelectorAll('table thead th').forEach(th=>{
+      if(th.querySelector('.col-resize-handle')) return;
+      const h = document.createElement('span');
+      h.className = 'col-resize-handle';
+      h.addEventListener('mousedown', e=>startColResize(e, h));
+      th.appendChild(h);
+    });
+  }
+  // Run after table renders
+  const orig = window.renderAll;
+  if(orig) window.renderAll = function(...a){ const r=orig.apply(this,a); setTimeout(addHandles,100); return r; };
+  setTimeout(addHandles, 1500);
+})();
+
+let _resizeState = null;
+
+function startColResize(e, handle){
+  e.preventDefault();
+  e.stopPropagation();
+  const th = handle.closest('th');
+  if(!th) return;
+  th.classList.add('resizing');
+  const startX = e.clientX;
+  const startW = th.getBoundingClientRect().width;
+  _resizeState = { th, startX, startW };
+
+  const onMove = ev => {
+    if(!_resizeState) return;
+    const newW = Math.max(40, _resizeState.startW + (ev.clientX - _resizeState.startX));
+    _resizeState.th.style.minWidth = newW+'px';
+    _resizeState.th.style.maxWidth = newW+'px';
+    _resizeState.th.style.width    = newW+'px';
+  };
+  const onUp = () => {
+    if(_resizeState) _resizeState.th.classList.remove('resizing');
+    _resizeState = null;
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
 
 // ── PWA Install Prompt ──────────────────────────────────
 let _pwaPrompt = null;
