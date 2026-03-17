@@ -1389,16 +1389,15 @@ function getNextRestockInfo(sku){
     const items = order.items||[];
     if(!items.length) return;
 
-    // Check if any un-received item in this order contains this SKU
+    // Check if any un-received item in this order contains this exact SKU
     const hasItem = items.some(item=>{
       const itemKey = item.itemKey || (item.parentSku+'__'+(item.color||'')+'__'+(item.rollIndex??''));
       if(rcv[itemKey]===true) return false; // already received
-      // Direct SKU match via skuList
-      if(item.skuList && item.skuList.includes(sku)) return true;
-      // Fallback: parentSku match
-      if(item.parentSku === parentSku) return true;
-      // Belt: skuKey match
-      if(item.skuKey===sku||item.sku===sku) return true;
+      // Must match via skuList (exact SKU) — no parentSku fallback to avoid false matches
+      if(item.skuList && item.skuList.length>0) return item.skuList.includes(sku);
+      // Belt: exact skuKey or sku match only
+      if(item.type==='belt') return item.skuKey===sku||item.sku===sku;
+      // Old orders without skuList: skip (avoid false positives)
       return false;
     });
     if(!hasItem) return;
@@ -3920,18 +3919,23 @@ function renderAll(data){
       // cv pill
       const cvHtml=`<span class="cv-pill" style="color:${item.consistColor}">${item.consistLabel}</span>`;
 
-      // status badge — ถ้ามีไฟล์สต๊อก ให้ใช้สถานะจากไฟล์เป็นหลัก
+      // status badge
       const _stkSt = getStockStatus(item.sku);
       const _stkAm = getStockAmount(item.sku);
+      // Check discontinued per color (parentSku + color)
+      const _isDisc = isDiscontinued(item.parentSku||item.sku, item.color||'')
+                   || isDiscontinued(item.parentSku||item.sku); // whole model
       let badge;
-      if(_stkSt === 'out'){
+      if(_isDisc){
+        // ไม่เติมแล้ว — override ทุก status
+        badge=`<span class="badge" style="background:rgba(100,116,139,.2);color:var(--muted);border:1px solid rgba(100,116,139,.3)">🚫 ไม่เติมแล้ว</span>`;
+      } else if(_stkSt === 'out'){
         badge=`<span class="badge b-danger">🔴 หมดสต๊อก${_stkAm!==null?' ('+_stkAm+')':''}</span>`;
       } else if(_stkSt === 'low'){
         badge=`<span class="badge b-warn">🟡 เหลือน้อย (${_stkAm})</span>`;
       } else if(_stkSt === 'ok'){
         badge=`<span class="badge b-ok">🟢 มี (${_stkAm})</span>`;
       } else {
-        // ไม่มีไฟล์สต๊อก → ใช้ logic เดิม (stockout score)
         badge=`<span class="badge b-ok"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>ปกติ</span>`;
         if(isHigh) badge=`<span class="badge b-danger"><svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>เสี่ยงสูง</span>`;
         else if(isMed) badge=`<span class="badge b-warn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>ติดตาม</span>`;
