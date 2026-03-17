@@ -3027,10 +3027,13 @@ function getNextRestockInfo(sku){
 
   let best = null;
   orderHistory.forEach(order=>{
-    // Skip if all items received
+    // Skip fully-received orders
+    if(order.received === true) return;
     const rcv = order.receivedItems||{};
     const items = order.items||[];
     if(!items.length) return;
+    // Also skip if all items individually ticked
+    if(isOrderFullyReceived(order)) return;
 
     // Check if any un-received item in this order contains this exact SKU
     const hasItem = items.some(item=>{
@@ -4012,6 +4015,8 @@ function getOrderNameSummary(order){
 
 // ── Helper: check if all items received ──
 function isOrderFullyReceived(order){
+  // Quick check: order-level received flag
+  if(order.received === true) return true;
   const items = order.items||[];
   if(!items.length) return false;
   const rcv = order.receivedItems||{};
@@ -4249,8 +4254,27 @@ async function toggleItemReceived(orderKey, itemKey, checked){
   try {
     await db.ref('order_history/'+orderKey+'/receivedItems/'+itemKey).set(checked||null);
     const order=orderHistory.find(o=>o.key===orderKey);
-    if(order){ if(!order.receivedItems) order.receivedItems={}; order.receivedItems[itemKey]=checked; }
+    if(order){
+      if(!order.receivedItems) order.receivedItems={};
+      order.receivedItems[itemKey] = checked;
+
+      // ── Auto-detect: if ALL items are now received → mark order received ──
+      const allDone = isOrderFullyReceived(order);
+      if(allDone && !order.received){
+        await db.ref('order_history/'+orderKey).update({ received: true, receivedAt: Date.now() });
+        order.received = true;
+        order.receivedAt = Date.now();
+      }
+      // ── If any item un-ticked → clear order.received ──
+      if(!checked && order.received){
+        await db.ref('order_history/'+orderKey).update({ received: null, receivedAt: null });
+        order.received = false;
+        order.receivedAt = null;
+      }
+    }
     renderOrderHistory();
+    // Re-render table so คาดรับ column updates
+    try { renderAll(getFilteredData()); } catch(e){}
   } catch(e){ console.warn('[Order] toggleItemReceived:', e); }
 }
 
