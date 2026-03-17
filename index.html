@@ -2771,7 +2771,9 @@ window.onload = () => {
         clearTimeout(fallback);
         if(!syncStarted){
           syncStarted=true;
-          loadAllConfigs().then(()=>{
+          loadAllConfigs().then(async ()=>{
+            // Load order history first so nextRestock shows correctly
+            try{ await loadOrderHistory(); }catch(e){}
             try{ renderAll(getFilteredData()); }catch(e){}
             try{ renderOrderTab(); }catch(e){}
           }).catch(()=>{});
@@ -3991,10 +3993,10 @@ async function loadOrderHistory(){
     const badge=$('history-badge');
     if(badge){ badge.style.display=''; badge.textContent=orderHistory.length; }
     renderOrderHistory();
-    // Re-enrich appData so nextRestock column updates
-    try { enrichAppData(); } catch(e){}
-    // Re-render table with updated restock info
-    try { renderAll(getFilteredData()); } catch(e){}
+    // Re-render table if data already loaded (so nextRestock column shows)
+    if(appData&&appData.length){
+      try { renderAll(getFilteredData()); } catch(e){}
+    }
   } catch(e){
     console.error('[History] Load failed:', e);
     area.innerHTML=`<div class="empty" style="padding:40px;color:var(--red)">โหลดไม่สำเร็จ: ${e.message}</div>`;
@@ -4818,9 +4820,10 @@ async function syncData(){
   try { enrichAppData(); } catch(ex){ console.warn('enrichAppData:', ex); }
   try { renderOrderTab(); } catch(ex){ console.warn('renderOrderTab:', ex); }
 
-  // Load configs + stock + save new cache to Firebase
+  // Load configs + order history + stock + save new cache to Firebase
   (async()=>{
     await loadAllConfigs();
+    try { await loadOrderHistory(); } catch(e){ console.warn('loadOrderHistory:', e); }
     try { renderAll(getFilteredData()); } catch(e){}
     try { renderOrderTab(); } catch(e){}
     if(!isStockLoaded()){
@@ -5018,9 +5021,12 @@ async function loadAppDataCache(){
     $('srch').value='';
     syncToggleButtons();
     buildFilterOptions();
-    renderAll();
     enrichAppData();
     renderOrderTab();
+    // Load order history first so nextRestock column is populated
+    loadOrderHistory().catch(()=>{}).finally(()=>{
+      renderAll(getFilteredData());
+    });
     const ageStr = ageHours<1 ? 'เมื่อกี้' : ageHours<24 ? Math.round(ageHours)+' ชม.ที่แล้ว' : Math.round(ageHours/24)+' วันที่แล้ว';
     updateCacheStatus('loaded', payload.data.length, ageStr);
     setTimeout(updateFStripLabel, 100);
