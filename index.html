@@ -1574,42 +1574,7 @@ html, body {
   flex-wrap: wrap !important;
 }
 
-/* Size cells — compact clean grid */
-.lot-size-cell {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 8px 6px;
-  border-radius: 10px;
-  background: var(--surface);
-  border: 1px solid rgba(217,119,6,.1);
-  min-width: 52px;
-  position: relative;
-  transition: border-color .15s;
-}
-.lot-size-cell.cell-ok    { background: rgba(22,163,74,.07);  border-color: rgba(22,163,74,.2); }
-.lot-size-cell.cell-oos   { background: rgba(239,68,68,.07);  border-color: rgba(239,68,68,.2); }
-.lot-size-cell.cell-low   { background: rgba(234,88,12,.07);  border-color: rgba(234,88,12,.2); }
-.lot-size-cell-sz   { font-size: 11px; font-weight: 800; color: var(--muted); letter-spacing: .4px; text-transform: uppercase; }
-.lot-size-cell-lots { font-size: 20px; font-weight: 800; color: var(--blue); font-family: 'IBM Plex Mono', monospace; line-height: 1; }
-.lot-size-cell-lots.is-zero { color: var(--faint); font-size: 16px; }
-.lot-size-cell-stock { font-size: 10px; font-weight: 700; margin-top: 1px; }
-.lot-size-cell input {
-  width: 36px;
-  font-size: 18px;
-  font-weight: 800;
-  font-family: 'IBM Plex Mono', monospace;
-  color: var(--blue);
-  background: none;
-  border: none;
-  outline: none;
-  text-align: center;
-  cursor: text;
-  padding: 0;
-  line-height: 1;
-}
-.lot-size-cell input:focus { color: var(--text); }
+
 .lot-size-cell-hint { font-size: 9px; color: var(--faint); }
 
 /* Filter popup when moved to body on mobile */
@@ -1626,6 +1591,46 @@ html, body {
   animation: slideUpSheet .22s ease !important;
   box-shadow: 0 -4px 30px rgba(180,130,50,.2) !important;
 }
+
+
+
+/* ── Size cell — 2-col layout ── */
+.lot-size-cell {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid rgba(217,119,6,.1);
+  min-width: 130px;
+  flex: 1;
+  transition: border-color .15s;
+  align-items: center;
+}
+.lot-size-cell.cell-ok  { border-color: rgba(22,163,74,.25); }
+.lot-size-cell.cell-oos { border-color: rgba(239,68,68,.25); }
+.lot-size-cell.cell-low { border-color: rgba(234,88,12,.25); }
+
+/* Left: info stack */
+.lsc-left { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lsc-dem  { font-size: 12px; color: var(--mid); }
+.lsc-stock-txt { font-size: 12px; font-weight: 700; }
+.lsc-rec  { font-size: 11px; color: var(--faint); }
+
+/* Right: size + lot input */
+.lsc-right { display: flex; flex-direction: column; align-items: center; gap: 0; flex-shrink: 0; min-width: 46px; }
+.lsc-sz   { font-size: 14px; font-weight: 800; color: var(--text); letter-spacing: .2px; }
+.lsc-lot  { display: flex; flex-direction: column; align-items: center; gap: 0; }
+.lsc-lot input {
+  width: 42px; font-size: 20px; font-weight: 800;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--blue);
+  background: none; border: none; outline: none;
+  text-align: center; cursor: text; padding: 0; line-height: 1.2;
+}
+.lsc-lot input:focus { color: var(--text); }
+.lsc-lot-lbl { font-size: 9px; color: var(--faint); letter-spacing: .4px; text-transform: uppercase; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -3242,25 +3247,33 @@ function renderPantsCard(g, days){
       const cardBg=noNeed?'rgba(46,204,138,.07)':isOOS?'rgba(255,85,114,.07)':isLow?'rgba(255,170,68,.06)':'var(--bg)';
       const cardBdr=noNeed?'1px solid rgba(46,204,138,.3)':isOOS?'1px solid rgba(255,85,114,.3)':isLow?'1px solid rgba(255,170,68,.3)':'none';
       const lotColor=noNeed?'var(--green)':isOv?'var(--orange)':'var(--blue)';
-      // Stock status class
       const cellCls = noNeed?'cell-ok':isOOS?'cell-oos':isLow?'cell-low':'';
-      // Stock badge text
-      const stockBadge = !hasFile ? ''
-        : noNeed  ? `<span class="lot-size-cell-stock" style="color:var(--green)">✓ ${onHand}</span>`
-        : isOOS   ? `<span class="lot-size-cell-stock" style="color:var(--red)">0</span>`
-        : isLow   ? `<span class="lot-size-cell-stock" style="color:var(--orange)">${onHand}</span>`
-        : `<span class="lot-size-cell-stock" style="color:var(--mid)">${onHand}</span>`;
-      const noSalesBadge = item&&item._noSales ? `<span style="font-size:9px;color:var(--orange)">⚠ ไม่มีข้อมูล</span>` : '';
+      const stockLine = !hasFile ? ''
+        : noNeed ? `<span class="lsc-stock-txt" style="color:var(--green)">✓ มี ${onHand} ตัว</span>`
+        : isOOS  ? `<span class="lsc-stock-txt" style="color:var(--red)">หมด</span>`
+        : isLow  ? `<span class="lsc-stock-txt" style="color:var(--orange)">เหลือ ${onHand} ตัว</span>`
+        : `<span class="lsc-stock-txt" style="color:var(--mid)">มี ${onHand} ตัว</span>`;
+      const demLine = item&&item._noSales
+        ? `<span class="lsc-dem" style="color:var(--orange)">⚠ ไม่มีข้อมูล</span>`
+        : `<span class="lsc-dem">ต้องการ ${d} ตัว/${days}ว${noNeed?' · พอ':net>0?' · ขาด '+net:''}</span>`;
+      const recLine = monthlyAvg ? `<span class="lsc-rec">แนะนำ ${monthlyAvg} ตัว/เดือน</span>` : '';
       return`<div class="lot-size-cell ${cellCls}">
-        <span class="lot-size-cell-sz">${sz}</span>
-        <input class="lot-cfg-input" type="number" min="0" max="99" value="${noNeed?0:lots}"
-          style="width:36px;font-size:18px;font-weight:800;color:${noNeed?'var(--faint)':lotColor};font-family:'IBM Plex Mono',monospace;background:none;border:none;outline:none;text-align:center;cursor:text;padding:0;line-height:1"
-          onchange="setLotsOverride('${esc}','${ovEsc}',+this.value)"
-          onclick="event.stopPropagation()"
-          title="${sz}: ต้องการ ${d}ตัว · ${isOv?'ปรับเอง':'auto='+autoVal}">
-        ${stockBadge}
-        ${noSalesBadge}
-        <span class="lot-size-cell-hint">${noNeed?'พอ':net>0?'ขาด '+net:d?'ไม่ขาด':''}</span>
+        <div class="lsc-left">
+          ${demLine}
+          ${stockLine}
+          ${recLine}
+        </div>
+        <div class="lsc-right">
+          <span class="lsc-sz">${sz}</span>
+          <div class="lsc-lot">
+            <input type="number" min="0" max="99" value="${noNeed?0:lots}"
+              style="color:${noNeed?'var(--faint)':lotColor}"
+              onchange="setLotsOverride('${esc}','${ovEsc}',+this.value)"
+              onclick="event.stopPropagation()"
+              title="${sz}: ${isOv?'ปรับเอง':'auto='+autoVal}">
+            <span class="lsc-lot-lbl">ล็อค</span>
+          </div>
+        </div>
       </div>`;
     }).join('');
 
