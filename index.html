@@ -645,13 +645,43 @@ canvas{display:block;width:100%!important}
 <div id="tab-dashboard" class="tab-content active">
 
   <!-- Formula Strip (collapsible) -->
-  <div class="f-strip" id="f-strip-bar" style="cursor:pointer" onclick="this.querySelector('.f-body').style.display=this.querySelector('.f-body').style.display==='none'?'flex':'none'">
+  <div class="f-strip" id="f-strip-bar" style="cursor:pointer" onclick="toggleFStrip(this)">
     <span class="f-lbl" style="color:var(--muted);font-size:12px">📐 สูตรคำนวณ</span>
     <span style="font-size:12px;color:var(--faint);margin-left:4px">▼</span>
     <div class="f-body" style="display:none;flex-wrap:wrap;gap:10px;align-items:center;width:100%;margin-top:8px">
     <span class="f-lbl">Adj.Velocity</span>
     <span class="f-chip">Raw Vel × Coverage Rate</span>
     <span class="f-chip red">&gt;60 → ×2.0</span>
+    <!-- Status bars inside collapsible -->
+    <div style="width:100%;border-top:1px solid rgba(255,255,255,.06);margin-top:8px;padding-top:8px;display:flex;flex-direction:column;gap:4px">
+      <div id="fb-status-bar" style="display:none;align-items:center;gap:8px;font-size:12px;flex-wrap:wrap;padding:4px 0">
+        <span id="fb-status-icon">✅</span>
+        <span id="fb-status-txt" style="font-weight:700;color:var(--text)"></span>
+        <span id="fb-status-sub" style="color:var(--muted)"></span>
+        <div style="margin-left:auto;display:flex;gap:4px">
+          <button class="btn" onclick="loadStockFromFirebase()" style="font-size:11px;padding:2px 7px;color:var(--blue)" title="รีโหลด">🔄</button>
+          <button class="btn" onclick="clearFirebaseStock()" style="font-size:11px;padding:2px 7px;color:var(--muted)" title="ล้าง">✕</button>
+        </div>
+      </div>
+      <div id="cache-status-bar" style="display:none;align-items:center;gap:6px;font-size:12px;padding:2px 0">
+        <span id="cache-status-lbl"></span>
+      </div>
+      <div id="stock-status-bar" style="display:none;align-items:center;gap:10px;font-size:12px;flex-wrap:wrap;padding:4px 0">
+        <span style="font-weight:800;color:var(--green)">📦 สต๊อกจริง:</span>
+        <span id="stk-loaded-name" style="color:var(--muted)"></span>
+        <span id="stk-stat-total" class="f-chip" style="font-size:11px"></span>
+        <span id="stk-stat-out"   class="f-chip red" style="font-size:11px"></span>
+        <span id="stk-stat-low"   class="f-chip orange" style="font-size:11px"></span>
+        <span id="stk-stat-ok"    class="f-chip" style="font-size:11px;color:var(--green)"></span>
+        <div style="display:flex;gap:6px;margin-left:auto;align-items:center">
+          <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px;cursor:pointer">
+            <input type="checkbox" id="stk-filter-out" onchange="renderAll(getFilteredData())" style="accent-color:var(--red)">
+            แสดงเฉพาะสินค้าหมด
+          </label>
+          <button onclick="clearStockFile()" style="font-size:12px;color:var(--red);background:none;border:none;cursor:pointer;font-family:Anuphan,sans-serif;font-weight:700">✕ ล้างสต๊อก</button>
+        </div>
+      </div>
+    </div>
     </div><!-- end f-body -->
   </div>
 
@@ -774,40 +804,6 @@ canvas{display:block;width:100%!important}
     <div id="active-filters" style="display:none;padding:8px 18px;background:var(--bg-dark);border-bottom:1px solid rgba(255,255,255,.06);display:flex;flex-wrap:wrap;gap:6px;align-items:center"></div>
     <!-- Firebase stock status bar -->
     <!-- Firebase + Cache status bars (compact) -->
-    <div id="fb-status-bar" style="display:none;align-items:center;gap:8px;padding:5px 16px;background:rgba(77,143,255,.06);border-bottom:1px solid rgba(77,143,255,.1);font-size:13px;flex-wrap:wrap">
-      <span id="fb-status-icon">✅</span>
-      <span id="fb-status-txt" style="font-weight:700;color:var(--text)"></span>
-      <span id="fb-status-sub" style="color:var(--muted)"></span>
-      <div style="margin-left:auto;display:flex;gap:4px">
-        <button class="btn" onclick="loadStockFromFirebase()" style="font-size:12px;padding:2px 8px;color:var(--blue)" title="รีโหลด">🔄</button>
-        <button class="btn" onclick="clearFirebaseStock()" style="font-size:12px;padding:2px 8px;color:var(--muted)" title="ล้าง">✕</button>
-      </div>
-    </div>
-    <div id="cache-status-bar" style="display:none;align-items:center;gap:6px;padding:3px 16px;background:rgba(77,143,255,.03);border-bottom:1px solid rgba(77,143,255,.07);font-size:12px">
-      <span id="cache-status-lbl"></span>
-    </div>
-    <div id="cache-status-bar" style="display:none;align-items:center;gap:10px;padding:6px 24px;background:rgba(77,143,255,.05);border-bottom:1px solid rgba(77,143,255,.1);font-size:13px">
-      <span id="cache-status-lbl"></span>
-    </div>
-
-    <!-- Stock file status bar -->
-    <div id="stock-status-bar" style="display:none;padding:10px 24px;background:rgba(46,204,138,.06);border-bottom:1px solid rgba(46,204,138,.12);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <span style="font-size:13px;font-weight:800;color:var(--green)">📦 สต๊อกจริง:</span>
-      <span id="stk-loaded-name" style="font-size:13px;color:var(--muted)"></span>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <span id="stk-stat-total" class="f-chip" style="font-size:12px"></span>
-        <span id="stk-stat-out"   class="f-chip red" style="font-size:12px"></span>
-        <span id="stk-stat-low"   class="f-chip orange" style="font-size:12px"></span>
-        <span id="stk-stat-ok"    class="f-chip" style="font-size:12px;color:var(--green)"></span>
-      </div>
-      <div style="display:flex;gap:6px;margin-left:auto;align-items:center">
-        <label style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:5px;cursor:pointer">
-          <input type="checkbox" id="stk-filter-out" onchange="renderAll(getFilteredData())" style="accent-color:var(--red)">
-          แสดงเฉพาะสินค้าหมด
-        </label>
-        <button onclick="clearStockFile()" style="font-size:12px;color:var(--red);background:none;border:none;cursor:pointer;font-family:Anuphan,sans-serif;font-weight:700">✕ ล้างสต๊อก</button>
-      </div>
-    </div>
     <div class="tbl-wrap">
       <table>
         <thead id="tbl-head">
@@ -1253,6 +1249,35 @@ function toggleOrderCatDropdown(){
   }
 }
 
+function toggleFStrip(el){
+  const body = el.querySelector('.f-body');
+  if(!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'flex';
+  const arrow = el.querySelector('span[style*="faint"]');
+  if(arrow) arrow.textContent = isOpen ? '▼' : '▲';
+  // Update summary label
+  updateFStripLabel();
+}
+
+function updateFStripLabel(){
+  const lbl = document.querySelector('#f-strip-bar .f-lbl');
+  if(!lbl) return;
+  const parts = [];
+  if($('fb-status-bar')?.style.display!=='none'){
+    const txt=$('fb-status-txt')?.textContent||'';
+    if(txt) parts.push('📦 '+txt.replace('สต๊อกจาก Firebase: ','').substring(0,20));
+  }
+  if($('stock-status-bar')?.style.display!=='none'){
+    const total=$('stk-stat-total')?.textContent||'';
+    if(total) parts.push(total);
+  }
+  if($('cache-status-bar')?.style.display!=='none'){
+    const c=$('cache-status-lbl')?.textContent||'';
+    if(c) parts.push(c.substring(0,30));
+  }
+  lbl.textContent = parts.length ? '📐 ' + parts.join(' · ') : '📐 สูตรคำนวณ';
+}
 function toggleLotConfigPopup(){
   const popup=$('lot-config-popup'); if(!popup) return;
   const isOpen=popup.style.display!=='none';
@@ -3117,6 +3142,7 @@ async function saveAppDataCache(data){
     await db.ref(RTDB_CACHE).set(payload);
     console.log('[Cache] Saved', data.length, 'SKUs to Firebase');
     updateCacheStatus('saved', data.length);
+    setTimeout(updateFStripLabel, 100);
   } catch(e){ console.warn('[Cache] Save failed:', e.message); }
 }
 
@@ -3148,6 +3174,7 @@ async function loadAppDataCache(){
     renderOrderTab();
     const ageStr = ageHours<1 ? 'เมื่อกี้' : ageHours<24 ? Math.round(ageHours)+' ชม.ที่แล้ว' : Math.round(ageHours/24)+' วันที่แล้ว';
     updateCacheStatus('loaded', payload.data.length, ageStr);
+    setTimeout(updateFStripLabel, 100);
     hideL();
     console.log('[Cache] Loaded', payload.data.length, 'SKUs, age:', ageStr);
     return true;
@@ -3450,6 +3477,7 @@ function applyStockMap(map){
   const setDisp = (id,d)   => { const el=$(id);  if(el) el.style.display=d; };
   const setCol  = (id,c)   => { const el=$(id);  if(el) el.style.color=c; };
   setDisp('stock-status-bar','flex');
+  setTimeout(updateFStripLabel, 100);
   setText('stk-loaded-name', stockFileName);
   setText('stk-stat-total',  `${total.toLocaleString()} SKUs`);
   setText('stk-stat-out',    `🔴 หมด ${out.toLocaleString()}`);
