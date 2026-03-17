@@ -1611,6 +1611,21 @@ html, body {
 }
 .lot-size-cell input:focus { color: var(--text); }
 .lot-size-cell-hint { font-size: 9px; color: var(--faint); }
+
+/* Filter popup when moved to body on mobile */
+#filterPopup-host #filterPopup {
+  position: fixed !important;
+  inset: auto 0 72px 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: auto !important;
+  border-radius: 20px 20px 0 0 !important;
+  max-height: 70vh !important;
+  overflow-y: auto !important;
+  z-index: 8000 !important;
+  animation: slideUpSheet .22s ease !important;
+  box-shadow: 0 -4px 30px rgba(180,130,50,.2) !important;
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -3778,6 +3793,10 @@ async function loadOrderHistory(){
     const badge=$('history-badge');
     if(badge){ badge.style.display=''; badge.textContent=orderHistory.length; }
     renderOrderHistory();
+    // Re-enrich appData so nextRestock column updates
+    try { enrichAppData(); } catch(e){}
+    // Re-render table with updated restock info
+    try { renderAll(getFilteredData()); } catch(e){}
   } catch(e){
     console.error('[History] Load failed:', e);
     area.innerHTML=`<div class="empty" style="padding:40px;color:var(--red)">โหลดไม่สำเร็จ: ${e.message}</div>`;
@@ -5346,7 +5365,18 @@ function toggleFpDd(listId){
 
 // ── Popup toggles ──
 function toggleFilterPopup(){
-  const p=$('filterPopup'); if(!p) return;
+  let p=$('filterPopup');
+  if(!p) return;
+  // On mobile: move popup to body so it's not inside a hidden container
+  if(window.innerWidth<=768 && p.parentElement && p.parentElement.id!=='filterPopup-host'){
+    const host = document.getElementById('filterPopup-host') || (() => {
+      const h = document.createElement('div');
+      h.id = 'filterPopup-host';
+      document.body.appendChild(h);
+      return h;
+    })();
+    host.appendChild(p);
+  }
   const open = p.style.display==='block';
   closeAllPopups();
   if(!open){ buildFilterOptions(); p.style.display='block'; }
