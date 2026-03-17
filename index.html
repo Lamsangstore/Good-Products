@@ -54,7 +54,7 @@
 
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:'Anuphan',sans-serif;background:linear-gradient(160deg,#fdf8ee 0%,#f9f0d8 100%);color:var(--text);min-height:100vh;padding:32px 24px 80px;line-height:1.6;overflow-x:hidden}
+body{font-family:'Anuphan',sans-serif;background:linear-gradient(160deg,#fdf8ee 0%,#f9f0d8 100%);color:var(--text);min-height:100vh;padding:32px 24px 80px;line-height:1.6;overflow-x:hidden;touch-action:pan-y}
 .page{max-width:1480px;margin:0 auto;overflow-x:hidden}
 
 /* ─── LOADING ─── */
@@ -569,7 +569,7 @@ button.fchip.on { background: rgba(217,119,6,.15); border-color: var(--blue); co
 
 body {
   padding: 0 0 calc(72px + var(--safe-bottom)) 0;
-  overscroll-behavior: none;
+  /* overscroll-behavior: none removed — was blocking 1-finger scroll */
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -741,7 +741,7 @@ body {
 }
 
 /* ── Pull-to-refresh feel ── */
-.page { overscroll-behavior-y: contain; }
+
 
 /* ── Touch-friendly tap targets ── */
 @media (hover: none) {
@@ -880,8 +880,7 @@ body {
   .panel-hdr .srch { width: 100%; box-sizing: border-box; }
   .srch-wrap { width: 100%; }
 
-  /* Show only 1-tab for dashboard — hide tab-bar but keep content visible */
-  #tab-dashboard { display: block !important; }
+  /* Tab content controlled by JS switchTab */
 
   /* Mobile filter/col row */
   .mob-tbl-toolbar {
@@ -1250,6 +1249,163 @@ html, body {
   .header { display: none !important; }
   .tab-bar { display: none !important; }
   #tab-risk, #tab-insight { display: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   ANIMATIONS & CARD CONFIG UI
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Card entrance ── */
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; } to { opacity: 1; }
+}
+@keyframes fadeOut {
+  from { opacity: 1; } to { opacity: 0; }
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: .6; }
+}
+@keyframes slideRight {
+  from { transform: translateX(-8px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes popIn {
+  0%   { transform: scale(0.8); opacity: 0; }
+  70%  { transform: scale(1.05); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+/* ── KPI card animations ── */
+.kpi { transition: transform .2s ease, box-shadow .2s ease; }
+.kpi:active { transform: scale(0.97) !important; }
+
+/* ── Button tap feedback ── */
+.btn, .icon-btn, .bnav-item {
+  transition: transform .12s ease, background .15s ease, box-shadow .15s ease;
+}
+.btn:active    { transform: scale(0.95) !important; }
+.icon-btn:active { transform: scale(0.9) !important; }
+
+/* ── Mob card pill animate ── */
+.mob-pill {
+  transition: background .15s, border-color .15s, transform .1s;
+  cursor: default;
+}
+.mob-pill:active { transform: scale(0.92); }
+
+/* ── Config pill trigger ── */
+.mob-pill-config {
+  background: rgba(217,119,6,.08) !important;
+  border: 1.5px dashed rgba(217,119,6,.3) !important;
+  color: var(--blue) !important;
+  cursor: pointer !important;
+  transition: background .15s, transform .12s !important;
+}
+.mob-pill-config:active { transform: scale(0.88) !important; }
+
+/* ── Mob card right value tap ── */
+.mob-card-right {
+  transition: transform .12s;
+  border-radius: 10px;
+  padding: 4px 6px;
+}
+.mob-card-right:active { transform: scale(0.92); background: rgba(217,119,6,.08); }
+
+/* ── Config sheet cards ── */
+.mob-cfg-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 6px 10px;
+  border-radius: 14px;
+  background: var(--bg-dark);
+  border: 1.5px solid rgba(217,119,6,.1);
+  cursor: pointer;
+  transition: all .15s ease;
+  position: relative;
+  text-align: center;
+}
+.mob-cfg-card:active { transform: scale(0.94); }
+.mob-cfg-card.active {
+  background: rgba(217,119,6,.12);
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217,119,6,.15);
+}
+.mob-cfg-icon { font-size: 20px; line-height: 1; }
+.mob-cfg-name { font-size: 10px; font-weight: 700; color: var(--mid); line-height: 1.2; }
+.mob-cfg-check {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #d97706;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .15s;
+  animation: popIn .2s ease;
+}
+.mob-cfg-card:not(.active) .mob-cfg-check { display: none; }
+
+/* ── Mob stat tap hint ── */
+.mob-stat-tap { cursor: pointer; transition: background .12s; }
+.mob-stat-tap:active { background: rgba(217,119,6,.12) !important; }
+
+/* ── Card expand animation ── */
+.mob-card-expand {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height .3s ease, padding .3s ease;
+  padding: 0 12px !important;
+}
+.mob-card-expand.open {
+  max-height: 400px !important;
+  padding: 10px 12px !important;
+  animation: none;
+}
+
+/* ── Live dot pulse ── */
+.live-dot { animation: lp 2.2s ease infinite; }
+@keyframes lp {
+  0%,100% { box-shadow: 0 0 0 2px rgba(22,163,74,.3); }
+  50%      { box-shadow: 0 0 0 5px rgba(22,163,74,.05); }
+}
+
+/* ── Topbar brand logo bounce on tap ── */
+.brand-logo:active, .app-topbar .brand-logo:active { animation: popIn .2s ease; }
+
+/* ── Tab switch ripple ── */
+.bnav-item.active span { animation: slideRight .2s ease; }
+
+/* ── Loading spinner ── */
+.spin { animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Mob card list stagger on filter ── */
+.mob-card { transform-origin: center top; }
+
+@media (max-width: 768px) {
+  /* Tab visibility — controlled by JS, respect normal show/hide */
+  .tab-content { display: none !important; }
+  .tab-content.active { display: block !important; }
+
+  /* Allow normal 1-finger scroll everywhere */
+  html, body, .page, .tab-content, .panel, #mob-card-list {
+    touch-action: pan-y !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Only horizontal scroll containers get pan-x */
+  .kpi-grid, .mob-card-pills, .lot-vis-colors {
+    touch-action: pan-x !important;
+  }
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -3690,10 +3846,16 @@ function exportOrderCSV(){
 
 // Mobile tab navigation
 function mobileTab(name, bnavBtn){
-  // sync desktop tabs
+  // Hide all tab contents first
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  // Show target tab
+  const tc = document.getElementById('tab-'+name);
+  if(tc) tc.classList.add('active');
+  // Sync desktop tab btn
   const tabBtnMap = {'dashboard':0,'order':1,'history':2};
   const desktopBtns = document.querySelectorAll('.tab-btn');
-  if(desktopBtns[tabBtnMap[name]]) switchTab(name, desktopBtns[tabBtnMap[name]]);
+  if(desktopBtns[tabBtnMap[name]]) desktopBtns[tabBtnMap[name]].classList.add('active');
   // update bottom nav active
   ['dashboard','order','history'].forEach(t=>{
     const b=$('bnav-'+t); if(b) b.classList.toggle('active', t===name);
@@ -5102,24 +5264,37 @@ function renderMobileCards(sorted, months){
     const _stkSt = getStockStatus(item.sku);
     const _stkAm = getStockAmount(item.sku);
     const _isDisc = isDiscontinued(item.parentSku||item.sku, item.color||'') || isDiscontinued(item.parentSku||item.sku);
-    let statusCls='', statusTxt='';
-    if(_isDisc){ statusCls='disc'; statusTxt='🚫 ไม่เติมแล้ว'; }
-    else if(_stkSt==='out'){ statusCls='danger'; statusTxt='🔴 หมด'+(_stkAm!==null?'('+_stkAm+')':''); }
-    else if(_stkSt==='low'){ statusCls='warn'; statusTxt='🟡 น้อย('+_stkAm+')'; }
-    else if(_stkSt==='ok'){ statusCls='ok'; statusTxt='🟢 มี('+_stkAm+')'; }
-    else if(item.stockoutScore>60){ statusCls='danger'; statusTxt='⚠ เสี่ยง'; }
-    else if(item.stockoutScore>=40){ statusCls='warn'; statusTxt='! ติดตาม'; }
-    else { statusCls='ok'; statusTxt='✓ ปกติ'; }
-
-    const ri = item._restockInfo;
-    const restockPill = ri ? `<span class="mob-pill ${ri.daysAway<=3?'warn':'ok'}">📦 ${ri.daysAway<=0?'วันนี้':ri.daysAway===1?'พรุ่งนี้':ri.daysAway+'วัน'}</span>` : '';
-    const dL = item.daysLeft;
-    const dLpill = dL!==null ? `<span class="mob-pill ${dL<=3?'danger':dL<=7?'warn':'ok'}">⏳ ${dL}วัน</span>` : '';
     const rec = item.recStock || calcStock(item.adjVel, months, item.safetyMult);
     const stockAvg = item.stockAvg || Math.ceil((rec + (item.stockMaxVel7||0)) / 2);
 
-    return `<div class="mob-card">
-      <div class="mob-card-main" onclick="this.closest('.mob-card').querySelector('.mob-card-expand').classList.toggle('open');this.querySelector('.mob-card-chevron').classList.toggle('open')">
+    // All available data slots
+    const allSlots = getMobCardSlots(item, _stkSt, _stkAm, _isDisc, rec, stockAvg, months);
+
+    // User config: which slots to show in pills row (3 slots)
+    const pillCfg = getMobPillConfig();
+    // Which slots in expand grid (6 slots)
+    const expandCfg = getMobExpandConfig();
+
+    const pills = pillCfg.map(key=>{
+      const slot = allSlots[key];
+      return slot ? `<span class="mob-pill ${slot.cls}" onclick="event.stopPropagation()">${slot.label}</span>` : '';
+    }).join('');
+
+    const expandStats = expandCfg.map(key=>{
+      const slot = allSlots[key];
+      if(!slot) return '<div class="mob-stat"></div>';
+      return `<div class="mob-stat mob-stat-tap" onclick="openMobCardConfig('expand')">
+        <div class="mob-stat-lbl">${slot.name}</div>
+        <div class="mob-stat-val">${slot.val}<span class="mob-stat-unit">${slot.unit||''}</span></div>
+      </div>`;
+    }).join('');
+
+    // Right value (configurable)
+    const rightKey = getMobRightConfig();
+    const rightSlot = allSlots[rightKey] || allSlots['maxvel7'];
+
+    return `<div class="mob-card" style="animation:cardIn .3s ease both;animation-delay:${Math.min(i*0.04,0.4)}s">
+      <div class="mob-card-main" onclick="this.closest('.mob-card').querySelector('.mob-card-expand').classList.toggle('open');this.querySelector('.mob-card-chevron').classList.toggle('open');this.querySelector('.mob-card-chevron svg').style.transform=this.closest('.mob-card').querySelector('.mob-card-expand').classList.contains('open')?'rotate(180deg)':''">
         <div class="mob-card-rank">${i+1}</div>
         <div class="mob-card-info">
           <div class="mob-card-name">${item.name}</div>
@@ -5129,29 +5304,202 @@ function renderMobileCards(sorted, months){
             <span style="font-size:10px;color:var(--faint)">${(item.category||'').replace('กางเกง ','')}</span>
           </div>
         </div>
-        <div class="mob-card-right">
-          <div class="mob-card-vel">${(item.maxVel7||0).toFixed(2)}</div>
-          <div class="mob-card-vel-lbl">MaxVel/วัน</div>
+        <div class="mob-card-right" onclick="event.stopPropagation();openMobCardConfig('right')" style="cursor:pointer">
+          <div class="mob-card-vel">${rightSlot.val}</div>
+          <div class="mob-card-vel-lbl">${rightSlot.name}</div>
         </div>
         <div class="mob-card-chevron">
-          <svg viewBox="0 0 10 10" style="width:10px;height:10px;stroke:var(--muted);fill:none;stroke-width:2.5"><polyline points="2 3 5 7 8 3"/></svg>
+          <svg viewBox="0 0 10 10" style="width:10px;height:10px;stroke:var(--muted);fill:none;stroke-width:2.5;transition:transform .2s"><polyline points="2 3 5 7 8 3"/></svg>
         </div>
       </div>
-      <div class="mob-card-pills">
-        <span class="mob-pill ${statusCls}">${statusTxt}</span>${dLpill}${restockPill}
-        <span class="mob-pill">${item.trendLabel||''}${item.trendPct>0?'+':''}${item.trendPct||0}%</span>
+      <div class="mob-card-pills" onclick="event.stopPropagation();openMobCardConfig('pills')">
+        ${pills}
+        <span class="mob-pill mob-pill-config" title="ตั้งค่า pill">⚙</span>
       </div>
       <div class="mob-card-expand">
-        <div class="mob-stat"><div class="mob-stat-lbl">Adj. Vel</div><div class="mob-stat-val">${(item.adjVel||0).toFixed(2)}<span class="mob-stat-unit">ชิ้น/วัน</span></div></div>
-        <div class="mob-stat"><div class="mob-stat-lbl">ยอดรวม</div><div class="mob-stat-val">${item.totalSold||0}<span class="mob-stat-unit">ชิ้น</span></div></div>
-        <div class="mob-stat"><div class="mob-stat-lbl">สต๊อกแนะนำ</div><div class="mob-stat-val">${rec}<span class="mob-stat-unit">ชิ้น</span></div></div>
-        <div class="mob-stat"><div class="mob-stat-lbl">ค่าเฉลี่ย</div><div class="mob-stat-val">${stockAvg}<span class="mob-stat-unit">ชิ้น</span></div></div>
-        <div class="mob-stat"><div class="mob-stat-lbl">ขายล่าสุด</div><div class="mob-stat-val">${item.daysLastSale<9999?item.daysLastSale:'—'}<span class="mob-stat-unit">${item.daysLastSale<9999?'วันที่แล้ว':''}</span></div></div>
-        <div class="mob-stat"><div class="mob-stat-lbl">True Star</div><div class="mob-stat-val">${item.starScore||0}<span class="mob-stat-unit">/ 100</span></div></div>
+        ${expandStats}
       </div>
     </div>`;
   }).join('');
 }
+
+// ── Slot definitions ──────────────────────────────────
+function getMobCardSlots(item, stkSt, stkAm, isDisc, rec, stockAvg, months){
+  const ri = item._restockInfo;
+  const dL = item.daysLeft;
+  let statusCls='ok', statusTxt='✓ ปกติ';
+  if(isDisc){ statusCls='disc'; statusTxt='🚫 ไม่เติม'; }
+  else if(stkSt==='out'){ statusCls='danger'; statusTxt='🔴 หมด'+(stkAm!==null?'('+stkAm+')':''); }
+  else if(stkSt==='low'){ statusCls='warn'; statusTxt='🟡 น้อย('+stkAm+')'; }
+  else if(stkSt==='ok'){ statusCls='ok'; statusTxt='🟢 มี('+stkAm+')'; }
+  else if(item.stockoutScore>60){ statusCls='danger'; statusTxt='⚠ เสี่ยง'; }
+  else if(item.stockoutScore>=40){ statusCls='warn'; statusTxt='! ติดตาม'; }
+
+  return {
+    status:   { name:'สถานะ',      cls:statusCls, label:statusTxt,  val:statusTxt.replace(/[^ก-๙a-z0-9()\s]/gi,'').trim(), unit:'' },
+    daysleft: { name:'หมดใน',      cls:dL===null?'':dL<=3?'danger':dL<=7?'warn':'ok', label:`⏳ ${dL!==null?dL+'วัน':'—'}`, val:dL!==null?dL:'—', unit:dL!==null?'วัน':'' },
+    restock:  { name:'คาดรับ',     cls:ri?ri.daysAway<=3?'warn':'ok':'', label:ri?`📦 ${ri.daysAway<=0?'วันนี้':ri.daysAway===1?'พรุ่งนี้':ri.label}`:'📦 ยังไม่มีกำหนด', val:ri?ri.label:'—', unit:'' },
+    trend:    { name:'Trend',       cls:item.trendPct>=30?'ok':item.trendPct<=-10?'danger':'', label:`${item.trendLabel||'→'} ${item.trendPct>0?'+':''}${item.trendPct||0}%`, val:(item.trendPct>0?'+':'')+( item.trendPct||0)+'%', unit:'' },
+    maxvel7:  { name:'MaxVel/วัน', cls:'', label:`🔥 ${(item.maxVel7||0).toFixed(2)}`, val:(item.maxVel7||0).toFixed(2), unit:'ชิ้น/วัน' },
+    adjvel:   { name:'Adj.Vel',    cls:'', label:`🚀 ${(item.adjVel||0).toFixed(2)}`, val:(item.adjVel||0).toFixed(2), unit:'ชิ้น/วัน' },
+    totalsold:{ name:'ยอดรวม',    cls:'', label:`📊 ${item.totalSold||0}`, val:item.totalSold||0, unit:'ชิ้น' },
+    recstock: { name:'สต๊อกแนะนำ',cls:'', label:`📦 ${rec}`, val:rec, unit:'ชิ้น' },
+    stockavg: { name:'ค่าเฉลี่ย', cls:'', label:`🟢 ${stockAvg}`, val:stockAvg, unit:'ชิ้น' },
+    lastsale: { name:'ขายล่าสุด', cls:item.daysLastSale>=14?'danger':item.daysLastSale>=7?'warn':'ok', label:`🕐 ${item.daysLastSale<9999?item.daysLastSale+'วัน':'—'}`, val:item.daysLastSale<9999?item.daysLastSale:'—', unit:item.daysLastSale<9999?'วันที่แล้ว':'' },
+    starScore:{ name:'True Star',  cls:item.starScore>=70?'ok':item.starScore>=50?'warn':'danger', label:`⭐ ${item.starScore||0}`, val:item.starScore||0, unit:'/ 100' },
+    vel7:     { name:'Vel 7วัน',   cls:'', label:`📆 ${(item.vel7||0).toFixed(2)}`, val:(item.vel7||0).toFixed(2), unit:'ชิ้น/วัน' },
+  };
+}
+
+// ── Config storage ──────────────────────────────────
+const MOB_PILL_KEY   = 'mob_pill_cfg';
+const MOB_EXPAND_KEY = 'mob_expand_cfg';
+const MOB_RIGHT_KEY  = 'mob_right_cfg';
+const MOB_PILL_DEF   = ['status','daysleft','restock'];
+const MOB_EXPAND_DEF = ['adjvel','totalsold','recstock','stockavg','lastsale','starScore'];
+const MOB_RIGHT_DEF  = 'maxvel7';
+
+function getMobPillConfig(){
+  try { const s=localStorage.getItem(MOB_PILL_KEY); if(s) return JSON.parse(s); } catch(e){}
+  return MOB_PILL_DEF;
+}
+function getMobExpandConfig(){
+  try { const s=localStorage.getItem(MOB_EXPAND_KEY); if(s) return JSON.parse(s); } catch(e){}
+  return MOB_EXPAND_DEF;
+}
+function getMobRightConfig(){
+  return localStorage.getItem(MOB_RIGHT_KEY)||MOB_RIGHT_DEF;
+}
+function saveMobConfig(type, val){
+  localStorage.setItem(type==='pills'?MOB_PILL_KEY:type==='expand'?MOB_EXPAND_KEY:MOB_RIGHT_KEY, JSON.stringify(val));
+  if(window._lastSorted) renderMobileCards(window._lastSorted, window._lastMonths||1);
+}
+
+// ── Card Config Modal ──────────────────────────────────
+const ALL_SLOT_NAMES = {
+  status:'สถานะสต๊อก', daysleft:'หมดในกี่วัน', restock:'คาดรับสินค้า',
+  trend:'Trend', maxvel7:'MaxVel 7วัน', adjvel:'Adj.Velocity',
+  totalsold:'ยอดขายรวม', recstock:'สต๊อกแนะนำ', stockavg:'ค่าเฉลี่ยสต๊อก',
+  lastsale:'ขายล่าสุด', starScore:'True Star Score', vel7:'Vel 7วัน'
+};
+const SLOT_ICON = {
+  status:'🔰', daysleft:'⏳', restock:'📦', trend:'📈', maxvel7:'🔥',
+  adjvel:'🚀', totalsold:'📊', recstock:'📦', stockavg:'🟢', lastsale:'🕐',
+  starScore:'⭐', vel7:'📆'
+};
+
+function openMobCardConfig(type){
+  let modal = document.getElementById('mob-config-modal');
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id = 'mob-config-modal';
+    modal.style.cssText='position:fixed;inset:0;z-index:9000;display:flex;align-items:flex-end;animation:fadeIn .2s ease';
+    document.body.appendChild(modal);
+  }
+  const cur = type==='pills'?getMobPillConfig() : type==='expand'?getMobExpandConfig() : [getMobRightConfig()];
+  const limit = type==='pills'?3 : type==='expand'?6 : 1;
+
+  const slots = Object.entries(ALL_SLOT_NAMES);
+  const slotsHtml = slots.map(([key,name])=>{
+    const isActive = cur.includes(key);
+    const icon = SLOT_ICON[key]||'📌';
+    return `<div class="mob-cfg-card ${isActive?'active':''}" onclick="toggleMobCfgSlot('${key}','${type}',${limit},this)" style="animation:cardIn .25s ease both;animation-delay:${slots.findIndex(s=>s[0]===key)*0.03}s">
+      <div class="mob-cfg-icon">${icon}</div>
+      <div class="mob-cfg-name">${name}</div>
+      <div class="mob-cfg-check">${isActive?'✓':''}</div>
+    </div>`;
+  }).join('');
+
+  const titles = {pills:'เลือก 3 Pill', expand:'เลือก 6 ข้อมูล', right:'เลือกค่าหลัก'};
+
+  modal.innerHTML = `
+    <div class="mob-cfg-backdrop" onclick="closeMobCardConfig()" style="position:absolute;inset:0;background:rgba(0,0,0,.45)"></div>
+    <div class="mob-cfg-sheet" style="position:relative;background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-height:80vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom);animation:slideUpSheet .25s ease">
+      <div style="width:40px;height:4px;background:var(--faint);border-radius:2px;margin:12px auto 4px"></div>
+      <div style="padding:12px 20px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(217,119,6,.1)">
+        <div>
+          <div style="font-size:16px;font-weight:800;color:var(--text)">${titles[type]}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">กดเลือกข้อมูลที่ต้องการแสดง · เลือกได้ ${limit} อย่าง</div>
+        </div>
+        <button onclick="closeMobCardConfig()" style="width:32px;height:32px;border-radius:50%;background:var(--bg-dark);border:1px solid rgba(217,119,6,.15);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>
+      <!-- Preview Card -->
+      <div style="padding:12px 20px;background:var(--bg-dark);margin:12px;border-radius:16px;border:1px solid rgba(217,119,6,.1)">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">ตัวอย่างการ์ด</div>
+        <div id="mob-cfg-preview" style="font-size:13px;color:var(--mid)">—</div>
+      </div>
+      <div style="padding:0 20px 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px" id="mob-cfg-grid">
+        ${slotsHtml}
+      </div>
+    </div>`;
+
+  // Show current config as preview
+  updateMobCfgPreview(type);
+  document.body.style.overflow='hidden';
+  window._mobCfgType = type;
+  window._mobCfgCur = [...cur];
+}
+
+function toggleMobCfgSlot(key, type, limit, el){
+  let cur = [...window._mobCfgCur];
+  const idx = cur.indexOf(key);
+  if(type==='right'){
+    // Single select
+    window._mobCfgCur = [key];
+    document.querySelectorAll('.mob-cfg-card').forEach(c=>c.classList.remove('active'));
+    document.querySelectorAll('.mob-cfg-card .mob-cfg-check').forEach(c=>c.textContent='');
+    el.classList.add('active');
+    el.querySelector('.mob-cfg-check').textContent='✓';
+    saveMobConfig(type, key);
+    updateMobCfgPreview(type);
+    return;
+  }
+  if(idx>-1){
+    cur.splice(idx,1);
+    el.classList.remove('active');
+    el.querySelector('.mob-cfg-check').textContent='';
+  } else {
+    if(cur.length>=limit){
+      // Remove first, add new
+      const firstKey=cur.shift();
+      const firstEl=document.querySelector(`.mob-cfg-card[onclick*="'${firstKey}'"]`);
+      if(firstEl){ firstEl.classList.remove('active'); firstEl.querySelector('.mob-cfg-check').textContent=''; }
+    }
+    cur.push(key);
+    el.classList.add('active');
+    el.querySelector('.mob-cfg-check').textContent='✓';
+  }
+  window._mobCfgCur = cur;
+  saveMobConfig(type, type==='right'?key:cur);
+  updateMobCfgPreview(type);
+  // Animate the card
+  el.style.transform='scale(0.94)';
+  setTimeout(()=>el.style.transform='', 150);
+}
+
+function updateMobCfgPreview(type){
+  const prev = document.getElementById('mob-cfg-preview');
+  if(!prev) return;
+  const cur = window._mobCfgCur||[];
+  if(type==='pills'){
+    prev.innerHTML = cur.map(k=>`<span class="mob-pill" style="display:inline-flex;margin-right:4px">${SLOT_ICON[k]||'📌'} ${ALL_SLOT_NAMES[k]||k}</span>`).join('');
+  } else if(type==='expand'){
+    prev.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">${cur.map(k=>`<div style="background:var(--bg);border-radius:8px;padding:5px 8px;font-size:11px"><div style="font-size:9px;color:var(--muted)">${SLOT_ICON[k]||'📌'}</div>${ALL_SLOT_NAMES[k]||k}</div>`).join('')}</div>`;
+  } else {
+    const k=cur[0]||'maxvel7';
+    prev.innerHTML = `<div style="font-size:22px;font-weight:800;color:var(--blue)">1.86</div><div style="font-size:11px;color:var(--muted)">${ALL_SLOT_NAMES[k]||k}</div>`;
+  }
+}
+
+function closeMobCardConfig(){
+  const modal = document.getElementById('mob-config-modal');
+  if(modal){
+    modal.style.animation='fadeOut .15s ease forwards';
+    setTimeout(()=>modal.remove(), 150);
+  }
+  document.body.style.overflow='';
+}
+
 
 window.riskThreshold = 60;
 let riskSortKey = 'stockoutScore', riskSortDir = 'desc';
