@@ -3155,7 +3155,137 @@ function setFactoryName(parentSku, name){
 }
 function getLotsPerRoll(p){ return getPantsCfg(p).lotsPerRoll||8; }
 function getPiecesPerLot(p){ return getPantsCfg(p).piecesPerLot||10; }
+function getLayoutLock(p){ return getPantsCfg(p).layoutLock===true; }
+function setLayoutLock(p,v){ getPantsCfg(p).layoutLock=!!v; saveOrderConfig(); renderOrderTab(); }
 function getOrderDays(){ return +($('orderDays')?.value||15); }
+
+// ── Uniform roll layout — master layout shared across all colors in a parentSku ──
+function calcUniformRollLayout(parentSku, byColorMap, days){
+  const lotsPerRoll  = getLotsPerRoll(parentSku);
+  const piecesPerLot = getPiecesPerLot(parentSku);
+  const cfg = getPantsCfg(parentSku);
+  const overrides = (cfg.lotsOverride||{});
+
+  // 1) Aggregate demand across ALL colors to get size proportions
+  const aggDemand = {};
+  let totalDemand = 0;
+  const allSizesSet = new Set();
+  byColorMap.forEach((skus) => {
+    skus.forEach(item => {
+      const sz = (item.size||'?').trim().toUpperCase();
+      allSizesSet.add(sz);
+      const d = getAvg(item, days);
+      aggDemand[sz] = (aggDemand[sz]||0) + d;
+      totalDemand += d;
+    });
+  });
+  const allSizes = SIZE_ORDER.filter(sz => allSizesSet.has(sz));
+  const extraSizes = [...allSizesSet].filter(sz => !SIZE_ORDER.includes(sz));
+  const finalSizes = [...allSizes, ...extraSizes];
+
+  // 2) Compute proportional lots per size for one roll
+  //    Each roll has lotsPerRoll slots → distribute by demand proportion
+  const sizeRatio = {};
+  finalSizes.forEach(sz => { sizeRatio[sz] = totalDemand > 0 ? (aggDemand[sz]||0)/totalDemand : 1/finalSizes.length; });
+
+  // Allocate lots to sizes using largest remainder method
+  const rawLots = {};
+  let sumFloor = 0;
+  finalSizes.forEach(sz => {
+    const raw = sizeRatio[sz] * lotsPerRoll;
+    rawLots[sz] = raw;
+    sumFloor += Math.floor(raw);
+  });
+  const masterLots = {};
+  finalSizes.forEach(sz => { masterLots[sz] = Math.floor(rawLots[sz]); });
+  let remain = lotsPerRoll - sumFloor;
+  // Distribute remainder to sizes with largest fractional parts
+  const sortedByFrac = [...finalSizes].sort((a,b) => (rawLots[b]-Math.floor(rawLots[b])) - (rawLots[a]-Math.floor(rawLots[a])));
+  for(let i=0; i<remain && i<sortedByFrac.length; i++){
+    masterLots[sortedByFrac[i]]++;
+  }
+  // Ensure every size with demand > 0 gets at least 1 lot
+  finalSizes.forEach(sz => {
+    if((aggDemand[sz]||0) > 0 && masterLots[sz] === 0){
+      // Steal from the size with the most lots
+      const maxSz = finalSizes.reduce((a,b) => (masterLots[a]||0) >= (masterLots[b]||0) ? a : b);
+      if(masterLots[maxSz] > 1){
+        masterLots[maxSz]--;
+        masterLots[sz] = 1;
+      }
+    }
+  });
+
+  return { masterLots, finalSizes, aggDemand, totalDemand, lotsPerRoll, piecesPerLot };
+}
+
+// Apply uniform layout to a single color: determine how many rolls needed, each with masterLots layout
+function applyUniformLayout(parentSku, skus, days, masterLots, finalSizes){
+  const lotsPerRoll  = getLotsPerRoll(parentSku);
+  const piecesPerLot = getPiecesPerLot(parentSku);
+  const cfg = getPantsCfg(parentSku);
+  const overrides = (cfg.lotsOverride||{});
+
+  const skuBySz = {};
+  skus.forEach(d => { skuBySz[(d.size||'?').trim().toUpperCase()] = d; });
+
+  // Calculate demand, stock, net for this color
+  const demand={}, stockOnHand={}, netDemand={};
+  let totalNetPieces = 0;
+  finalSizes.forEach(sz => {
+    const item = skuBySz[sz];
+    const d = item ? getAvg(item, days) : 0;
+    demand[sz] = d;
+    const skuKey = (item?.sku||'').toLowerCase();
+    const rawStock = (isStockLoaded() && skuKey && skuKey in stockMap) ? Math.max(0, Number(stockMap[skuKey])||0) : 0;
+    stockOnHand[sz] = rawStock;
+    const net = Math.max(0, d - rawStock);
+    netDemand[sz] = net;
+    totalNetPieces += net;
+  });
+
+  // How many rolls for this color? Based on total net demand / pieces per roll
+  const piecesPerRollTotal = lotsPerRoll * piecesPerLot;
+  const totalRolls = totalNetPieces > 0 ? Math.max(1, Math.ceil(totalNetPieces / piecesPerRollTotal)) : 0;
+
+  // lotsNeeded per size (for display) = masterLots × totalRolls
+  const lotsNeeded = {};
+  finalSizes.forEach(sz => {
+    const ov = skuBySz[sz] && overrides[skuBySz[sz].sku] !== undefined ? overrides[skuBySz[sz].sku] : null;
+    if(ov !== null){
+      lotsNeeded[sz] = ov;
+    } else {
+      lotsNeeded[sz] = (masterLots[sz]||0) * totalRolls;
+    }
+  });
+
+  const totalLots = Object.values(lotsNeeded).reduce((a,b) => a+b, 0);
+
+  // Build rolls — each roll uses the master layout
+  const rolls = [];
+  for(let ri = 0; ri < totalRolls; ri++){
+    const counts = {};
+    const extraCounts = {};
+    finalSizes.forEach(sz => { counts[sz] = masterLots[sz]||0; });
+    const chunk = [];
+    finalSizes.forEach(sz => {
+      for(let i=0; i<(masterLots[sz]||0); i++) chunk.push({sz, extra:false});
+    });
+    rolls.push({ chunk, counts, extraCounts, totalLots: lotsPerRoll });
+  }
+
+  const totalPieces = totalRolls * lotsPerRoll * piecesPerLot;
+  const neededPieces = totalLots * piecesPerLot;
+  const extraSlots = (totalRolls * lotsPerRoll) - totalLots;
+  const extraPieces = extraSlots * piecesPerLot;
+
+  return {
+    allSizes: finalSizes, skuBySz, demand, stockOnHand, netDemand, lotsNeeded,
+    totalLots, totalRolls, rolls, piecesPerLot, lotsPerRoll,
+    totalPieces, neededPieces, extraPieces, extraSlots,
+    isUniform: true
+  };
+}
 
 // ── butterfly packing ──
 const SIZE_ORDER = ['XS','S','M','L','XL','XXL','XXXL','FREE SIZE'];
@@ -3459,6 +3589,7 @@ function renderPantsCard(g, days){
   const totalAvgAll=g.skus.reduce((s,d)=>s+getAvg(d,days),0);
   let colorsHtml='', grandPieces=0, grandRolls=0;
   const esc=g.parentSku.replace(/'/g,"\\'");
+  const isLocked = getLayoutLock(g.parentSku) && byColor.size >= 2;
 
   // เรียงสีตาม: OOS มากก่อน → stock รวมน้อยก่อน → ปกติ
   const getColorStock = (skuList) => {
@@ -3484,8 +3615,26 @@ function renderPantsCard(g, days){
   if(isDiscontinued(g.parentSku)){
     colorsHtml = `<div style="padding:10px 14px;color:var(--muted);font-size:14px;opacity:.5">🚫 ไม่เติมสต๊อกแล้ว — ซ่อนรายละเอียดทั้งหมด</div>`;
   } else {
+  // ── Layout Lock: compute master layout if enabled ──
+  let masterLayout = null;
+  if(isLocked){
+    masterLayout = calcUniformRollLayout(g.parentSku, byColor, days);
+  }
+  // ── Master layout badge ──
+  if(masterLayout){
+    const mlParts = masterLayout.finalSizes.filter(sz=>(masterLayout.masterLots[sz]||0)>0)
+      .map(sz=>`${sz}×${masterLayout.masterLots[sz]}`).join(' ');
+    colorsHtml += `<div style="margin-bottom:12px;padding:10px 14px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-size:14px">🔒</span>
+      <span style="font-size:13px;font-weight:800;color:var(--purple)">Layout กลาง (ทุกไม้เหมือนกัน)</span>
+      <span style="font-size:13px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:600">${mlParts}</span>
+      <span style="font-size:12px;color:var(--muted)">= ${lotsPerRoll} ล็อค/ไม้ × ${piecesPerLot} ตัว</span>
+    </div>`;
+  }
   colorsSorted.forEach(([col,skus])=>{
-    const r=calcColorOrder(g.parentSku,skus,days);
+    const r = masterLayout
+      ? applyUniformLayout(g.parentSku, skus, days, masterLayout.masterLots, masterLayout.finalSizes)
+      : calcColorOrder(g.parentSku, skus, days);
     const colAvg=skus.reduce((s,d)=>s+getAvg(d,days),0);
     grandPieces+=r.totalPieces;
     grandRolls+=r.totalRolls;
@@ -3622,7 +3771,7 @@ function renderPantsCard(g, days){
 
       <div>
         <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px">
-          📋 แผนไม้ <span style="font-weight:400;color:var(--faint)">(เล็ก↔ใหญ่อยู่ด้วยกัน)</span>
+          📋 แผนไม้ ${r.isUniform?'<span style="font-weight:700;color:var(--purple)">🔒 Layout เดียวกันทุกไม้</span>':'<span style="font-weight:400;color:var(--faint)">(เล็ก↔ใหญ่อยู่ด้วยกัน)</span>'}
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">${rollCards}</div>
       </div>
@@ -3649,6 +3798,11 @@ function renderPantsCard(g, days){
           onclick="event.stopPropagation();promptFactoryName(this.getAttribute('data-psku'),this.getAttribute('data-pname'))"
           title="ชื่อที่โรงงานใช้">
           🏭 ${getFactoryName(g.parentSku)||'ตั้งชื่อโรงงาน'}
+        </button>
+        <button class="btn" style="font-size:11px;padding:3px 9px;gap:4px;${isLocked?'background:rgba(124,58,237,.12);color:var(--purple);border-color:rgba(124,58,237,.3)':'color:var(--faint)'}"
+          onclick="event.stopPropagation();setLayoutLock('${esc}',${!isLocked})"
+          title="${isLocked?'ปิด Layout Lock — แต่ละสีคำนวณแยก':'เปิด Layout Lock — ทุกไม้ทุกสีใช้ layout เดียวกัน (เงื่อนไขโรงงาน)'}">
+          ${isLocked?'🔒 Layout ล้อค':'🔓 Layout อิสระ'}
         </button>
         ${Object.keys((orderConfig[g.parentSku]||{}).lotsOverride||{}).length>0?
           `<button class="btn" style="font-size:11px;padding:3px 9px;color:var(--orange);gap:4px"
