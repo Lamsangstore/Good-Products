@@ -4843,7 +4843,7 @@ async function syncData(){
       // ตัดส่วนเวลาออก รองรับทั้ง "01/03/2026 11:48:29" และ "1/3/2026, 11:49:08"
       const d=ds.split(/[\s,]/)[0].trim();
       if(!d) return;
-      for(let c=4;c<=25;c++){
+      for(let c=6;c<=27;c++){
         const sc=row.c[c];
         if(sc?.v){
           const sku=String(sc.v).trim();
@@ -4908,7 +4908,7 @@ async function syncData(){
         const ds=dc?(dc.f||String(dc.v)):'';
         const dd=ds.split(/[\s,]/)[0].trim();
         if(!dd) return;
-        for(let c=4;c<=25;c++){
+        for(let c=6;c<=27;c++){
           if(row.c[c]?.v===sku||(row.c[c]?.v&&String(row.c[c].v).trim()===sku)){
             if(firstHalf.has(dd)) s1++;
             else if(secondHalf.has(dd)) s2++;
@@ -4946,7 +4946,7 @@ async function syncData(){
         const ds=dc?(dc.f||String(dc.v)):'';
         const dd=ds.split(/[\s,]/)[0].trim();
         if(!dd||!dailySales.hasOwnProperty(dd)) return;
-        for(let c=4;c<=25;c++){
+        for(let c=6;c<=27;c++){
           if(row.c[c]?.v&&String(row.c[c].v).trim()===sku)
             dailySales[dd]++;
         }
