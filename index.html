@@ -3157,134 +3157,176 @@ function getLotsPerRoll(p){ return getPantsCfg(p).lotsPerRoll||8; }
 function getPiecesPerLot(p){ return getPantsCfg(p).piecesPerLot||10; }
 function getLayoutLock(p){ return getPantsCfg(p).layoutLock===true; }
 function setLayoutLock(p,v){ getPantsCfg(p).layoutLock=!!v; saveOrderConfig(); renderOrderTab(); }
+function getMinRollsPerGroup(p){ return getPantsCfg(p).minRollsPerGroup||2; }
+function setMinRollsPerGroup(p,n){ getPantsCfg(p).minRollsPerGroup=Math.max(2,Math.min(10,n||2)); saveOrderConfig(); renderOrderTab(); }
 function getOrderDays(){ return +($('orderDays')?.value||15); }
 
-// ── Uniform roll layout — master layout shared across all colors in a parentSku ──
-function calcUniformRollLayout(parentSku, byColorMap, days){
+// ══════════════════════════════════════════════════════
+// LAYOUT GROUPING — จัดกลุ่มไม้ข้ามสี ให้ layout เหมือนกัน
+//   1. คำนวณไม้แต่ละสีปกติ (calcColorOrder)
+//   2. รวมไม้ทุกสีเป็น pool
+//   3. จัดกลุ่มไม้ที่ demand profile คล้ายกัน (≥ minPerGroup ไม้/กลุ่ม)
+//   4. ภายในกลุ่ม → คำนวณ layout กลาง (avg proportion) แล้วใช้ร่วมกัน
+// ══════════════════════════════════════════════════════
+
+function calcGroupedLayouts(parentSku, byColorMap, days){
   const lotsPerRoll  = getLotsPerRoll(parentSku);
   const piecesPerLot = getPiecesPerLot(parentSku);
-  const cfg = getPantsCfg(parentSku);
-  const overrides = (cfg.lotsOverride||{});
+  const minPerGroup  = getMinRollsPerGroup(parentSku);
 
-  // 1) Aggregate demand across ALL colors to get size proportions
-  const aggDemand = {};
-  let totalDemand = 0;
-  const allSizesSet = new Set();
-  byColorMap.forEach((skus) => {
-    skus.forEach(item => {
-      const sz = (item.size||'?').trim().toUpperCase();
-      allSizesSet.add(sz);
-      const d = getAvg(item, days);
-      aggDemand[sz] = (aggDemand[sz]||0) + d;
-      totalDemand += d;
+  // 1) คำนวณไม้แต่ละสีปกติ
+  const colorResults = new Map();
+  byColorMap.forEach((skus, col) => {
+    colorResults.set(col, calcColorOrder(parentSku, skus, days));
+  });
+
+  // 2) รวมไม้ทุกสีเป็น pool — เก็บว่าแต่ละไม้มาจากสีไหน + layout เดิม
+  const pool = [];
+  colorResults.forEach((r, col) => {
+    r.rolls.forEach((roll, ri) => {
+      // คำนวณ demand vector (สัดส่วนไซส์) สำหรับเปรียบเทียบ
+      const vec = {};
+      const total = Object.values(roll.counts).reduce((s,v)=>s+v,0)
+                  + Object.values(roll.extraCounts||{}).reduce((s,v)=>s+v,0);
+      r.allSizes.forEach(sz => {
+        vec[sz] = total>0 ? ((roll.counts[sz]||0)+(roll.extraCounts?.[sz]||0))/total : 0;
+      });
+      pool.push({ col, ri, roll, vec, allSizes:r.allSizes, assigned:false });
     });
   });
-  const allSizes = SIZE_ORDER.filter(sz => allSizesSet.has(sz));
-  const extraSizes = [...allSizesSet].filter(sz => !SIZE_ORDER.includes(sz));
-  const finalSizes = [...allSizes, ...extraSizes];
 
-  // 2) Compute proportional lots per size for one roll
-  //    Each roll has lotsPerRoll slots → distribute by demand proportion
-  const sizeRatio = {};
-  finalSizes.forEach(sz => { sizeRatio[sz] = totalDemand > 0 ? (aggDemand[sz]||0)/totalDemand : 1/finalSizes.length; });
-
-  // Allocate lots to sizes using largest remainder method
-  const rawLots = {};
-  let sumFloor = 0;
-  finalSizes.forEach(sz => {
-    const raw = sizeRatio[sz] * lotsPerRoll;
-    rawLots[sz] = raw;
-    sumFloor += Math.floor(raw);
-  });
-  const masterLots = {};
-  finalSizes.forEach(sz => { masterLots[sz] = Math.floor(rawLots[sz]); });
-  let remain = lotsPerRoll - sumFloor;
-  // Distribute remainder to sizes with largest fractional parts
-  const sortedByFrac = [...finalSizes].sort((a,b) => (rawLots[b]-Math.floor(rawLots[b])) - (rawLots[a]-Math.floor(rawLots[a])));
-  for(let i=0; i<remain && i<sortedByFrac.length; i++){
-    masterLots[sortedByFrac[i]]++;
+  if(pool.length < 2){
+    // ไม่พอจัดกลุ่ม → ใช้ layout เดิมไม่เปลี่ยน
+    return { groups:null, colorResults };
   }
-  // Ensure every size with demand > 0 gets at least 1 lot
-  finalSizes.forEach(sz => {
-    if((aggDemand[sz]||0) > 0 && masterLots[sz] === 0){
-      // Steal from the size with the most lots
-      const maxSz = finalSizes.reduce((a,b) => (masterLots[a]||0) >= (masterLots[b]||0) ? a : b);
-      if(masterLots[maxSz] > 1){
-        masterLots[maxSz]--;
-        masterLots[sz] = 1;
+
+  // 3) จัดกลุ่มด้วย greedy similarity clustering
+  //    Distance = sum of |vecA[sz] - vecB[sz]| for all sizes
+  const allSizesUnion = [...new Set(pool.flatMap(p=>p.allSizes))];
+  function dist(a, b){
+    return allSizesUnion.reduce((s,sz) => s + Math.abs((a.vec[sz]||0)-(b.vec[sz]||0)), 0);
+  }
+
+  const groups = [];
+  const remaining = [...pool];
+
+  while(remaining.length >= minPerGroup){
+    // เริ่มจากไม้แรกที่เหลือ
+    const seed = remaining.shift();
+    const group = [seed];
+
+    // หา nearest neighbors จนครบ minPerGroup
+    while(group.length < minPerGroup && remaining.length > 0){
+      // หาไม้ที่ใกล้ centroid ของกลุ่มมากที่สุด
+      const centroid = {};
+      allSizesUnion.forEach(sz => {
+        centroid[sz] = group.reduce((s,m)=>s+(m.vec[sz]||0),0)/group.length;
+      });
+      let bestIdx=0, bestDist=Infinity;
+      remaining.forEach((m,i) => {
+        const d = allSizesUnion.reduce((s,sz) => s+Math.abs((centroid[sz]||0)-(m.vec[sz]||0)), 0);
+        if(d<bestDist){ bestDist=d; bestIdx=i; }
+      });
+      group.push(remaining.splice(bestIdx,1)[0]);
+    }
+
+    // ดูว่ายังมี member ที่ใกล้กลุ่มนี้มากกว่า threshold ไหม — ดูดเข้ามาเพิ่ม
+    // (ให้กลุ่มใหญ่ขึ้นได้ แต่ต้องเหลือเพื่อนพอให้กลุ่มถัดไป)
+    let added = true;
+    while(added && remaining.length > minPerGroup){
+      added = false;
+      const centroid = {};
+      allSizesUnion.forEach(sz => {
+        centroid[sz] = group.reduce((s,m)=>s+(m.vec[sz]||0),0)/group.length;
+      });
+      // หาตัวที่ใกล้มาก (dist < 0.3) แล้วดูดเข้า
+      for(let i=remaining.length-1; i>=0; i--){
+        if(remaining.length <= minPerGroup) break; // ต้องเหลือพอ
+        const d = allSizesUnion.reduce((s,sz) => s+Math.abs((centroid[sz]||0)-(remaining[i].vec[sz]||0)), 0);
+        if(d < 0.3){
+          group.push(remaining.splice(i,1)[0]);
+          added = true;
+        }
       }
     }
-  });
 
-  return { masterLots, finalSizes, aggDemand, totalDemand, lotsPerRoll, piecesPerLot };
-}
-
-// Apply uniform layout to a single color: determine how many rolls needed, each with masterLots layout
-function applyUniformLayout(parentSku, skus, days, masterLots, finalSizes){
-  const lotsPerRoll  = getLotsPerRoll(parentSku);
-  const piecesPerLot = getPiecesPerLot(parentSku);
-  const cfg = getPantsCfg(parentSku);
-  const overrides = (cfg.lotsOverride||{});
-
-  const skuBySz = {};
-  skus.forEach(d => { skuBySz[(d.size||'?').trim().toUpperCase()] = d; });
-
-  // Calculate demand, stock, net for this color
-  const demand={}, stockOnHand={}, netDemand={};
-  let totalNetPieces = 0;
-  finalSizes.forEach(sz => {
-    const item = skuBySz[sz];
-    const d = item ? getAvg(item, days) : 0;
-    demand[sz] = d;
-    const skuKey = (item?.sku||'').toLowerCase();
-    const rawStock = (isStockLoaded() && skuKey && skuKey in stockMap) ? Math.max(0, Number(stockMap[skuKey])||0) : 0;
-    stockOnHand[sz] = rawStock;
-    const net = Math.max(0, d - rawStock);
-    netDemand[sz] = net;
-    totalNetPieces += net;
-  });
-
-  // How many rolls for this color? Based on total net demand / pieces per roll
-  const piecesPerRollTotal = lotsPerRoll * piecesPerLot;
-  const totalRolls = totalNetPieces > 0 ? Math.max(1, Math.ceil(totalNetPieces / piecesPerRollTotal)) : 0;
-
-  // lotsNeeded per size (for display) = masterLots × totalRolls
-  const lotsNeeded = {};
-  finalSizes.forEach(sz => {
-    const ov = skuBySz[sz] && overrides[skuBySz[sz].sku] !== undefined ? overrides[skuBySz[sz].sku] : null;
-    if(ov !== null){
-      lotsNeeded[sz] = ov;
-    } else {
-      lotsNeeded[sz] = (masterLots[sz]||0) * totalRolls;
-    }
-  });
-
-  const totalLots = Object.values(lotsNeeded).reduce((a,b) => a+b, 0);
-
-  // Build rolls — each roll uses the master layout
-  const rolls = [];
-  for(let ri = 0; ri < totalRolls; ri++){
-    const counts = {};
-    const extraCounts = {};
-    finalSizes.forEach(sz => { counts[sz] = masterLots[sz]||0; });
-    const chunk = [];
-    finalSizes.forEach(sz => {
-      for(let i=0; i<(masterLots[sz]||0); i++) chunk.push({sz, extra:false});
-    });
-    rolls.push({ chunk, counts, extraCounts, totalLots: lotsPerRoll });
+    groups.push(group);
   }
 
-  const totalPieces = totalRolls * lotsPerRoll * piecesPerLot;
-  const neededPieces = totalLots * piecesPerLot;
-  const extraSlots = (totalRolls * lotsPerRoll) - totalLots;
-  const extraPieces = extraSlots * piecesPerLot;
+  // เหลือไม่ถึง minPerGroup → รวมเข้ากลุ่มสุดท้าย
+  if(remaining.length > 0 && groups.length > 0){
+    remaining.forEach(m => groups[groups.length-1].push(m));
+  } else if(remaining.length > 0){
+    groups.push(remaining);
+  }
 
-  return {
-    allSizes: finalSizes, skuBySz, demand, stockOnHand, netDemand, lotsNeeded,
-    totalLots, totalRolls, rolls, piecesPerLot, lotsPerRoll,
-    totalPieces, neededPieces, extraPieces, extraSlots,
-    isUniform: true
-  };
+  // 4) คำนวณ layout กลางของแต่ละกลุ่ม
+  const groupLayouts = groups.map((members, gi) => {
+    // Average the vectors → allocate lots by proportion
+    const avgVec = {};
+    allSizesUnion.forEach(sz => {
+      avgVec[sz] = members.reduce((s,m)=>s+(m.vec[sz]||0),0)/members.length;
+    });
+    // Largest remainder allocation
+    const rawLots = {};
+    let sumFloor = 0;
+    const activeSizes = allSizesUnion.filter(sz => avgVec[sz]>0);
+    activeSizes.forEach(sz => {
+      const raw = avgVec[sz] * lotsPerRoll;
+      rawLots[sz] = raw;
+      sumFloor += Math.floor(raw);
+    });
+    const layout = {};
+    allSizesUnion.forEach(sz => { layout[sz] = 0; });
+    activeSizes.forEach(sz => { layout[sz] = Math.floor(rawLots[sz]||0); });
+    let rem = lotsPerRoll - sumFloor;
+    const sortedFrac = [...activeSizes].sort((a,b) =>
+      (rawLots[b]-Math.floor(rawLots[b])) - (rawLots[a]-Math.floor(rawLots[a])));
+    for(let i=0; i<rem && i<sortedFrac.length; i++){
+      layout[sortedFrac[i]]++;
+    }
+    // Ensure every active size gets at least 1
+    activeSizes.forEach(sz => {
+      if(layout[sz]===0){
+        const maxSz = activeSizes.reduce((a,b)=>(layout[a]||0)>=(layout[b]||0)?a:b);
+        if(layout[maxSz]>1){ layout[maxSz]--; layout[sz]=1; }
+      }
+    });
+
+    // Rewrite each member's roll with the group layout
+    members.forEach(m => {
+      const newCounts = {};
+      const newExtra = {};
+      allSizesUnion.forEach(sz => { newCounts[sz] = layout[sz]||0; });
+      const chunk = [];
+      allSizesUnion.forEach(sz => {
+        for(let i=0;i<(layout[sz]||0);i++) chunk.push({sz,extra:false});
+      });
+      m.roll = { chunk, counts:newCounts, extraCounts:newExtra, totalLots:lotsPerRoll };
+      m.groupIndex = gi;
+    });
+
+    const layoutStr = allSizesUnion.filter(sz=>(layout[sz]||0)>0)
+      .map(sz=>`${sz}×${layout[sz]}`).join(' ');
+
+    return { layout, members, layoutStr, groupIndex:gi };
+  });
+
+  // Build lookup: (col, ri) → group info
+  const rollGroupMap = new Map();
+  groupLayouts.forEach(gl => {
+    gl.members.forEach(m => {
+      rollGroupMap.set(`${m.col}__${m.ri}`, {
+        groupIndex: gl.groupIndex,
+        layout: gl.layout,
+        layoutStr: gl.layoutStr,
+        groupSize: gl.members.length,
+        roll: m.roll
+      });
+    });
+  });
+
+  return { groups:groupLayouts, colorResults, rollGroupMap, allSizesUnion };
 }
 
 // ── butterfly packing ──
@@ -3615,26 +3657,49 @@ function renderPantsCard(g, days){
   if(isDiscontinued(g.parentSku)){
     colorsHtml = `<div style="padding:10px 14px;color:var(--muted);font-size:14px;opacity:.5">🚫 ไม่เติมสต๊อกแล้ว — ซ่อนรายละเอียดทั้งหมด</div>`;
   } else {
-  // ── Layout Lock: compute master layout if enabled ──
-  let masterLayout = null;
+  // ── Layout Grouping: จัดกลุ่มไม้ข้ามสี ──
+  let groupedData = null;
   if(isLocked){
-    masterLayout = calcUniformRollLayout(g.parentSku, byColor, days);
+    groupedData = calcGroupedLayouts(g.parentSku, byColor, days);
   }
-  // ── Master layout badge ──
-  if(masterLayout){
-    const mlParts = masterLayout.finalSizes.filter(sz=>(masterLayout.masterLots[sz]||0)>0)
-      .map(sz=>`${sz}×${masterLayout.masterLots[sz]}`).join(' ');
-    colorsHtml += `<div style="margin-bottom:12px;padding:10px 14px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <span style="font-size:14px">🔒</span>
-      <span style="font-size:13px;font-weight:800;color:var(--purple)">Layout กลาง (ทุกไม้เหมือนกัน)</span>
-      <span style="font-size:13px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:600">${mlParts}</span>
-      <span style="font-size:12px;color:var(--muted)">= ${lotsPerRoll} ล็อค/ไม้ × ${piecesPerLot} ตัว</span>
+  // ── Group summary badge ──
+  if(groupedData && groupedData.groups){
+    const minG = getMinRollsPerGroup(g.parentSku);
+    const totalRollsAll = groupedData.groups.reduce((s,gl)=>s+gl.members.length, 0);
+    colorsHtml += `<div style="margin-bottom:12px;padding:10px 14px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:12px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+        <span style="font-size:14px">🔒</span>
+        <span style="font-size:13px;font-weight:800;color:var(--purple)">จัดกลุ่ม Layout (ข้ามสี · ≥${minG} ไม้/กลุ่ม)</span>
+        <span style="font-size:12px;color:var(--muted)">${totalRollsAll} ไม้ → ${groupedData.groups.length} กลุ่ม</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+      ${groupedData.groups.map((gl,gi) => {
+        const colors = [...new Set(gl.members.map(m=>m.col))];
+        const colLabel = colors.length>2 ? colors.slice(0,2).join(', ')+' +' : colors.join(', ');
+        return `<div style="background:var(--bg);border:1px solid rgba(124,58,237,.15);border-radius:10px;padding:6px 10px;flex:1;min-width:160px">
+          <div style="font-size:12px;font-weight:800;color:var(--purple);margin-bottom:3px">กลุ่ม ${String.fromCharCode(65+gi)} · ${gl.members.length} ไม้</div>
+          <div style="font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--text);font-weight:600">${gl.layoutStr}</div>
+          <div style="font-size:11px;color:var(--faint);margin-top:2px">🎨 ${colLabel}</div>
+        </div>`;
+      }).join('')}
+      </div>
     </div>`;
   }
   colorsSorted.forEach(([col,skus])=>{
-    const r = masterLayout
-      ? applyUniformLayout(g.parentSku, skus, days, masterLayout.masterLots, masterLayout.finalSizes)
-      : calcColorOrder(g.parentSku, skus, days);
+    // ถ้าเปิด layout lock → ใช้ผลจาก colorResults ที่คำนวณไว้ แล้วแทน roll ด้วย grouped layout
+    let r;
+    if(groupedData && groupedData.groups && groupedData.rollGroupMap){
+      r = groupedData.colorResults.get(col);
+      // Override rolls with grouped layout
+      r.rolls = r.rolls.map((origRoll, ri) => {
+        const info = groupedData.rollGroupMap.get(`${col}__${ri}`);
+        if(info) return info.roll;
+        return origRoll;
+      });
+      r._groupedData = groupedData; // attach for roll card rendering
+    } else {
+      r = calcColorOrder(g.parentSku, skus, days);
+    }
     const colAvg=skus.reduce((s,d)=>s+getAvg(d,days),0);
     grandPieces+=r.totalPieces;
     grandRolls+=r.totalRolls;
@@ -3694,6 +3759,11 @@ function renderPantsCard(g, days){
 
     // roll cards — butterfly visualization
     const rollCards=r.rolls.map((roll,ri)=>{
+      // Group badge
+      const grpInfo = r._groupedData?.rollGroupMap?.get(`${col}__${ri}`);
+      const grpBadge = grpInfo
+        ? `<span style="font-size:10px;font-weight:800;background:rgba(124,58,237,.15);color:var(--purple);border-radius:4px;padding:1px 6px;border:1px solid rgba(124,58,237,.2)">กลุ่ม ${String.fromCharCode(65+grpInfo.groupIndex)}</span>`
+        : '';
       // group normal + extra per size, in SIZE_ORDER
       const allSzInRoll=[...new Set(roll.chunk.map(x=>x.sz))].sort((a,b)=>{
         const ai=SIZE_ORDER.indexOf(a)<0?99:SIZE_ORDER.indexOf(a);
@@ -3722,6 +3792,7 @@ function renderPantsCard(g, days){
       return`<div class="lot-vis-roll" style="min-width:120px;flex:1">
         <div class="lot-vis-roll-hdr" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">
           <span style="font-size:13px;font-weight:800;color:var(--text)">ไม้ ${ri+1}</span>
+          ${grpBadge}
           <span style="font-size:12px;color:var(--blue);font-weight:700;font-family:'IBM Plex Mono',monospace">${rollPieces}ตัว</span>
           ${hasExtra?`<span style="font-size:10px;color:var(--orange);font-weight:700">+เกิน</span>`:''}
           <button class="cart-select-btn ${rollInCart?'selected':''}" style="margin-left:auto"
@@ -3771,7 +3842,7 @@ function renderPantsCard(g, days){
 
       <div>
         <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px">
-          📋 แผนไม้ ${r.isUniform?'<span style="font-weight:700;color:var(--purple)">🔒 Layout เดียวกันทุกไม้</span>':'<span style="font-weight:400;color:var(--faint)">(เล็ก↔ใหญ่อยู่ด้วยกัน)</span>'}
+          📋 แผนไม้ ${r._groupedData?'<span style="font-weight:700;color:var(--purple)">🔒 จัดกลุ่ม Layout ข้ามสี</span>':'<span style="font-weight:400;color:var(--faint)">(เล็ก↔ใหญ่อยู่ด้วยกัน)</span>'}
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">${rollCards}</div>
       </div>
@@ -3801,9 +3872,15 @@ function renderPantsCard(g, days){
         </button>
         <button class="btn" style="font-size:11px;padding:3px 9px;gap:4px;${isLocked?'background:rgba(124,58,237,.12);color:var(--purple);border-color:rgba(124,58,237,.3)':'color:var(--faint)'}"
           onclick="event.stopPropagation();setLayoutLock('${esc}',${!isLocked})"
-          title="${isLocked?'ปิด Layout Lock — แต่ละสีคำนวณแยก':'เปิด Layout Lock — ทุกไม้ทุกสีใช้ layout เดียวกัน (เงื่อนไขโรงงาน)'}">
-          ${isLocked?'🔒 Layout ล้อค':'🔓 Layout อิสระ'}
+          title="${isLocked?'ปิดจัดกลุ่ม Layout — แต่ละสีคำนวณแยก':'เปิดจัดกลุ่ม Layout — ไม้ข้ามสีที่ demand คล้ายกันจะใช้ layout เดียวกัน (เงื่อนไขโรงงาน)'}">
+          ${isLocked?'🔒 Layout กลุ่ม':'🔓 Layout อิสระ'}
         </button>
+        ${isLocked?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--purple)">
+          ≥<input type="number" min="2" max="10" value="${getMinRollsPerGroup(g.parentSku)}"
+            style="width:32px;height:22px;font-size:12px;font-weight:700;text-align:center;border:1px solid rgba(124,58,237,.3);border-radius:5px;background:var(--bg);color:var(--purple);outline:none;font-family:inherit"
+            onchange="setMinRollsPerGroup('${esc}',+this.value)"
+            onclick="event.stopPropagation()">ไม้/กลุ่ม
+        </span>`:''}
         ${Object.keys((orderConfig[g.parentSku]||{}).lotsOverride||{}).length>0?
           `<button class="btn" style="font-size:11px;padding:3px 9px;color:var(--orange);gap:4px"
             onclick="event.stopPropagation();resetModelOverrides('${esc}')"
