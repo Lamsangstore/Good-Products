@@ -54,7 +54,7 @@
 
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:'Anuphan',sans-serif;background:linear-gradient(160deg,#fdf8ee 0%,#f9f0d8 100%);color:var(--text);min-height:100vh;padding:32px 24px 80px;line-height:1.6;overflow-x:hidden;touch-action:pan-y}
+body{font-family:'Anuphan',sans-serif;background:linear-gradient(160deg,#fdf8ee 0%,#f9f0d8 100%);color:var(--text);min-height:100vh;padding:20px 16px 70px;line-height:1.5;overflow-x:hidden;touch-action:pan-y}
 .page{max-width:1480px;margin:0 auto;overflow-x:hidden}
 
 /* ─── LOADING ─── */
@@ -66,13 +66,13 @@ body{font-family:'Anuphan',sans-serif;background:linear-gradient(160deg,#fdf8ee 
 .spin-label{background:var(--bg);box-shadow:var(--sm);border-radius:14px;padding:10px 24px;font-size:17px;font-weight:700;color:var(--mid);letter-spacing:.3px}
 
 /* ─── HEADER ─── */
-.header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:40px}
-.brand{display:flex;align-items:center;gap:18px}
-.brand-logo{width:56px;height:56px;border-radius:18px;background:var(--bg);box-shadow:var(--so);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
-.brand-logo::after{content:'';position:absolute;inset:8px;border-radius:12px;background:linear-gradient(140deg,#fbbf24,#d97706);box-shadow:0 4px 14px rgba(217,119,6,.35)}
-.brand-logo svg{position:relative;z-index:1;width:22px;height:22px;stroke:#fff;stroke-width:2.5;fill:none}
-.brand-name{font-size:28px;font-weight:800;color:var(--text);letter-spacing:-.8px;line-height:1.1;font-family:'Anuphan',sans-serif}
-.brand-sub{font-size:16px;color:var(--muted);margin-top:4px;letter-spacing:.2px}
+.header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-logo{width:44px;height:44px;border-radius:14px;background:var(--bg);box-shadow:var(--so);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
+.brand-logo::after{content:'';position:absolute;inset:6px;border-radius:10px;background:linear-gradient(140deg,#fbbf24,#d97706);box-shadow:0 4px 14px rgba(217,119,6,.35)}
+.brand-logo svg{position:relative;z-index:1;width:18px;height:18px;stroke:#fff;stroke-width:2.5;fill:none}
+.brand-name{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.6px;line-height:1.1;font-family:'Anuphan',sans-serif}
+.brand-sub{font-size:13px;color:var(--muted);margin-top:2px;letter-spacing:.2px}
 .hdr-r{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
 .live-pill{display:flex;align-items:center;gap:7px;padding:7px 16px;border-radius:50px;background:rgba(22,163,74,.1);box-shadow:none;font-size:13px;font-weight:800;color:var(--green);letter-spacing:.8px;text-transform:uppercase;border:1px solid rgba(22,163,74,.25)}
@@ -86,14 +86,14 @@ body{font-family:'Anuphan',sans-serif;background:linear-gradient(160deg,#fdf8ee 
 .btn:active{box-shadow:var(--sp);transform:none}
 
 /* ─── TABS ─── */
-.tab-bar{display:flex;gap:6px;margin-bottom:24px;background:var(--bg-dark);box-shadow:var(--si);border-radius:20px;padding:6px}
-.tab-btn{flex:1;padding:14px 18px;border:none;border-radius:14px;font-size:16px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;background:transparent;color:var(--muted);transition:all .22s;letter-spacing:.1px}
-.tab-btn.active{background:linear-gradient(135deg,#fbbf24,#d97706);box-shadow:0 4px 14px rgba(217,119,6,.3);color:#fff;transform:translateY(-1px)}
+.tab-bar{display:flex;gap:4px;margin-bottom:16px;background:var(--bg-dark);box-shadow:var(--si);border-radius:14px;padding:4px}
+.tab-btn{flex:1;padding:10px 12px;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;background:transparent;color:var(--muted);transition:all .22s;letter-spacing:.1px}
+.tab-btn.active{background:linear-gradient(135deg,#fbbf24,#d97706);box-shadow:0 3px 10px rgba(217,119,6,.3);color:#fff;transform:translateY(-1px)}
 .tab-content{display:none}.tab-content.active{display:block}
 
 /* ─── KPI GRID ─── */
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:auto auto;gap:10px;margin-bottom:16px}
-.kpi{background:var(--surface);border-radius:20px;box-shadow:var(--sm);padding:18px 20px 16px;position:relative;overflow:hidden;transition:box-shadow .22s,transform .18s;cursor:default;border:1px solid rgba(217,119,6,.1)}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:auto auto;gap:8px;margin-bottom:14px}
+.kpi{background:var(--surface);border-radius:16px;box-shadow:var(--sm);padding:14px 16px 12px;position:relative;overflow:hidden;transition:box-shadow .22s,transform .18s;cursor:default;border:1px solid rgba(217,119,6,.1)}
 /* Bento: สินค้าทั้งหมด + True Star = แถวบน 2 กล่อง | Velocity, Trend, Stock = แถวล่าง */
 .kpi.bento-wide{grid-column:span 2}
 .kpi:hover{box-shadow:6px 6px 18px #e4d9c0,-4px -4px 14px #ffffff,0 0 0 2px rgba(217,119,6,.15);transform:translateY(-2px)}
@@ -110,24 +110,46 @@ body{font-family:'Anuphan',sans-serif;background:linear-gradient(160deg,#fdf8ee 
 .kpi.c-purple .kpi-accent{background:var(--purple)}
 .kpi.c-orange .kpi-accent{background:var(--orange)}
 .kpi.c-gold  .kpi-accent{background:var(--gold)}
-.kpi-ico{width:40px;height:40px;border-radius:12px;background:var(--bg);box-shadow:var(--sm);display:flex;align-items:center;justify-content:center;margin-bottom:16px;flex-shrink:0}
-.kpi-ico svg{width:18px;height:18px;stroke-width:2;fill:none}
+.kpi-ico{width:34px;height:34px;border-radius:10px;background:var(--bg);box-shadow:var(--sm);display:flex;align-items:center;justify-content:center;margin-bottom:10px;flex-shrink:0}
+.kpi-ico svg{width:16px;height:16px;stroke-width:2;fill:none}
 .kpi.c-blue   .kpi-ico svg{stroke:var(--blue)}
 .kpi.c-red    .kpi-ico svg{stroke:var(--red)}
 .kpi.c-green  .kpi-ico svg{stroke:var(--green)}
 .kpi.c-purple .kpi-ico svg{stroke:var(--purple)}
 .kpi.c-orange .kpi-ico svg{stroke:var(--orange)}
 .kpi.c-gold   .kpi-ico svg{stroke:var(--gold)}
-.kpi-lbl{font-size:14px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.kpi-val{font-size:32px;font-weight:700;letter-spacing:-2px;line-height:1;font-feature-settings:"tnum"}
-.kpi-unit{font-size:17px;font-weight:500;letter-spacing:0;color:var(--muted);margin-left:4px}
+.kpi-lbl{font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.kpi-val{font-size:26px;font-weight:700;letter-spacing:-1.5px;line-height:1;font-feature-settings:"tnum"}
+.kpi-unit{font-size:14px;font-weight:500;letter-spacing:0;color:var(--muted);margin-left:3px}
 .kpi.c-blue   .kpi-val{color:var(--blue)}
 .kpi.c-red    .kpi-val{color:var(--red)}
 .kpi.c-green  .kpi-val{color:var(--green)}
 .kpi.c-purple .kpi-val{color:var(--purple)}
 .kpi.c-orange .kpi-val{color:var(--orange)}
 .kpi.c-gold   .kpi-val{color:var(--gold)}
-.kpi-note{font-size:14px;color:var(--muted);margin-top:7px;line-height:1.4}
+.kpi-note{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.3}
+
+/* ─── KPI SPLIT LAYOUT 40:60 ─── */
+.kpi-split{display:flex;gap:12px;align-items:center}
+.kpi-left{flex:0 0 40%;min-width:0}
+.kpi-right{flex:0 0 58%;min-width:0;display:flex;align-items:center;justify-content:center}
+.kpi-right canvas{max-width:100%;height:auto!important}
+
+@media(max-width:767px){
+  .kpi-split{flex-direction:column;gap:8px}
+  .kpi-left{flex:none;width:100%}
+  .kpi-right{flex:none;width:100%}
+}
+
+/* ─── KPI TOP LIST ─── */
+.kpi-top-list{margin-top:6px;display:flex;flex-direction:column;gap:2px}
+.kpi-top-item{display:flex;align-items:center;gap:6px;font-size:11px;line-height:1.3;color:var(--mid)}
+.kpi-top-rank{width:14px;height:14px;border-radius:50%;background:var(--bg-dark);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--muted);flex-shrink:0}
+.kpi-top-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.kpi-top-val{flex-shrink:0;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:11px}
+.kpi-top-item:first-child .kpi-top-rank{background:#d97706;color:#fff}
+.kpi-top-item:nth-child(2) .kpi-top-rank{background:#b0a080;color:#fff}
+.kpi-top-item:nth-child(3) .kpi-top-rank{background:#c89060;color:#fff}
 
 /* ─── FORMULA STRIP ─── */
 .f-strip{background:var(--bg-dark);border-radius:12px;padding:8px 16px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1px solid rgba(217,119,6,.12)}
@@ -137,10 +159,10 @@ body{font-family:'Anuphan',sans-serif;background:linear-gradient(160deg,#fdf8ee 
 .f-div{width:1px;height:18px;background:rgba(255,255,255,.08)}
 
 /* ─── PANEL ─── */
-.panel{background:var(--surface);border-radius:24px;box-shadow:var(--so);overflow:hidden;margin-bottom:28px;border:1px solid rgba(217,119,6,.08)}
-.panel-hdr{padding:14px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;background:var(--bg-dark);border-bottom:1px solid rgba(217,119,6,.1)}
-.panel-ttl{font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.3px;font-family:'Anuphan',sans-serif}
-.panel-sub{font-size:15px;color:var(--muted);margin-top:3px;letter-spacing:.2px}
+.panel{background:var(--surface);border-radius:18px;box-shadow:var(--so);overflow:hidden;margin-bottom:18px;border:1px solid rgba(217,119,6,.08)}
+.panel-hdr{padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;background:var(--bg-dark);border-bottom:1px solid rgba(217,119,6,.1)}
+.panel-ttl{font-size:16px;font-weight:800;color:var(--text);letter-spacing:-.3px;font-family:'Anuphan',sans-serif}
+.panel-sub{font-size:13px;color:var(--muted);margin-top:2px;letter-spacing:.2px}
 .srch-wrap{position:relative}
 .srch-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:13px;height:13px;stroke:var(--faint);stroke-width:2.2;fill:none;pointer-events:none}
 .srch{background:var(--surface);border:1px solid rgba(217,119,6,.2);box-shadow:var(--si);border-radius:14px;padding:10px 16px 10px 38px;font-size:15px;font-family:'Anuphan',sans-serif;color:var(--text);width:240px;outline:none;transition:box-shadow .18s}
@@ -148,21 +170,21 @@ body{font-family:'Anuphan',sans-serif;background:linear-gradient(160deg,#fdf8ee 
 .srch:focus{box-shadow:var(--si),0 0 0 2px rgba(217,119,6,.25);border-color:var(--blue)}
 
 /* ─── TABLE ─── */
-.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;max-height:70vh}
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 thead th{
-  padding:9px 10px;
-  font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;
+  padding:7px 8px;
+  font-size:11px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;
   color:var(--muted);background:var(--bg-dark);
   border-bottom:2px solid rgba(217,119,6,.15);
-  white-space:normal;word-break:keep-all;
-  line-height:1.3;text-align:center;
+  white-space:nowrap;
+  line-height:1.2;text-align:center;
   position:sticky;top:0;z-index:2
 }
 tbody td{
-  padding:10px 10px;
-  font-size:15px;
-  border-bottom:1px solid rgba(217,119,6,.07);
+  padding:6px 8px;
+  font-size:14px;
+  border-bottom:1px solid rgba(217,119,6,.05);
   vertical-align:middle;
   transition:background .12s
 }
@@ -170,36 +192,36 @@ tbody td{
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:rgba(217,119,6,.08)!important}
 tbody tr:active td{background:rgba(217,119,6,.15)!important}
-.pname{font-weight:800;font-size:15px;color:var(--text);line-height:1.3;font-family:'Anuphan',sans-serif}
-.psku{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--faint);margin-top:3px;letter-spacing:.3px}
-.mono{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:500;color:var(--text)}
+.pname{font-weight:700;font-size:14px;color:var(--text);line-height:1.25;font-family:'Anuphan',sans-serif;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.psku{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--faint);margin-top:2px;letter-spacing:.2px}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:500;color:var(--text)}
 .tr{text-align:right}.tc{text-align:center}
 
 /* First column # */
-tbody td:first-child{font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--faint);text-align:center;width:28px;padding:6px 6px}
-thead th:first-child{width:28px;text-align:center;padding:6px 6px}
-/* Column width constraints — snug to data */
-th[data-col="sku"]      {min-width:100px;max-width:130px}
-th[data-col="color"]    {min-width:54px;max-width:80px}
-th[data-col="size"]     {min-width:44px;max-width:64px}
-th[data-col="star"]     {min-width:68px;max-width:90px}
-th[data-col="vel"]      {min-width:60px;max-width:80px}
-th[data-col="vel7"]     {min-width:58px;max-width:78px}
-th[data-col="maxvel7"]  {min-width:60px;max-width:84px}
-th[data-col="trend"]    {min-width:50px;max-width:70px}
-th[data-col="gap"]      {min-width:52px;max-width:70px}
-th[data-col="consist"]  {min-width:60px;max-width:80px}
-th[data-col="totalsold"]{min-width:54px;max-width:72px}
-th[data-col="activevel"]{min-width:58px;max-width:78px}
-th[data-col="peakval"]  {min-width:54px;max-width:72px}
-th[data-col="lastsale"] {min-width:60px;max-width:80px}
-th[data-col="peakday"]  {min-width:58px;max-width:78px}
-th[data-col="stock"]    {min-width:90px;max-width:120px}
-th[data-col="stockavg"] {min-width:70px;max-width:96px}
-th[data-col="stockmaxvel7"]{min-width:70px;max-width:96px}
-th[data-col="status"]   {min-width:70px;max-width:96px}
-th[data-col="daysleft"] {min-width:70px;max-width:96px}
-th[data-col="nextrestock"]{min-width:90px;max-width:120px}
+tbody td:first-child{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--faint);text-align:center;width:24px;padding:4px 4px}
+thead th:first-child{width:24px;text-align:center;padding:4px 4px}
+/* Column width constraints — compact */
+th[data-col="sku"]      {min-width:80px;max-width:110px}
+th[data-col="color"]    {min-width:40px;max-width:64px}
+th[data-col="size"]     {min-width:36px;max-width:52px}
+th[data-col="star"]     {min-width:56px;max-width:76px}
+th[data-col="vel"]      {min-width:50px;max-width:68px}
+th[data-col="vel7"]     {min-width:48px;max-width:66px}
+th[data-col="maxvel7"]  {min-width:50px;max-width:72px}
+th[data-col="trend"]    {min-width:42px;max-width:60px}
+th[data-col="gap"]      {min-width:42px;max-width:60px}
+th[data-col="consist"]  {min-width:50px;max-width:68px}
+th[data-col="totalsold"]{min-width:46px;max-width:64px}
+th[data-col="activevel"]{min-width:48px;max-width:66px}
+th[data-col="peakval"]  {min-width:46px;max-width:64px}
+th[data-col="lastsale"] {min-width:50px;max-width:68px}
+th[data-col="peakday"]  {min-width:48px;max-width:66px}
+th[data-col="stock"]    {min-width:72px;max-width:100px}
+th[data-col="stockavg"] {min-width:56px;max-width:80px}
+th[data-col="stockmaxvel7"]{min-width:56px;max-width:80px}
+th[data-col="status"]   {min-width:56px;max-width:80px}
+th[data-col="daysleft"] {min-width:56px;max-width:80px}
+th[data-col="nextrestock"]{min-width:72px;max-width:100px}
 td[data-col="color"],td[data-col="size"]{text-align:center}
 td[data-col="vel"],td[data-col="vel7"],td[data-col="maxvel7"],
 td[data-col="trend"],td[data-col="gap"],td[data-col="consist"],
@@ -207,8 +229,8 @@ td[data-col="totalsold"],td[data-col="activevel"],td[data-col="peakval"],
 td[data-col="lastsale"],td[data-col="peakday"]{text-align:right}
 
 /* ─── VELOCITY BAR ─── */
-.vrow{display:flex;align-items:center;gap:10px;min-width:130px}
-.vnum{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;width:38px;text-align:right;flex-shrink:0}
+.vrow{display:flex;align-items:center;gap:6px;min-width:100px}
+.vnum{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;width:32px;text-align:right;flex-shrink:0}
 .bar-o{flex:1;height:6px;border-radius:3px;background:var(--bg);box-shadow:var(--si);overflow:hidden}
 .bar-i{height:100%;border-radius:3px;transition:width .5s ease}
 .bar-blue{background:linear-gradient(90deg,var(--blue-s),var(--blue))}
@@ -335,11 +357,8 @@ td .stock-pill.instock{background:rgba(46,204,138,.13);color:var(--green)}
 .lot-vis-lot{background:var(--bg);box-shadow:var(--sm);border-radius:10px;padding:8px 10px;min-width:60px;border-top:3px solid var(--blue)}
 .lot-vis-lot-num{font-size:13px;font-weight:800;color:var(--blue);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;text-align:center}
 
-/* ─── CONVEX / CONCAVE column alternating ─── */
-td.col-convex{background:var(--bg)!important;box-shadow:inset 0 0 0 0 transparent}
-td.col-concave{background:var(--bg-darker)!important}
-tbody tr:hover td.col-convex,
-tbody tr:hover td.col-concave{background:rgba(77,143,255,.07)!important}
+/* ─── CONVEX / CONCAVE — DISABLED (v3.0: ลดลายตา) ─── */
+/* col-convex/col-concave ถูกปิดแล้ว ใช้ row stripe แทน */
 
 /* ─── STOCK AVG (middle green) ─── */
 .stk-avg-box{border-radius:12px;padding:8px 12px;min-width:130px;background:rgba(46,204,138,.07);border:1px solid rgba(46,204,138,.18)}
@@ -1513,7 +1532,7 @@ html, body {
 .kpi canvas { display: block !important; flex-shrink: 0 !important; }
 .kpi { overflow: hidden !important; }
 /* Sparkline wrappers constrain width */
-#kpi-chart-vel, #kpi-chart-trend { max-height: 28px !important; }
+#kpi-chart-vel, #kpi-chart-trend { max-height: 60px !important; }
 
 /* ── Hard-lock all KPI canvases ── */
 .kpi canvas {
@@ -1698,21 +1717,21 @@ tbody td:nth-child(3) { left: 196px; }
 tbody td:nth-child(4) { left: 268px; box-shadow: 4px 0 6px rgba(180,130,50,.07); }
 
 /* Match sticky cell bg to row bg */
-/* Subtle row stripes — no column colors */
-tbody tr:nth-child(odd)  td { background: #fefcf6; }
-tbody tr:nth-child(even) td { background: #f9f2e3; }
+/* Subtle row stripes — very soft, almost invisible */
+tbody tr:nth-child(odd)  td { background: #fefcf7; }
+tbody tr:nth-child(even) td { background: #fbf6ec; }
 
 tbody tr:nth-child(odd)  td:nth-child(1),
 tbody tr:nth-child(odd)  td:nth-child(2),
 tbody tr:nth-child(odd)  td:nth-child(3),
-tbody tr:nth-child(odd)  td:nth-child(4) { background: #fefcf6; }
+tbody tr:nth-child(odd)  td:nth-child(4) { background: #fefcf7; }
 
 tbody tr:nth-child(even) td:nth-child(1),
 tbody tr:nth-child(even) td:nth-child(2),
 tbody tr:nth-child(even) td:nth-child(3),
-tbody tr:nth-child(even) td:nth-child(4) { background: #f9f2e3; }
+tbody tr:nth-child(even) td:nth-child(4) { background: #fbf6ec; }
 
-tbody tr:hover td { background: #fce8b8 !important; }
+tbody tr:hover td { background: rgba(217,119,6,.08) !important; }
 
 /* Column resize handle */
 thead th { position: relative; user-select: none; }
@@ -1826,6 +1845,160 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
   opacity: .6;
   border-left-color: #94a3b8 !important;
   background: rgba(100,116,139,.03) !important;
+}
+
+/* ============================================================
+   v3.0 — UI Polish: Responsive + iOS Safe Area + Touch Targets
+   ============================================================ */
+
+/* ── iOS Safe Area ── */
+@supports(padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: calc(32px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+  .cart-fab { bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ── Mobile: KPI 2-col, bigger touch, full-width search ── */
+@media (max-width: 767px) {
+  body { padding: 16px 12px 90px; }
+  .header { margin-bottom: 24px; gap: 12px; }
+  .brand-name { font-size: 22px; }
+  .brand-sub { font-size: 13px; }
+  .brand-logo { width: 46px; height: 46px; }
+
+  .kpi-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px;
+  }
+  .kpi.bento-wide { grid-column: span 1; }
+  .kpi { padding: 14px 14px 12px; border-radius: 16px; }
+  .kpi-val { font-size: 26px; }
+  .kpi-lbl { font-size: 12px; }
+  .kpi-ico { width: 34px; height: 34px; margin-bottom: 10px; }
+
+  .tab-bar { border-radius: 14px; padding: 4px; gap: 4px; }
+  .tab-btn {
+    padding: 11px 8px;
+    font-size: 13px;
+    border-radius: 10px;
+    min-height: 44px;
+  }
+
+  .panel { border-radius: 18px; margin-bottom: 18px; }
+  .panel-hdr { padding: 12px 14px; gap: 10px; }
+  .panel-ttl { font-size: 16px; }
+
+  .srch { width: 100% !important; font-size: 16px; padding: 12px 16px 12px 38px; }
+  .btn { min-height: 44px; padding: 10px 14px; font-size: 14px; }
+  .neu-sel { padding: 10px 14px; font-size: 15px; }
+
+  .f-strip { padding: 6px 10px; gap: 6px; }
+  .f-lbl { font-size: 13px; }
+  .f-chip { font-size: 11px; padding: 3px 8px; }
+
+  thead th { font-size: 11px; padding: 7px 6px; }
+  tbody td { font-size: 14px; padding: 8px 6px; }
+  .pname { font-size: 14px; }
+  .psku { font-size: 12px; }
+  .mono { font-size: 15px; }
+
+  .cart-fab { bottom: 16px; right: 16px; }
+  .cart-btn { padding: 12px 18px; font-size: 16px; border-radius: 16px; }
+
+  /* Order tab cards */
+  .belt-card { padding: 14px 14px; margin: 8px 12px; border-radius: 16px; }
+  .belt-name { font-size: 16px; }
+  .belt-qty-box { padding: 10px 14px; min-width: 100px; }
+  .belt-qty-val { font-size: 22px; }
+
+  .lot-cfg-card { padding: 10px 12px; min-width: 140px; }
+  .lot-cfg-name { font-size: 14px; }
+}
+
+/* ── Tablet: 3-col KPI, wider panels ── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .kpi-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 10px;
+  }
+  .kpi.bento-wide { grid-column: span 1; }
+  .panel { border-radius: 22px; }
+}
+
+/* ── Desktop: wider layout, better table readability ── */
+@media (min-width: 1024px) {
+  .page { max-width: 1600px; }
+  body { padding: 32px 32px 80px; }
+  .srch { width: 280px !important; }
+  
+  /* Table hover highlight enhancement */
+  tbody tr { transition: background .15s ease; }
+  tbody tr:hover td {
+    background: rgba(217,119,6,.06) !important;
+  }
+}
+
+/* ── Accessibility: Focus states ── */
+.btn:focus-visible,
+.tab-btn:focus-visible,
+.neu-sel:focus-visible,
+.cart-btn:focus-visible,
+.disc-btn:focus-visible,
+.cart-select-btn:focus-visible {
+  outline: 3px solid rgba(217,119,6,.5);
+  outline-offset: 2px;
+}
+
+/* ── Better scrollbar ── */
+.tbl-wrap::-webkit-scrollbar { height: 6px; }
+.tbl-wrap::-webkit-scrollbar-track { background: var(--bg-dark); border-radius: 3px; }
+.tbl-wrap::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 3px; }
+.tbl-wrap::-webkit-scrollbar-thumb:hover { background: var(--mid); }
+
+/* ── Cart modal mobile full-screen ── */
+@media (max-width: 640px) {
+  .cart-modal-panel {
+    width: 100vw !important;
+    border-radius: 0;
+  }
+  .cart-modal-hdr { padding: 16px 16px; }
+  .cart-modal-body { padding: 12px 16px; }
+  .cart-modal-footer { padding: 12px 16px; }
+}
+
+/* ── KPI micro-chart smooth ── */
+.kpi canvas { border-radius: 8px; }
+
+/* ── Empty state polish ── */
+.empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 15px;
+}
+.empty svg {
+  display: block;
+  margin: 0 auto 12px;
+  opacity: .5;
+}
+
+/* ── Lot vis cards mobile ── */
+@media (max-width: 767px) {
+  .lot-vis-lots { gap: 4px; }
+  .lot-vis-lot { padding: 6px 8px; min-width: 50px; border-radius: 8px; }
+  .lot-vis-lot-num { font-size: 11px; margin-bottom: 4px; }
+}
+
+/* ── Print mode ── */
+@media print {
+  .cart-fab, .loading, .tab-bar, .hdr-r, .btn, .f-strip,
+  #stock-file-bar, .srch-wrap, .panel-hdr .btn { display: none !important; }
+  body { background: white !important; padding: 10px; }
+  .panel { box-shadow: none !important; border: 1px solid #ddd; break-inside: avoid; }
+  .kpi { box-shadow: none !important; border: 1px solid #ddd; }
+  tbody tr:hover td { background: transparent !important; }
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -1985,80 +2158,98 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
 <!-- KPI Bento Grid -->
 <div class="kpi-grid">
 
-  <!-- Card 1: สินค้าทั้งหมด — Donut chart (stock status distribution) -->
+  <!-- Card 1: สินค้าทั้งหมด -->
   <div class="kpi c-blue kpi-clickable bento-wide" onclick="kpiSort('name','asc','สินค้าทั้งหมด')" title="คลิกเรียงชื่อ">
     <div class="kpi-accent"></div>
-    <div style="display:flex;align-items:center;gap:14px">
-      <div style="position:relative;width:64px;height:64px;flex-shrink:0">
-        <canvas id="kpi-chart-total" width="64" height="64" style="max-width:64px;max-height:64px;width:64px!important;height:64px!important"></canvas>
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
-          <svg viewBox="0 0 20 20" style="width:18px;height:18px;stroke:#d97706;fill:none;stroke-width:1.8"><path d="M17 13.5V7a2 2 0 0 0-1-1.73l-5-2.88a2 2 0 0 0-2 0L4 5.27A2 2 0 0 0 3 7v6.5a2 2 0 0 0 1 1.73l5 2.88a2 2 0 0 0 2 0l5-2.88A2 2 0 0 0 17 13.5z"/></svg>
-        </div>
-      </div>
-      <div>
+    <div class="kpi-split">
+      <div class="kpi-left">
         <div class="kpi-lbl">สินค้าทั้งหมด</div>
         <div class="kpi-val" style="margin:2px 0"><span id="k-total">—</span><span class="kpi-unit">SKUs</span></div>
         <div id="kpi-stock-legend" class="kpi-note" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"></div>
+        <div id="kpi-top-total" class="kpi-top-list"></div>
+      </div>
+      <div class="kpi-right">
+        <canvas id="kpi-chart-total" width="120" height="120"></canvas>
       </div>
     </div>
   </div>
 
-  <!-- Card 2: True Star — Gauge / arc chart -->
+  <!-- Card 2: True Star -->
   <div class="kpi c-gold kpi-clickable bento-wide" onclick="kpiSort('starScore','desc','True Star Score')" title="คลิกเรียง True Star">
     <div class="kpi-accent"></div>
-    <div style="display:flex;align-items:center;gap:14px">
-      <div style="position:relative;width:64px;height:40px;flex-shrink:0;overflow:visible">
-        <canvas id="kpi-chart-star" width="96" height="52" style="max-width:96px;max-height:52px;margin-top:-6px;margin-left:-16px"></canvas>
-      </div>
-      <div style="flex:1;min-width:0">
+    <div class="kpi-split">
+      <div class="kpi-left">
         <div class="kpi-lbl">True Star สูงสุด</div>
         <div class="kpi-val" style="margin:2px 0"><span id="k-starscore">—</span><span class="kpi-unit">/ 100</span></div>
         <div class="kpi-note" id="k-starname" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+        <div id="kpi-top-star" class="kpi-top-list"></div>
+      </div>
+      <div class="kpi-right">
+        <canvas id="kpi-chart-star" width="120" height="70"></canvas>
       </div>
     </div>
   </div>
 
-  <!-- Card 3: Adj. Velocity — Sparkline bar -->
+  <!-- Card 3: Adj. Velocity -->
   <div class="kpi c-green kpi-clickable" onclick="kpiSort('adjVel','desc','Adj. Velocity')" title="คลิกเรียง Velocity">
     <div class="kpi-accent"></div>
-    <div class="kpi-lbl">Adj. Velocity</div>
-    <div class="kpi-val" style="margin:4px 0 2px"><span id="k-vel">—</span><span class="kpi-unit">ชิ้น/วัน</span></div>
-    <div class="kpi-note" style="margin-bottom:6px">สูงสุดในระบบ</div>
-    <canvas id="kpi-chart-vel" style="display:block"></canvas>
-  </div>
-
-  <!-- Card 4: Trend — Bubble / scatter dots -->
-  <div class="kpi c-orange kpi-clickable" onclick="kpiSort('trendPct','desc','Trend')" title="คลิกเรียง Trend">
-    <div class="kpi-accent"></div>
-    <div class="kpi-lbl">กำลังมาแรง 🚀</div>
-    <div class="kpi-val" style="margin:4px 0 2px"><span id="k-rising">—</span><span class="kpi-unit">SKUs</span></div>
-    <div class="kpi-note" style="margin-bottom:6px">Trend &gt;30%</div>
-    <canvas id="kpi-chart-trend" style="display:block"></canvas>
-  </div>
-
-  <!-- Card 5: Stock — Horizontal progress fill -->
-  <div class="kpi c-purple kpi-clickable" style="grid-column:span 2" onclick="kpiSort('recStock','desc','สต๊อกแนะนำ')" title="คลิกเรียงสต๊อก">
-    <div class="kpi-accent"></div>
-    <div style="display:flex;align-items:center;gap:16px">
-      <div style="flex:1;min-width:0">
-        <div class="kpi-lbl">สต๊อกรวมที่แนะนำ</div>
-        <div class="kpi-val" style="margin:4px 0 4px"><span id="k-totalstock">—</span><span class="kpi-unit">ชิ้น</span></div>
-        <div class="kpi-note" id="k-stocknote" style="margin-bottom:8px">สำหรับ 1 เดือนข้างหน้า</div>
-        <!-- Segmented bar: out/low/ok -->
-        <div id="kpi-stock-bar-wrap" style="display:flex;gap:2px;height:8px;border-radius:6px;overflow:hidden;background:rgba(217,119,6,.1)">
-          <div id="kpi-bar-out" style="height:100%;background:#ef4444;border-radius:6px 0 0 6px;width:0;transition:width 1s cubic-bezier(.34,1.56,.64,1)"></div>
-          <div id="kpi-bar-low" style="height:100%;background:#ea580c;width:0;transition:width 1s cubic-bezier(.34,1.56,.64,1) .1s"></div>
-          <div id="kpi-bar-ok"  style="height:100%;background:#16a34a;border-radius:0 6px 6px 0;width:0;transition:width 1s cubic-bezier(.34,1.56,.64,1) .2s"></div>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:5px;flex-wrap:wrap">
-          <span id="kpi-bar-lbl-out" style="font-size:11px;color:#ef4444"></span>
-          <span id="kpi-bar-lbl-low" style="font-size:11px;color:#ea580c"></span>
-          <span id="kpi-bar-lbl-ok"  style="font-size:11px;color:#16a34a"></span>
-        </div>
+    <div class="kpi-split">
+      <div class="kpi-left">
+        <div class="kpi-lbl">Adj. Velocity</div>
+        <div class="kpi-val" style="margin:4px 0 2px"><span id="k-vel">—</span><span class="kpi-unit">ชิ้น/วัน</span></div>
+        <div class="kpi-note">สูงสุดในระบบ</div>
+        <div id="kpi-top-vel" class="kpi-top-list"></div>
       </div>
-      <canvas id="kpi-chart-stock" width="80" height="80" style="flex-shrink:0;max-width:80px;max-height:80px"></canvas>
+      <div class="kpi-right">
+        <canvas id="kpi-chart-vel" width="160" height="60"></canvas>
+      </div>
     </div>
   </div>
+
+  <!-- Card 4: Trend -->
+  <div class="kpi c-orange kpi-clickable" onclick="kpiSort('trendPct','desc','Trend')" title="คลิกเรียง Trend">
+    <div class="kpi-accent"></div>
+    <div class="kpi-split">
+      <div class="kpi-left">
+        <div class="kpi-lbl">กำลังมาแรง 🚀</div>
+        <div class="kpi-val" style="margin:4px 0 2px"><span id="k-rising">—</span><span class="kpi-unit">SKUs</span></div>
+        <div class="kpi-note">Trend &gt;30%</div>
+        <div id="kpi-top-trend" class="kpi-top-list"></div>
+      </div>
+      <div class="kpi-right">
+        <canvas id="kpi-chart-trend" width="160" height="60"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 5: Stock -->
+  <div class="kpi c-purple kpi-clickable" style="grid-column:span 2" onclick="kpiSort('recStock','desc','สต๊อกแนะนำ')" title="คลิกเรียงสต๊อก">
+    <div class="kpi-accent"></div>
+    <div class="kpi-split">
+      <div class="kpi-left">
+        <div class="kpi-lbl">สต๊อกรวมที่แนะนำ</div>
+        <div class="kpi-val" style="margin:4px 0 4px"><span id="k-totalstock">—</span><span class="kpi-unit">ชิ้น</span></div>
+        <div class="kpi-note" id="k-stocknote">สำหรับ 1 เดือนข้างหน้า</div>
+        <div id="kpi-top-stock" class="kpi-top-list"></div>
+      </div>
+      <div class="kpi-right" style="display:flex;flex-direction:column;gap:6px;align-items:stretch">
+        <canvas id="kpi-chart-stock" width="120" height="120"></canvas>
+        <div id="kpi-stock-bar-wrap" style="display:flex;gap:2px;height:5px;border-radius:3px;overflow:hidden;background:rgba(217,119,6,.1)">
+          <div id="kpi-bar-out" style="height:100%;background:#ef4444;border-radius:3px 0 0 3px;width:0;transition:width 1s cubic-bezier(.34,1.56,.64,1)"></div>
+          <div id="kpi-bar-low" style="height:100%;background:#ea580c;width:0;transition:width 1s cubic-bezier(.34,1.56,.64,1) .1s"></div>
+          <div id="kpi-bar-ok"  style="height:100%;background:#16a34a;border-radius:0 3px 3px 0;width:0;transition:width 1s cubic-bezier(.34,1.56,.64,1) .2s"></div>
+        </div>
+        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+          <span id="kpi-bar-lbl-out" style="font-size:10px;color:#ef4444"></span>
+          <span id="kpi-bar-lbl-low" style="font-size:10px;color:#ea580c"></span>
+          <span id="kpi-bar-lbl-ok"  style="font-size:10px;color:#16a34a"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 
 </div>
 
@@ -2808,8 +2999,17 @@ function handleStockUpload(input){ loadStockFile(input); }
 const SHEET_ID = '1rO8rJbVPfTRiuuZB0WVx3NnIFSYgs2Vh2Nu6bc-rKhk';
 let appData = [];
 let maxAdjVel = 1, maxStock = 1;
+
+// ✅ v3.0: ตรวจสอบว่า SKU ถูกต้อง — กรอง null/undefined/ว่าง/N-A ออกทุกจุด
+function isValidSku(sku) {
+  if (!sku) return false;
+  const s = String(sku).trim();
+  if (!s || s.toUpperCase() === 'UNDEFINED' || s.toUpperCase() === 'NULL' || s === 'N/A' || s === '-' || s === '0') return false;
+  if (s.length < 2) return false;
+  return true;
+}
 let sortKey = 'starScore', sortDir = 'desc';
-const COL_DEFAULTS = ['color','size','vel','maxvel7','totalsold','lastsale','stock','stockavg','daysleft','nextrestock','status'];
+const COL_DEFAULTS = ['color','size','star','vel','stock','stockavg','status'];
 const COL_STORAGE_KEY = 'visibleCols';
 function loadVisibleCols(){
   // Try Firebase cache first
@@ -3052,7 +3252,7 @@ function buildOrderCatButtons(){
 }
 function groupByParent(items){
   const map=new Map();
-  items.forEach(item=>{
+  items.filter(item=>isValidSku(item.sku)).forEach(item=>{
     const key=item.parentSku||item.sku;
     if(!map.has(key)) map.set(key,{parentSku:key,name:item.name,category:item.category,skus:[]});
     map.get(key).skus.push(item);
@@ -3061,7 +3261,7 @@ function groupByParent(items){
   // supplement with productDict — เพิ่มทุก SKU จาก Sheet ที่ไม่มียอดขาย
   const pd = window._productDict||{};
   Object.values(pd).forEach(info=>{
-    if(!info.sku) return;
+    if(!isValidSku(info.sku)) return;
     const key = info.parentSku||info.sku;
     const ct = classifyCat(info.category||'');
     if(ct === 'skip') return;
@@ -4405,9 +4605,16 @@ async function loadOrderHistory(){
     orderHistory = Object.entries(raw)
       .map(([key,v])=>({key,...v}))
       .sort((a,b)=>b.createdAt-a.createdAt);  // newest first
-    // update badge
+    // update badge — ✅ v3.0: แสดงเฉพาะจำนวนที่กำลังสั่งซื้อ (pending)
     const badge=$('history-badge');
-    if(badge){ badge.style.display=''; badge.textContent=orderHistory.length; }
+    if(badge){
+      const pendingCount = orderHistory.filter(o=>!o.cancelled&&!isOrderFullyReceived(o)).length;
+      if(pendingCount > 0){
+        badge.style.display=''; badge.textContent=pendingCount;
+      } else {
+        badge.style.display='none';
+      }
+    }
     renderOrderHistory();
     // Re-render table if data already loaded (so nextRestock column shows)
     if(appData&&appData.length){
@@ -4960,7 +5167,7 @@ function exportOrderCSV(){
       });
     });
   });
-  appData.filter(d=>{const ct=classifyCat(d.category);return ct==='belt'||ct==='other';}).forEach(item=>{
+  appData.filter(d=>{if(!isValidSku(d.sku)) return false;const ct=classifyCat(d.category);return ct==='belt'||ct==='other';}).forEach(item=>{
     const cfg=orderConfig[item.parentSku||item.sku]||{};
     const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(getAvg(item,days));
     rows.push([item.category,item.name,item.color||'',item.size||'',item.sku,'','','',saved,'',Math.ceil(getAvg(item,days))]);
@@ -5097,7 +5304,7 @@ async function syncData(){
       .sort((a,b)=>a.t-b.t)
       .map(x=>x.s);
 
-    appData=Object.entries(bySkU).map(([sku,d])=>{
+    appData=Object.entries(bySkU).filter(([sku])=>isValidSku(sku)).map(([sku,d])=>{
       const activeDays=d.days.size;
       const rawVel=Number((d.total/activeDays).toFixed(2));
       const coverageRate=activeDays/totalDays;
@@ -5295,7 +5502,7 @@ async function syncData(){
     // เพิ่ม SKU ที่ไม่มียอดขายจาก dict (Google Sheets products) เข้า appData
     const existingSkus = new Set(appData.map(d=>d.sku));
     Object.values(dict).forEach(info=>{
-      if(!info.sku || existingSkus.has(info.sku)) return;
+      if(!isValidSku(info.sku) || existingSkus.has(info.sku)) return;
       const ct = getCategoryThreshold(info.category);
       if(ct.skip) return; // ข้าม category ที่ไม่ติดตาม
       appData.push({
@@ -5935,6 +6142,8 @@ function getFilteredData(){
   const srch = ($('srch')?.value||'').toLowerCase().trim();
   const filterOut = $('stk-filter-out')?.checked;
   return appData.filter(item=>{
+    // ✅ v3.0: กรอง SKU ว่างออก — ไม่แสดงสินค้าที่ไม่มี SKU
+    if(!isValidSku(item.sku)) return false;
     if(srch && !item.name.toLowerCase().includes(srch) && !item.sku.toLowerCase().includes(srch)) return false;
     if(activeFilters.names.size  && !activeFilters.names.has(item.name))  return false;
     if(activeFilters.colors.size && !activeFilters.colors.has(item.color||'')) return false;
@@ -6025,9 +6234,10 @@ function rebuildFilterLists(){
   const selSizes  = activeFilters.sizes;
 
   // Available items given OTHER filters (not self)
-  const byNames  = appData.filter(d=> (selColors.size===0||selColors.has(d.color||'')) && (selSizes.size===0||selSizes.has(d.size||'')));
-  const byColors = appData.filter(d=> (selNames.size===0||selNames.has(d.name))         && (selSizes.size===0||selSizes.has(d.size||'')));
-  const bySizes  = appData.filter(d=> (selNames.size===0||selNames.has(d.name))         && (selColors.size===0||selColors.has(d.color||'')));
+  const validData = appData.filter(d=>isValidSku(d.sku));
+  const byNames  = validData.filter(d=> (selColors.size===0||selColors.has(d.color||'')) && (selSizes.size===0||selSizes.has(d.size||'')));
+  const byColors = validData.filter(d=> (selNames.size===0||selNames.has(d.name))         && (selSizes.size===0||selSizes.has(d.size||'')));
+  const bySizes  = validData.filter(d=> (selNames.size===0||selNames.has(d.name))         && (selColors.size===0||selColors.has(d.color||'')));
 
   const names  = [...new Set(byNames.map(d=>d.name))].sort((a,b)=>a.localeCompare(b,'th'));
   const colors = [...new Set(byColors.map(d=>d.color||'').filter(Boolean))].sort((a,b)=>a.localeCompare(b,'th'));
@@ -6298,6 +6508,9 @@ function renderAll(data){
   $('k-totalstock').textContent=totalStock.toLocaleString();
   $('k-stocknote').textContent=`สำหรับ ${months} เดือนข้างหน้า`;
 
+  // ✅ v3.0: Top 3 lists ใน KPI cards
+  try { renderKpiTopLists(sorted, months); } catch(e){ console.warn('kpiTopLists:', e); }
+
   // Draw KPI micro-charts
   try { drawKpiCharts(sorted, months); } catch(e){ console.warn('kpiCharts:', e); }
 
@@ -6370,21 +6583,20 @@ function renderAll(data){
       let _colIdx = 0;
       function td(col,inner,cls=''){
         const show=visibleCols.has(col);
-        const alt = show ? (_colIdx++ % 2 === 0 ? ' col-convex' : ' col-concave') : '';
-        return `<td data-col="${col}" class="${cls}${alt}" style="display:${show?'':'none'}">${inner}</td>`;
+        return `<td data-col="${col}" class="${cls}" style="display:${show?'':'none'}">${inner}</td>`;
       }
 
       _colIdx = 0;
-      const rowBg = _stkSt==='out' ? 'background:rgba(255,85,114,.06)!important;' : _stkSt==='low' ? 'background:rgba(255,170,68,.05)!important;' : '';
+      const rowBg = _stkSt==='out' ? 'background:rgba(255,85,114,.03)!important;' : _stkSt==='low' ? 'background:rgba(255,170,68,.03)!important;' : '';
       return`<tr style="animation-delay:${i*.025}s;cursor:pointer;${rowBg}" onclick="openChart('${item.sku}')" title="คลิกดูกราฟ Timeline">
         <td><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--muted)">${i+1}</span></td>
         <td>
-          <div class="pname">${item.name} <span style="font-size:12px;color:var(--blue)">📊</span></div>
-          ${item.category?`<div style="margin-top:2px"><span style="font-size:12px;background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:1px 6px;color:var(--mid);font-weight:600">${item.category}</span></div>`:''}
+          <div class="pname">${item.name}</div>
+          ${item.category?`<div style="margin-top:1px"><span style="font-size:11px;color:var(--faint);font-weight:500">${item.category}</span></div>`:''}
         </td>
         ${td('sku',  `<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted)">${item.sku}${item.parentSku&&item.parentSku!==item.sku?'<br><span style="font-size:12px;color:var(--faint)">'+item.parentSku+'</span>':''}</span>`)}
-        ${td('color',item.color?`<span style="font-size:14px;font-weight:700;color:var(--purple)">🎨 ${item.color}</span>`:'<span style="color:var(--faint)">—</span>')}
-        ${td('size', item.size ?`<span style="font-size:14px;font-weight:700;color:var(--blue)">📐 ${item.size}</span>`:'<span style="color:var(--faint)">—</span>')}
+        ${td('color',item.color?`<span style="font-size:13px;font-weight:600;color:var(--purple)">${item.color}</span>`:'<span style="color:var(--faint)">—</span>')}
+        ${td('size', item.size ?`<span style="font-size:13px;font-weight:600;color:var(--blue)">${item.size}</span>`:'<span style="color:var(--faint)">—</span>')}
         ${td('star', `<div class="star-wrap">
             <div style="display:flex;align-items:center;gap:8px">
               <span class="star-score" style="color:${starColor}">${item.starScore}</span>
@@ -6785,6 +6997,47 @@ function destroyKpiChart(id){
   if(_kpiCharts[id]){ try{_kpiCharts[id].destroy();}catch(e){} delete _kpiCharts[id]; }
 }
 
+// ✅ v3.0: Render Top 3 lists inside KPI cards
+function renderKpiTopLists(sorted, months){
+  if(!sorted||!sorted.length) return;
+
+  function topHtml(items, valueFn, unitSuffix=''){
+    return items.slice(0,3).map((d,i)=>{
+      const val = valueFn(d);
+      return `<div class="kpi-top-item">
+        <span class="kpi-top-rank">${i+1}</span>
+        <span class="kpi-top-name">${d.name}${d.color?' · '+d.color:''}</span>
+        <span class="kpi-top-val">${val}${unitSuffix}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Card 1: Top ยอดขายรวมสูงสุด
+  const byTotal = [...sorted].sort((a,b)=>b.totalSold-a.totalSold);
+  const el1=$('kpi-top-total');
+  if(el1) el1.innerHTML=topHtml(byTotal, d=>d.totalSold.toLocaleString(), ' ชิ้น');
+
+  // Card 2: Top Star Score
+  const byStar = [...sorted].sort((a,b)=>b.starScore-a.starScore);
+  const el2=$('kpi-top-star');
+  if(el2) el2.innerHTML=topHtml(byStar, d=>d.starScore, ' pt');
+
+  // Card 3: Top Velocity
+  const byVel = [...sorted].sort((a,b)=>b.adjVel-a.adjVel);
+  const el3=$('kpi-top-vel');
+  if(el3) el3.innerHTML=topHtml(byVel, d=>d.adjVel.toFixed(1), '/วัน');
+
+  // Card 4: Top Trend
+  const byTrend = [...sorted].filter(d=>d.trendPct>0).sort((a,b)=>b.trendPct-a.trendPct);
+  const el4=$('kpi-top-trend');
+  if(el4) el4.innerHTML=topHtml(byTrend, d=>'+'+d.trendPct+'%', '');
+
+  // Card 5: Top Stock แนะนำสูงสุด
+  const byStock = [...sorted].sort((a,b)=>(b.recStock||0)-(a.recStock||0));
+  const el5=$('kpi-top-stock');
+  if(el5) el5.innerHTML=topHtml(byStock, d=>(d.recStock||0).toLocaleString(), ' ชิ้น');
+}
+
 function drawKpiCharts(sorted, months){
   if(!sorted||!sorted.length) return;
   const AMBER='#d97706', GREEN='#16a34a', RED='#ef4444', ORANGE='#ea580c';
@@ -6794,15 +7047,14 @@ function drawKpiCharts(sorted, months){
     if(_kpiCharts[id]){ try{_kpiCharts[id].destroy();}catch(e){} delete _kpiCharts[id]; }
     const c = document.getElementById(id);
     if(!c) return null;
-    // On mobile, cap to actual card width
-    const card = c.closest('.kpi');
-    const cardW = card ? card.getBoundingClientRect().width : 999;
-    const fw = Math.min(w, Math.floor(cardW * 0.45));  // max 45% of card
-    const fh = Math.round(h * (fw / w));                // scale height proportionally
-    // Set attribute + style — both needed to prevent Chart.js resize loop
+    // ใช้ kpi-right container width (60% ของ card)
+    const container = c.closest('.kpi-right') || c.closest('.kpi');
+    const containerW = container ? container.getBoundingClientRect().width : 999;
+    const fw = Math.min(w, Math.floor(containerW * 0.92));
+    const fh = Math.round(h * (fw / w));
     c.setAttribute('width',  fw);
     c.setAttribute('height', fh);
-    c.style.cssText = `width:${fw}px!important;height:${fh}px!important;max-width:${fw}px!important;max-height:${fh}px!important;display:block!important;flex-shrink:0!important`;
+    c.style.cssText = `width:${fw}px!important;height:${fh}px!important;max-width:${fw}px!important;max-height:${fh}px!important;display:block!important`;
     return c;
   }
 
@@ -6814,7 +7066,7 @@ function drawKpiCharts(sorted, months){
   };
 
   // ── Chart 1: Donut — stock status ──
-  const totalC = freshCanvas('kpi-chart-total', 64, 64);
+  const totalC = freshCanvas('kpi-chart-total', 120, 120);
   if(totalC){
     let out=0,low=0,ok=0,unk=0;
     if(isStockLoaded()){
@@ -6837,7 +7089,7 @@ function drawKpiCharts(sorted, months){
   }
 
   // ── Chart 2: Gauge — True Star ──
-  const starC = freshCanvas('kpi-chart-star', 96, 52);
+  const starC = freshCanvas('kpi-chart-star', 140, 80);
   const topScore = sorted[0]?.starScore||0;
   if(starC){
     _kpiCharts['star'] = new Chart(starC, {
@@ -6850,10 +7102,10 @@ function drawKpiCharts(sorted, months){
   }
 
   // ── Chart 3: Sparkline bars — top 8 velocity ──
-  // Sparkline: use full card width
-  const velCard = document.getElementById('kpi-chart-vel')?.closest('.kpi');
-  const velW = velCard ? Math.floor(velCard.getBoundingClientRect().width - 32) : 120;
-  const velC = freshCanvas('kpi-chart-vel', velW, 28);
+  // Sparkline: use kpi-right container width
+  const velRight = document.getElementById('kpi-chart-vel')?.closest('.kpi-right');
+  const velW = velRight ? Math.floor(velRight.getBoundingClientRect().width - 16) : 160;
+  const velC = freshCanvas('kpi-chart-vel', velW, 50);
   if(velC){
     const top8=[...sorted].sort((a,b)=>b.adjVel-a.adjVel).slice(0,8);
     const maxV=top8[0]?.adjVel||1;
@@ -6870,9 +7122,9 @@ function drawKpiCharts(sorted, months){
   }
 
   // ── Chart 4: Line — trend distribution ──
-  const trendCard = document.getElementById('kpi-chart-trend')?.closest('.kpi');
-  const trendW = trendCard ? Math.floor(trendCard.getBoundingClientRect().width - 32) : 120;
-  const trendC = freshCanvas('kpi-chart-trend', trendW, 28);
+  const trendRight = document.getElementById('kpi-chart-trend')?.closest('.kpi-right');
+  const trendW = trendRight ? Math.floor(trendRight.getBoundingClientRect().width - 16) : 160;
+  const trendC = freshCanvas('kpi-chart-trend', trendW, 50);
   if(trendC){
     const buckets=[-100,-30,-10,10,30,100];
     const counts=new Array(buckets.length-1).fill(0);
@@ -6890,7 +7142,7 @@ function drawKpiCharts(sorted, months){
   }
 
   // ── Chart 5: Polar — stock breakdown ──
-  const stockC = freshCanvas('kpi-chart-stock', 80, 80);
+  const stockC = freshCanvas('kpi-chart-stock', 110, 110);
   let sOut=0,sLow=0,sOk=0;
   if(isStockLoaded()){
     sorted.forEach(item=>{ const s=getStockStatus(item.sku); if(s==='out')sOut++; else if(s==='low')sLow++; else if(s==='ok')sOk++; });
@@ -7031,8 +7283,7 @@ function renderRiskTab(sorted, months){
   let _rColIdx = 0;
   function rtd(col,inner,cls=''){
     const show=riskVisibleCols.has(col);
-    const alt = show ? (_rColIdx++ % 2 === 0 ? ' col-convex' : ' col-concave') : '';
-    return `<td data-rcol="${col}" class="${cls}${alt}" style="display:${show?'':'none'}">${inner}</td>`;
+    return `<td data-rcol="${col}" class="${cls}" style="display:${show?'':'none'}">${inner}</td>`;
   }
 
   tbody.innerHTML = items.map((item,i)=>{
