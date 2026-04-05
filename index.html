@@ -3768,6 +3768,8 @@ function setLotsPerRoll(p,n){ getPantsCfg(p).lotsPerRoll=Math.max(1,n||8); saveO
 function setPiecesPerLot(p,n){ getPantsCfg(p).piecesPerLot=Math.max(1,n||10); saveOrderConfig(); renderOrderTab(); }
 function getCostPerPiece(p){ return Number(getPantsCfg(p).costPerPiece)||0; }
 function setCostPerPiece(p,v){ getPantsCfg(p).costPerPiece=Math.max(0,Number(v)||0); saveOrderConfig(); renderOrderTab(); }
+function getCostXXL(p){ return Number(getPantsCfg(p).costXXL)||0; }
+function setCostXXL(p,v){ getPantsCfg(p).costXXL=Math.max(0,Number(v)||0); saveOrderConfig(); renderOrderTab(); }
 function setBeltCost(parentSku,sku,v){
   const cfg=getPantsCfg(parentSku);
   if(!cfg.costs) cfg.costs={};
@@ -3916,20 +3918,22 @@ function renderOrderTab(){
     pantsGrps.forEach(g=>{
       const cp=getCostPerPiece(g.parentSku);
       if(!cp) return;
+      const cxxl=getCostXXL(g.parentSku)||cp;
+      const ppl=getPiecesPerLot(g.parentSku);
       const pm=getPendingQtyMap();
-      let pieces=0;
       g.skus.forEach(item=>{
         const sk=(item.sku||'').toLowerCase();
+        const isXXL=(item.size||'').trim().toUpperCase()==='XXL';
         const onH=isStockLoaded()&&sk in stockMap?Math.max(0,Number(stockMap[sk])||0):0;
         const pend=pm[sk]||0;
         const demand=getAvg(item,days);
         const net=Math.max(0,demand-onH-pend);
         const cfg2=getPantsCfg(g.parentSku);
         const ov=(cfg2.lotsOverride||{})[item.sku];
-        const lots=ov!==undefined?ov:(net>0?Math.ceil(net/getPiecesPerLot(g.parentSku)):0);
-        pieces+=lots*getPiecesPerLot(g.parentSku);
+        const lots=ov!==undefined?ov:(net>0?Math.ceil(net/ppl):0);
+        const pieces=lots*ppl;
+        grandTotal+=(isXXL?cxxl:cp)*pieces;
       });
-      grandTotal+=cp*pieces;
     });
     // Belt + Other
     const beltAll=appData.filter(d=>{ const ct=classifyCat(d.category||''); return ct==='belt'||ct==='other'; });
@@ -3970,7 +3974,7 @@ function renderPantsCard(g, days){
   const lotsPerRoll=getLotsPerRoll(g.parentSku);
   const piecesPerLot=getPiecesPerLot(g.parentSku);
   const totalAvgAll=g.skus.reduce((s,d)=>s+getAvg(d,days),0);
-  let colorsHtml='', grandPieces=0, grandRolls=0;
+  let colorsHtml='', grandPieces=0, grandRolls=0, grandXXLPieces=0;
   const esc=g.parentSku.replace(/'/g,"\\'");
   const isLocked = getLayoutLock(g.parentSku) && byColor.size >= 2;
 
@@ -4044,6 +4048,15 @@ function renderPantsCard(g, days){
     const colAvg=skus.reduce((s,d)=>s+getAvg(d,days),0);
     grandPieces+=r.totalPieces;
     grandRolls+=r.totalRolls;
+    // count XXL pieces in this color
+    {
+      const xxlSz='XXL';
+      const xxlLots=(r.lotsNeeded&&r.lotsNeeded[xxlSz])||0;
+      // also count extra slots for XXL
+      let xxlExtra=0;
+      (r.rolls||[]).forEach(roll=>{ xxlExtra+=(roll.extraCounts&&roll.extraCounts[xxlSz])||0; });
+      grandXXLPieces += (xxlLots+xxlExtra)*r.piecesPerLot;
+    }
 
     // size demand rows — show ALL sizes, factor in stock on hand
     const sizeRows=r.allSizes.map(sz=>{
@@ -4238,11 +4251,33 @@ function renderPantsCard(g, days){
         <div><span class="lot-card-avg-val">${grandPieces}</span><span class="lot-card-avg-unit"> ตัว</span></div>
         <div style="font-size:12px;color:var(--green);margin-top:2px">${grandRolls} ไม้ · เฉลี่ย ${totalAvgAll} ตัว/${days}วัน</div>
         <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(234,88,12,.2)">
-          <div style="font-size:10px;font-weight:800;color:var(--orange);letter-spacing:.3px;margin-bottom:4px">฿/ตัว</div>
-          <input class="lot-cfg-input" type="number" min="0" step="1" value="${getCostPerPiece(g.parentSku)||''}" placeholder="0"
-            style="width:64px;font-size:16px;color:var(--orange)"
-            onchange="setCostPerPiece('${esc}',+this.value)" onclick="event.stopPropagation()">
-          ${(()=>{ const cp=getCostPerPiece(g.parentSku); if(!cp||!grandPieces) return ''; const total=cp*grandPieces; return `<div style="margin-top:5px"><div style="font-size:10px;color:var(--orange);font-weight:800;letter-spacing:.4px">💰 ต้นทุนประมาณ</div><div style="font-size:16px;font-weight:800;color:var(--orange);font-family:'IBM Plex Mono',monospace">${total.toLocaleString('th-TH')} ฿</div></div>`; })()}
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <div>
+              <div style="font-size:10px;font-weight:800;color:var(--orange);letter-spacing:.3px;margin-bottom:4px">฿/ตัว</div>
+              <input class="lot-cfg-input" type="number" min="0" step="1" value="${getCostPerPiece(g.parentSku)||''}" placeholder="0"
+                style="width:58px;font-size:15px;color:var(--orange)"
+                onchange="setCostPerPiece('${esc}',+this.value)" onclick="event.stopPropagation()">
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:800;color:var(--purple);letter-spacing:.3px;margin-bottom:4px">฿/XXL</div>
+              <input class="lot-cfg-input" type="number" min="0" step="1" value="${getCostXXL(g.parentSku)||''}" placeholder="เท่ากัน"
+                style="width:68px;font-size:15px;color:var(--purple)"
+                onchange="setCostXXL('${esc}',+this.value)" onclick="event.stopPropagation()">
+            </div>
+          </div>
+          ${(()=>{
+            const cp=getCostPerPiece(g.parentSku);
+            if(!cp||!grandPieces) return '';
+            const cxxl=getCostXXL(g.parentSku)||cp;
+            const normalPcs=grandPieces-grandXXLPieces;
+            const total=cp*normalPcs + cxxl*grandXXLPieces;
+            const hasXXL=grandXXLPieces>0&&getCostXXL(g.parentSku)>0&&getCostXXL(g.parentSku)!==cp;
+            return `<div style="margin-top:6px">
+              <div style="font-size:10px;color:var(--orange);font-weight:800;letter-spacing:.4px">💰 ต้นทุนประมาณ</div>
+              <div style="font-size:16px;font-weight:800;color:var(--orange);font-family:'IBM Plex Mono',monospace">${total.toLocaleString('th-TH')} ฿</div>
+              ${hasXXL?`<div style="font-size:10px;color:var(--faint);margin-top:2px">${normalPcs} ตัว×${cp}฿ + XXL ${grandXXLPieces} ตัว×${cxxl}฿</div>`:''}
+            </div>`;
+          })()}
         </div>
       </div>
     </div>
@@ -4596,7 +4631,19 @@ function renderCartModal(){
           </div>
           <div id="cart-summary-${item.parentSku}-${item.color}-${item.rollIndex}" style="font-size:12px;color:var(--green);font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <span>${item.pieces} ตัว · ${item.lots} ล็อค</span>
-            ${(()=>{ const cp=getCostPerPiece(item.parentSku); if(!cp||!item.pieces) return ''; return `<span style="font-size:13px;font-weight:800;color:var(--orange);font-family:'IBM Plex Mono',monospace">= ${(cp*item.pieces).toLocaleString('th-TH')} ฿</span><span style="font-size:11px;color:var(--faint)">@ ${cp.toLocaleString('th-TH')} ฿/ตัว</span>`; })()}
+            ${(()=>{
+              const cp=getCostPerPiece(item.parentSku);
+              if(!cp||!item.pieces) return '';
+              const cxxl=getCostXXL(item.parentSku)||cp;
+              const ppl=item.piecesPerLot||10;
+              const allC={...item.counts||{},...item.extraCounts||{}};
+              let xxlL=0,totL=0;
+              Object.entries(allC).forEach(([sz,l])=>{ totL+=l; if(sz.toUpperCase()==='XXL') xxlL+=l; });
+              const xxlPcs=xxlL*ppl, normPcs=(totL-xxlL)*ppl;
+              const total=cp*normPcs+cxxl*xxlPcs;
+              const hasXXL=xxlPcs>0&&cxxl!==cp;
+              return `<span style="font-size:13px;font-weight:800;color:var(--orange);font-family:'IBM Plex Mono',monospace">= ${total.toLocaleString('th-TH')} ฿</span>${hasXXL?`<span style="font-size:10px;color:var(--faint)">XXL ${cxxl}฿/ตัว</span>`:`<span style="font-size:11px;color:var(--faint)">@ ${cp.toLocaleString('th-TH')} ฿/ตัว</span>`}`;
+            })()}
           </div>
         </div>`;
       } else {
@@ -4632,8 +4679,14 @@ function renderCartModal(){
   let grandCartCost = 0;
   Object.values(cart).forEach(item=>{
     if(item.type==='pants'){
-      const cp = getCostPerPiece(item.parentSku);
-      if(cp && item.pieces) grandCartCost += cp * item.pieces;
+      const cp=getCostPerPiece(item.parentSku);
+      if(!cp) return;
+      const cxxl=getCostXXL(item.parentSku)||cp;
+      const ppl=item.piecesPerLot||10;
+      const allC={...item.counts||{},...item.extraCounts||{}};
+      let xxlL=0,totL=0;
+      Object.entries(allC).forEach(([sz,l])=>{ totL+=l; if(sz.toUpperCase()==='XXL') xxlL+=l; });
+      grandCartCost+=cp*(totL-xxlL)*ppl+cxxl*xxlL*ppl;
     } else {
       const cp = Number(((orderConfig[item.parentSku]||{}).costs||{})[item.skuKey||''])||0;
       if(cp && item.qty) grandCartCost += cp * item.qty;
@@ -4698,7 +4751,18 @@ async function submitCartOrder(){
   items.forEach(item=>{
     if(item.type==='pants'){
       const cp=getCostPerPiece(item.parentSku);
-      if(cp&&item.pieces) _orderCost+=cp*item.pieces;
+      if(!cp) return;
+      const cxxl=getCostXXL(item.parentSku)||cp;
+      const ppl=item.piecesPerLot||10;
+      // count XXL lots from counts+extraCounts
+      const allCounts={...item.counts||{},...item.extraCounts||{}};
+      let xxlLots=0,totalLots=0;
+      Object.entries(allCounts).forEach(([sz,lots])=>{
+        totalLots+=lots;
+        if(sz.toUpperCase()==='XXL') xxlLots+=lots;
+      });
+      const xxlPcs=xxlLots*ppl, normalPcs=(totalLots-xxlLots)*ppl;
+      _orderCost+=cp*normalPcs+cxxl*xxlPcs;
     } else {
       const cp=Number(((orderConfig[item.parentSku]||{}).costs||{})[item.skuKey||''])||0;
       if(cp&&item.qty) _orderCost+=cp*item.qty;
