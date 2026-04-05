@@ -3743,7 +3743,6 @@ function renderLotConfig(){
       const lotsPerRoll=getLotsPerRoll(g.parentSku);
       const piecesPerLot=getPiecesPerLot(g.parentSku);
       const esc=g.parentSku.replace(/'/g,"\'");
-      const cost=getCostPerPiece(g.parentSku);
       return`<div class="lot-cfg-card" style="min-width:200px">
         <div style="font-size:16px">👖</div>
         <div class="lot-cfg-name" title="${g.name}">${g.name}</div>
@@ -3758,11 +3757,7 @@ function renderLotConfig(){
             <input class="lot-cfg-input" type="number" min="1" max="50" value="${piecesPerLot}"
               onchange="setPiecesPerLot('${esc}',+this.value)" onclick="event.stopPropagation()" style="width:38px;color:var(--green)">
           </div>
-          <div style="display:flex;align-items:center;gap:5px">
-            <span style="font-size:11px;color:var(--orange);white-space:nowrap;min-width:52px">฿/ตัว</span>
-            <input class="lot-cfg-input" type="number" min="0" step="1" value="${cost||''}" placeholder="0"
-              onchange="setCostPerPiece('${esc}',+this.value)" onclick="event.stopPropagation()" style="width:54px;color:var(--orange)">
-          </div>
+
         </div>
       </div>`;
     }).join('');
@@ -4242,7 +4237,13 @@ function renderPantsCard(g, days){
         <div class="lot-card-avg-lbl">รวมสั่งทั้งหมด</div>
         <div><span class="lot-card-avg-val">${grandPieces}</span><span class="lot-card-avg-unit"> ตัว</span></div>
         <div style="font-size:12px;color:var(--green);margin-top:2px">${grandRolls} ไม้ · เฉลี่ย ${totalAvgAll} ตัว/${days}วัน</div>
-        ${(()=>{ const cp=getCostPerPiece(g.parentSku); if(!cp||!grandPieces) return ''; const total=cp*grandPieces; return `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(234,88,12,.2)"><div style="font-size:11px;color:var(--orange);font-weight:800;letter-spacing:.4px">💰 ต้นทุนประมาณ</div><div style="font-size:18px;font-weight:800;color:var(--orange);font-family:'IBM Plex Mono',monospace">${total.toLocaleString('th-TH')} ฿</div><div style="font-size:11px;color:var(--muted)">@ ${cp.toLocaleString('th-TH')} ฿/ตัว</div></div>`; })()}
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(234,88,12,.2)">
+          <div style="font-size:10px;font-weight:800;color:var(--orange);letter-spacing:.3px;margin-bottom:4px">฿/ตัว</div>
+          <input class="lot-cfg-input" type="number" min="0" step="1" value="${getCostPerPiece(g.parentSku)||''}" placeholder="0"
+            style="width:64px;font-size:16px;color:var(--orange)"
+            onchange="setCostPerPiece('${esc}',+this.value)" onclick="event.stopPropagation()">
+          ${(()=>{ const cp=getCostPerPiece(g.parentSku); if(!cp||!grandPieces) return ''; const total=cp*grandPieces; return `<div style="margin-top:5px"><div style="font-size:10px;color:var(--orange);font-weight:800;letter-spacing:.4px">💰 ต้นทุนประมาณ</div><div style="font-size:16px;font-weight:800;color:var(--orange);font-family:'IBM Plex Mono',monospace">${total.toLocaleString('th-TH')} ฿</div></div>`; })()}
+        </div>
       </div>
     </div>
     ${colorsHtml}
