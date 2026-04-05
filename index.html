@@ -3347,7 +3347,70 @@ function getNextRestockInfo(sku){
   };
 }
 function getFactoryName(parentSku){ return (orderConfig[parentSku]||{}).factoryName||''; }
-function setFactoryName(parentSku, name){
+
+// ── Cache สำหรับ pending map (reset ทุกครั้งที่ renderOrderTab) ──
+let _cachedPendingMap = null;
+function getPendingQtyMap(){
+  if(_cachedPendingMap) return _cachedPendingMap;
+  const map = {};
+  if(!orderHistory||!orderHistory.length){ _cachedPendingMap=map; return map; }
+  orderHistory.forEach(order=>{
+    if(order.cancelled===true) return;
+    if(isOrderFullyReceived(order)) return;
+    const rcv = order.receivedItems||{};
+    (order.items||[]).forEach(item=>{
+      // ตรวจว่า item นี้ยัง pending (ยังไม่ได้รับ)
+      const itemKey = item.type==='belt'
+        ? item.parentSku+'__'+(item.skuKey||item.sku||item.color||'')
+        : (item.itemKey||(item.parentSku+'__'+(item.color||'')+'__'+(item.rollIndex??'')));
+      if(rcv[itemKey]===true) return; // รับแล้ว ข้ามไป
+
+      if(item.type==='belt'){
+        // belt/other → qty ต่อ sku
+        const k=(item.skuKey||item.sku||'').toLowerCase();
+        if(k) map[k]=(map[k]||0)+(item.qty||0);
+      } else {
+        // pants → skuList+sizes มี qty ต่อไซส์
+        const sizes = item.sizes||{};
+        if(Object.keys(sizes).length>0){
+          Object.entries(sizes).forEach(([sz,qty])=>{
+            // หา sku จาก skuList หรือ _productDict
+            const skuList = item.skuList||[];
+            // หา sku ของไซส์นั้นจาก _productDict
+            const parentSku = item.parentSku;
+            const pd = window._productDict||{};
+            // หาว่า skuList ตัวไหนมี size ตรงกัน
+            let matchedSku = skuList.find(s=>{
+              const info=pd[s.toLowerCase()];
+              return info && (info.size||'').trim().toUpperCase()===sz.toUpperCase();
+            });
+            if(!matchedSku){
+              // fallback: หาจาก appData
+              const skuItem = (appData||[]).find(d=>
+                (d.parentSku||d.sku)===parentSku &&
+                (d.size||'').trim().toUpperCase()===sz.toUpperCase()
+              );
+              if(skuItem) matchedSku=skuItem.sku;
+            }
+            if(matchedSku){
+              const k=matchedSku.toLowerCase();
+              map[k]=(map[k]||0)+(qty||0);
+            }
+          });
+        } else if(item.skuList&&item.skuList.length>0){
+          // pants ที่ไม่มี sizes breakdown → แบ่งเท่าๆ กัน
+          const perSku = Math.round((item.pieces||0)/item.skuList.length);
+          item.skuList.forEach(s=>{
+            const k=s.toLowerCase();
+            map[k]=(map[k]||0)+perSku;
+          });
+        }
+      }
+    });
+  });
+  _cachedPendingMap = map;
+  return map;
+}(parentSku, name){
   getPantsCfg(parentSku).factoryName = name.trim();
   saveOrderConfig();
   // re-render history if visible
@@ -3565,9 +3628,10 @@ function calcColorOrder(parentSku, skus, days){
   const skuBySz={};
   skus.forEach(d=>{ skuBySz[(d.size||'?').trim().toUpperCase()]=d; });
 
-  const demand={}, stockOnHand={}, netDemand={}, lotsNeeded={};
+  const demand={}, stockOnHand={}, netDemand={}, lotsNeeded={}, pendingOnOrder={};
   const cfg=getPantsCfg(parentSku);
   const overrides=(cfg.lotsOverride||{});
+  const pendingMap=getPendingQtyMap();
   allSizes.forEach(sz=>{
     const item=skuBySz[sz];
     const d=item?getAvg(item,days):0;
@@ -3576,8 +3640,11 @@ function calcColorOrder(parentSku, skus, days){
     const skuKey=(item?.sku||'').toLowerCase();
     const rawStock=(isStockLoaded()&&skuKey&&skuKey in stockMap)?Math.max(0,Number(stockMap[skuKey])||0):0;
     stockOnHand[sz]=rawStock;
-    // net demand = demand - stock already on hand
-    const net=Math.max(0,d-rawStock);
+    // pending = จำนวนที่สั่งซื้อแล้วยังไม่ได้รับ
+    const pending=skuKey?(pendingMap[skuKey]||0):0;
+    pendingOnOrder[sz]=pending;
+    // net demand = demand - stock on hand - pending orders
+    const net=Math.max(0,d-rawStock-pending);
     netDemand[sz]=net;
     const ov=item&&overrides[item.sku]!==undefined?overrides[item.sku]:null;
     if(ov!==null){
@@ -3635,7 +3702,7 @@ function calcColorOrder(parentSku, skus, days){
   const extraPieces   = extraSlots*piecesPerLot;
 
   return {allSizes,skuBySz,demand,stockOnHand,netDemand,lotsNeeded,totalLots,totalRolls,rolls,
-          piecesPerLot,lotsPerRoll,totalPieces,neededPieces,extraPieces,extraSlots};
+          piecesPerLot,lotsPerRoll,totalPieces,neededPieces,extraPieces,extraSlots,pendingOnOrder};
 }
 
 // ── Lot Config Area ──
@@ -3724,6 +3791,7 @@ function setLotsOverride(parentSku,sku,n){
 // ── MAIN RENDER ──
 function renderOrderTab(){
   try {
+  _cachedPendingMap = null; // reset cache ทุกครั้งที่ render ใหม่
   if(!appData || !appData.length){
     const oc=$('order-content'); if(oc) oc.innerHTML='<div class="empty" style="padding:60px">กรุณาซิงก์ข้อมูลก่อน</div>';
     return;
@@ -3910,6 +3978,7 @@ function renderPantsCard(g, days){
       const d=r.demand[sz];
       const onHand=r.stockOnHand[sz];
       const net=r.netDemand[sz];
+      const pending=r.pendingOnOrder?.[sz]||0;
       const lots=r.lotsNeeded[sz];
       const pcs=lots*piecesPerLot;
       const skuId=item?.sku||'';
@@ -3936,11 +4005,15 @@ function renderPantsCard(g, days){
       const demLine = item&&item._noSales
         ? `<span class="lsc-dem" style="color:var(--orange)">⚠ ไม่มีข้อมูล</span>`
         : `<span class="lsc-dem">ต้องการ ${d} ตัว/${days}ว${noNeed?' · พอ':net>0?' · ขาด '+net:''}</span>`;
+      const pendingLine = pending>0
+        ? `<span class="lsc-stock-txt" style="color:var(--purple);font-weight:800">🚚 สั่งซื้อแล้ว ${pending} ตัว</span>`
+        : '';
       const recLine = monthlyAvg ? `<span class="lsc-rec">แนะนำ ${monthlyAvg} ตัว/เดือน</span>` : '';
       return`<div class="lot-size-cell ${cellCls}">
         <div class="lsc-left">
           ${demLine}
           ${stockLine}
+          ${pendingLine}
           ${recLine}
         </div>
         <div class="lsc-right">
@@ -4115,7 +4188,9 @@ function renderBeltCard(g, days){
     const rawAvg=getAvg(item,days);
     const skuKey=(item.sku||'').toLowerCase();
     const onHand=isStockLoaded()&&skuKey in stockMap?Math.max(0,Number(stockMap[skuKey])||0):null;
-    const net=onHand!==null?Math.max(0,rawAvg-onHand):rawAvg;
+    const pendingMap=getPendingQtyMap();
+    const pending=pendingMap[skuKey]||0;
+    const net=onHand!==null?Math.max(0,rawAvg-onHand-pending):Math.max(0,rawAvg-pending);
     const autoOrder=Math.ceil(net/10)*10;  // round up to nearest 10
     const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:autoOrder;
     const colLabel=[item.color,item.size].filter(Boolean).join(' / ')||item.sku;
@@ -4131,6 +4206,9 @@ function renderBeltCard(g, days){
                      isLow?`<span style="font-size:11px;color:var(--orange);font-weight:800">🟡 เหลือ ${onHand} (ต้องการ ${demand15d}/15วัน)</span>`:
                      isOk ?`<span style="font-size:11px;color:var(--green)">✓ พอ (${onHand})</span>`:
                      onHand!==null?`<span style="font-size:11px;color:var(--muted)">มี ${onHand}</span>`:``;
+    const pendingBadge=pending>0
+      ?`<span style="font-size:11px;color:var(--purple);font-weight:800">🚚 สั่งแล้ว ${pending}</span>`
+      :'';
     const itemDisc = isDiscontinued(g.parentSku, item.color||'');
     if(itemDisc) return`<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--bg-dark);border:1px solid rgba(255,255,255,.06);border-radius:10px;min-width:190px;opacity:.55">
       <div style="font-size:14px;font-weight:700;color:var(--muted)">${colLabel}</div>
@@ -4158,8 +4236,9 @@ function renderBeltCard(g, days){
         <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
           <span style="font-size:12px;color:var(--blue)">เฉลี่ย ${Math.ceil(rawAvg)} /${days}วัน</span>
           ${stockBadge}
+          ${pendingBadge}
         </div>
-        ${onHand!==null&&net>0?`<div style="font-size:11px;color:var(--muted)">ขาด ${net} → สั่ง ${autoOrder}</div>`:''}
+        ${onHand!==null&&(net>0||pending>0)?`<div style="font-size:11px;color:var(--muted)">${pending>0?`ลบสั่งแล้ว ${pending} → `:''}ขาด ${net} → สั่ง ${autoOrder}</div>`:''}
       </div>
       <div style="text-align:center">
         <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin-bottom:3px">สั่ง</div>
@@ -4170,7 +4249,10 @@ function renderBeltCard(g, days){
     </div>`;
   }).join('');
   const totalOrder=skusSorted.reduce((s,item)=>{
-    const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(Math.max(0,getAvg(item,days)-(isStockLoaded()&&(item.sku||'').toLowerCase() in stockMap?Math.max(0,Number(stockMap[(item.sku||'').toLowerCase()])||0):0))/10)*10;
+    const skuKey2=(item.sku||'').toLowerCase();
+    const onH2=isStockLoaded()&&skuKey2 in stockMap?Math.max(0,Number(stockMap[skuKey2])||0):0;
+    const pend2=(getPendingQtyMap()[skuKey2]||0);
+    const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(Math.max(0,getAvg(item,days)-onH2-pend2)/10)*10;
     return s+saved;
   },0);
   const beltDisc = isDiscontinued(g.parentSku);
