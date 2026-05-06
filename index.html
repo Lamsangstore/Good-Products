@@ -5119,7 +5119,11 @@ function renderHistDetail(order){
       });
     }
   });
-  const allChecked = allItemKeys.length>0 && allItemKeys.every(ik=>rcvItems[ik]===true);
+  // ── Apply pending stage (uncommitted checkbox changes) on top of saved state ──
+  const pending = (window._pendingReceived && window._pendingReceived[order.key]) || {};
+  const effectiveRcv = ik => (ik in pending) ? pending[ik] : (rcvItems[ik]===true);
+  const hasPending = Object.keys(pending).length>0;
+  const allChecked = allItemKeys.length>0 && allItemKeys.every(ik=>effectiveRcv(ik));
   const allIkJson = JSON.stringify(allItemKeys).replace(/"/g,"'");
 
   // Pastel palettes
@@ -5137,13 +5141,28 @@ function renderHistDetail(order){
   let html=`<div style="padding:12px 14px 16px;background:var(--bg-dark);border-top:1px solid rgba(217,119,6,.1);overflow-x:auto">`;
 
   // Date + check-all header
+  const pendingCount = Object.keys(pending).length;
   html+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0 14px;flex-wrap:wrap;gap:8px">
     <span style="font-size:20px;font-weight:800;color:var(--text)">📅 ${dateStr}</span>
-    <div style="display:flex;align-items:center;gap:8px">
-      <button class="btn" onclick="editOrderDate('${order.key}',${order.createdAt})" style="font-size:12px;padding:3px 10px;color:var(--muted)">✏️ แก้ไขวันที่</button>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      ${hasPending ? `
+        <span style="font-size:12px;font-weight:700;color:#b45309;background:#fef3c7;padding:4px 10px;border-radius:12px;border:1px solid #fcd34d">
+          ⏳ รอยืนยัน ${pendingCount} รายการ
+        </span>
+        <button class="btn" onclick="commitPendingReceived('${order.key}')"
+          style="font-size:13px;padding:5px 14px;background:#16a34a;color:#fff;font-weight:800;border-radius:10px;border:none;cursor:pointer;box-shadow:0 2px 6px rgba(22,163,74,.35)">
+          ✅ ยืนยัน
+        </button>
+        <button class="btn" onclick="cancelPendingReceived('${order.key}')"
+          style="font-size:12px;padding:5px 10px;background:#f1f5f9;color:#475569;border-radius:10px;border:1px solid #cbd5e1;cursor:pointer">
+          ✖ ยกเลิก
+        </button>
+      ` : `
+        <button class="btn" onclick="editOrderDate('${order.key}',${order.createdAt})" style="font-size:12px;padding:3px 10px;color:var(--muted)">✏️ แก้ไขวันที่</button>
+      `}
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:700;color:${allChecked?'#15803d':'var(--muted)'}">
         <input type="checkbox" ${allChecked?'checked':''} style="width:16px;height:16px;accent-color:#16a34a;cursor:pointer"
-          onchange="checkAllItems('${order.key}',this.checked)">
+          onchange="stageAllItems('${order.key}',this.checked)">
         ${allChecked?'✅ รับครบแล้ว':'เลือกทั้งหมด'}
       </label>
     </div>
@@ -5175,9 +5194,10 @@ function renderHistDetail(order){
       </tr>`;
       g.beltItems.forEach((item,bi)=>{
         const ik=item.parentSku+'__'+(item.skuKey||item.sku||item.color);
-        const rcvd=rcvItems[ik]===true;
+        const rcvd=effectiveRcv(ik);
+        const isPending = (ik in pending);
         const rowBg = bi%2===0 ? pal.row1 : pal.row2;
-        html+=`<tr style="background:${rowBg}${rcvd?';opacity:.6':''}">
+        html+=`<tr style="background:${rowBg}${rcvd?';opacity:.6':''}${isPending?';outline:2px dashed #f59e0b;outline-offset:-2px':''}">
           <td style="padding:7px 12px;font-weight:700;color:#1e293b;font-size:13px">${item.name}</td>
           <td style="padding:7px 0 7px 16px;color:#334155;font-size:13px">${item.color}</td>
           <td></td>
@@ -5185,7 +5205,7 @@ function renderHistDetail(order){
           <td style="padding:7px 10px;font-size:11px;color:#16a34a;text-align:right;white-space:nowrap">🚚 ${deliveryStr}</td>
           <td style="padding:7px 8px;text-align:center">
             <input type="checkbox" ${rcvd?'checked':''} style="width:16px;height:16px;accent-color:#16a34a;cursor:pointer"
-              title="ได้รับแล้ว" onchange="toggleItemReceived('${order.key}','${ik}',this.checked)">
+              title="ได้รับแล้ว" onchange="stageItemReceived('${order.key}','${ik}',this.checked)">
           </td>
         </tr>`;
       });
@@ -5208,10 +5228,11 @@ function renderHistDetail(order){
       g.colorRolls[color].forEach((roll,ri)=>{
         const isLastRow=ci===colorKeys.length-1&&ri===g.colorRolls[color].length-1;
         const ik=roll.itemKey||key+'__'+color+'__'+ri;
-        const rcvd=rcvItems[ik]===true;
+        const rcvd=effectiveRcv(ik);
+        const isPending = (ik in pending);
         const rowBg = rowIdx%2===0 ? pal.row1 : pal.row2;
         rowIdx++;
-        html+=`<tr style="background:${rowBg}${rcvd?';opacity:.55':''}">
+        html+=`<tr style="background:${rowBg}${rcvd?';opacity:.55':''}${isPending?';outline:2px dashed #f59e0b;outline-offset:-2px':''}">
           <td style="padding:7px 12px;font-weight:700;color:#1e293b;font-size:13px;white-space:nowrap">${g.name}</td>
           <td style="padding:7px 0 7px 16px;color:#334155;font-weight:600;font-size:13px;white-space:nowrap">${color} / ${roll.rollLabel}</td>
           <td></td>
@@ -5224,7 +5245,7 @@ function renderHistDetail(order){
           <td style="padding:7px 8px;font-size:11px;color:#16a34a;text-align:right;white-space:nowrap">${isLastRow?`🚚 ${deliveryStr}`:''}</td>
           <td style="padding:7px 8px;text-align:center">
             <input type="checkbox" ${rcvd?'checked':''} style="width:16px;height:16px;accent-color:#16a34a;cursor:pointer"
-              title="${color} ${roll.rollLabel}" onchange="toggleItemReceived('${order.key}','${ik}',this.checked)">
+              title="${color} ${roll.rollLabel}" onchange="stageItemReceived('${order.key}','${ik}',this.checked)">
           </td>
         </tr>`;
       });
@@ -5236,7 +5257,113 @@ function renderHistDetail(order){
   return html;
 }
 
-// Check-all handler
+// ── Pending received state (uncommitted checkbox changes) ──
+window._pendingReceived = window._pendingReceived || {}; // { orderKey: { itemKey: bool } }
+
+// Stage one item (just toggle in memory, no Firebase write, minimal re-render)
+function stageItemReceived(orderKey, itemKey, checked){
+  const order = orderHistory.find(o=>o.key===orderKey);
+  if(!order) return;
+  if(!window._pendingReceived[orderKey]) window._pendingReceived[orderKey] = {};
+  const saved = (order.receivedItems||{})[itemKey]===true;
+  // If user toggles back to saved state → remove from pending
+  if(checked === saved){
+    delete window._pendingReceived[orderKey][itemKey];
+    if(Object.keys(window._pendingReceived[orderKey]).length===0){
+      delete window._pendingReceived[orderKey];
+    }
+  } else {
+    window._pendingReceived[orderKey][itemKey] = checked;
+  }
+  // Re-render only this order's detail (preserves open state, no full refresh)
+  rerenderOrderDetail(orderKey);
+}
+
+// Stage all items for one order
+function stageAllItems(orderKey, checked){
+  const order = orderHistory.find(o=>o.key===orderKey);
+  if(!order) return;
+  if(!window._pendingReceived[orderKey]) window._pendingReceived[orderKey] = {};
+  const items = order.items||[];
+  const saved = order.receivedItems||{};
+  items.forEach(item=>{
+    const ik = item.type==='belt'
+      ? item.parentSku+'__'+(item.skuKey||item.sku||item.color||'')
+      : (item.itemKey || (item.parentSku+'__'+(item.color||'')+'__'+(item.rollIndex??'')));
+    const savedVal = saved[ik]===true;
+    if(checked === savedVal){
+      delete window._pendingReceived[orderKey][ik];
+    } else {
+      window._pendingReceived[orderKey][ik] = checked;
+    }
+  });
+  if(Object.keys(window._pendingReceived[orderKey]).length===0){
+    delete window._pendingReceived[orderKey];
+  }
+  rerenderOrderDetail(orderKey);
+}
+
+// Cancel pending (revert checkboxes to saved state)
+function cancelPendingReceived(orderKey){
+  if(window._pendingReceived[orderKey]){
+    delete window._pendingReceived[orderKey];
+    rerenderOrderDetail(orderKey);
+  }
+}
+
+// Commit pending: write all changes to Firebase in ONE batch, then refresh
+async function commitPendingReceived(orderKey){
+  const pending = window._pendingReceived[orderKey];
+  if(!pending || Object.keys(pending).length===0) return;
+  const order = orderHistory.find(o=>o.key===orderKey);
+  if(!order) return;
+  const db = getRtdb(); if(!db) return;
+
+  const updates = {};
+  if(!order.receivedItems) order.receivedItems = {};
+  Object.entries(pending).forEach(([ik, val])=>{
+    updates['order_history/'+orderKey+'/receivedItems/'+ik] = val||null;
+    order.receivedItems[ik] = val;
+  });
+
+  // Recompute order-level received flag based on new state
+  const allDone = isOrderFullyReceived(order);
+  if(allDone && !order.received){
+    updates['order_history/'+orderKey+'/received'] = true;
+    updates['order_history/'+orderKey+'/receivedAt'] = Date.now();
+  } else if(!allDone && order.received){
+    updates['order_history/'+orderKey+'/received'] = null;
+    updates['order_history/'+orderKey+'/receivedAt'] = null;
+  }
+
+  try {
+    await db.ref('/').update(updates);
+    if(allDone){ order.received = true; order.receivedAt = Date.now(); }
+    else if(order.received && !allDone){ order.received = false; order.receivedAt = null; }
+    delete window._pendingReceived[orderKey];
+    renderOrderHistory();
+    try { renderAll(getFilteredData()); } catch(e){}
+    // Visual feedback
+    const hdr = document.querySelector(`#hist-${orderKey} .order-hist-hdr`);
+    if(hdr){ hdr.style.animation='none'; requestAnimationFrame(()=>{ hdr.style.animation='popIn .3s ease'; }); }
+  } catch(e){
+    console.warn('[Order] commitPending failed:', e);
+    alert('บันทึกล้มเหลว: '+e.message);
+  }
+}
+
+// Re-render only ONE order's detail panel (keeps it open, no scroll jump)
+function rerenderOrderDetail(orderKey){
+  const body = document.getElementById('histbody-'+orderKey);
+  if(!body) return;
+  const order = orderHistory.find(o=>o.key===orderKey);
+  if(!order) return;
+  const wasOpen = body.classList.contains('open');
+  body.innerHTML = renderHistDetail(order);
+  if(wasOpen){ body.classList.add('open'); body.style.display='block'; }
+}
+
+// Check-all handler (legacy: still kept for any direct callers, but we use stageAllItems now)
 async function checkAllItems(orderKey, checked){
   const order = orderHistory.find(o=>o.key===orderKey);
   if(!order) return;
