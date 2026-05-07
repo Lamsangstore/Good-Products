@@ -3311,7 +3311,11 @@ function getAvg(item,days=15){
   const weighted   = 0.5 * recentRate + 0.5 * earlyRate;
   const baseRate = Math.max(recentRate, weighted, rawVel * 0.7);
   if(baseRate > 0) return Math.max(1, Math.ceil(baseRate * days));
-  // fallback (เผื่อ data เก่ายังไม่มี recent30/early60)
+  // Fallback 1: cache เก่ายังไม่มี recent30/early60 และ rawVel ก็ 0 (SKU เพิ่งเพิ่ม)
+  // ใช้ activeVelAvg (ยอดขาย/จำนวนวันที่มีออเดอร์) ถ้ามี
+  const av = Number(item.activeVelAvg)||0;
+  if(av > 0) return Math.max(1, Math.ceil(av * 0.7 * days));
+  // Fallback 2: ใช้ stockAvg/30 × days (ค่าเก่าจาก v1)
   const monthly = Math.max(0, item.stockAvg||Math.ceil(((item.recStock||0)+(item.stockMaxVel7||0))/2));
   return Math.max(1, Math.ceil(monthly*(days/30)));
 }
@@ -6292,6 +6296,31 @@ async function loadAppDataCache(){
     const ageHours = savedAt ? (Date.now()-payload.savedAt)/(1000*3600) : 999;
     appData = payload.data;
     appData.forEach(item=>{ if(!item.dailySales) item.dailySales={}; });
+    // ตรวจสอบ cache เก่าที่ขาด field สูตร v3 (recent30/early60)
+    const skusWithSales = appData.filter(d => (d.totalSold||0) > 0);
+    const missingV3 = skusWithSales.filter(d => 
+      d.recent30 === undefined || d.early60 === undefined
+    );
+    if(skusWithSales.length > 0 && missingV3.length / skusWithSales.length > 0.5){
+      console.warn(`[Cache] ⚠️ Cache เก่าขาด field v3 (${missingV3.length}/${skusWithSales.length} SKU) — ควรซิงก์ข้อมูลใหม่`);
+      // เพิ่ม banner เตือน user
+      setTimeout(()=>{
+        const msg = `⚠️ ข้อมูลเก่ายังไม่มีฟิลด์สูตรใหม่ (recent30/early60) ${missingV3.length} SKU\nกด "ซิงก์ข้อมูล" เพื่อให้คำแนะนำสั่งซื้อแม่นยำขึ้น`;
+        if(typeof showStockoutBanner === 'function'){
+          // ใช้ banner existing
+          const banner = document.getElementById('stockoutBanner');
+          if(banner){
+            banner.classList.add('on');
+            const ttl = document.getElementById('stockoutBannerTtl');
+            const body = document.getElementById('stockoutBannerBody');
+            if(ttl) ttl.textContent = '⚠️ Cache เก่า — ควรซิงก์ใหม่';
+            if(body) body.textContent = msg;
+          }
+        } else {
+          console.log(msg);
+        }
+      }, 1500);
+    }
     // restore _productDict from cache
     if(payload.productDict && Object.keys(payload.productDict).length){
       window._productDict = payload.productDict;
