@@ -2615,6 +2615,17 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
           <div id="order-cat-list"></div>
         </div>
       </div>
+      <!-- Sort dropdown -->
+      <span style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;white-space:nowrap;margin-left:8px">เรียงตาม:</span>
+      <div style="display:flex;align-items:center;gap:6px;background:var(--bg);box-shadow:var(--si);border-radius:10px;padding:5px 12px">
+        <select id="order-sort" onchange="setOrderSort(this.value)"
+          style="background:none;border:none;outline:none;font-family:'Anuphan',sans-serif;font-size:14px;font-weight:700;color:var(--text);cursor:pointer">
+          <option value="qty_desc" selected>📦 รวมสั่ง: มาก → น้อย</option>
+          <option value="qty_asc">📦 รวมสั่ง: น้อย → มาก</option>
+          <option value="name_asc">🔤 ชื่อ: ก → ฮ</option>
+          <option value="name_desc">🔤 ชื่อ: ฮ → ก</option>
+        </select>
+      </div>
       <div style="flex:1"></div>
       <!-- Lot config popup trigger — only show when pants category selected -->
       <button class="btn" onclick="toggleLotConfigPopup()" id="lot-cfg-btn" style="color:var(--muted);gap:5px;display:none" title="ตั้งค่าล็อคกางเกง">
@@ -3082,6 +3093,7 @@ function hideL(){ $('loading').classList.remove('on') }
 // ════════════════════════════════════════════════════════════════
 
 let orderCatFilter = 'all';
+let orderSort = 'qty_desc'; // 'qty_desc' | 'qty_asc' | 'name_asc' | 'name_desc'
 let orderCatType   = 'all'; // 'all' | 'pants' | 'belt' | 'other' | specific category string
 const ORDER_STORE_KEY = 'orderConfig';
 let orderConfig = {};
@@ -3818,6 +3830,62 @@ function setLotsOverride(parentSku,sku,n){
 }
 
 // ── MAIN RENDER ──
+// คำนวณยอดรวมสั่งของ group หนึ่ง (ใช้ logic เดียวกับการ์ด)
+function getGroupTotalOrder(g, days){
+  if(!g || !g.skus || !g.skus.length) return 0;
+  if(isDiscontinued(g.parentSku)) return 0; // ทั้ง parent ไม่เติมแล้ว
+  const ct = classifyCat(g.category||'');
+  const pm = getPendingQtyMap();
+  let total = 0;
+  if(ct === 'pants'){
+    // Pants: ใช้ lots × piecesPerLot
+    const cfg = getPantsCfg(g.parentSku);
+    const ppl = getPiecesPerLot(g.parentSku);
+    g.skus.forEach(item=>{
+      if(isDiscontinued(g.parentSku, item.color||'')) return;
+      const sk = (item.sku||'').toLowerCase();
+      const onH = isStockLoaded()&&sk in stockMap?Math.max(0,Number(stockMap[sk])||0):0;
+      const pend = pm[sk]||0;
+      const demand = getAvg(item, days);
+      const net = Math.max(0, demand - onH - pend);
+      const ov = (cfg.lotsOverride||{})[item.sku];
+      const lots = ov!==undefined ? ov : (net>0 ? Math.ceil(net/ppl) : 0);
+      total += lots * ppl;
+    });
+  } else {
+    // Belt + Other: ใช้ qty โดยตรง
+    const cfg = orderConfig[g.parentSku] || {};
+    g.skus.forEach(item=>{
+      if(isDiscontinued(g.parentSku, item.color||'')) return;
+      const sk = (item.sku||'').toLowerCase();
+      const onH = isStockLoaded()&&sk in stockMap?Math.max(0,Number(stockMap[sk])||0):0;
+      const pend = pm[sk]||0;
+      const saved = (cfg.qtys||{})[item.sku] !== undefined
+        ? (cfg.qtys||{})[item.sku]
+        : Math.ceil(Math.max(0, getAvg(item, days) - onH - pend) / 10) * 10;
+      total += saved;
+    });
+  }
+  return total;
+}
+
+// เรียง group list ตาม orderSort
+function sortOrderGroups(gList, days){
+  const items = gList.map(g => ({ g, qty: getGroupTotalOrder(g, days), name: g.name||g.parentSku||'' }));
+  switch(orderSort){
+    case 'qty_desc': items.sort((a,b)=> b.qty - a.qty || a.name.localeCompare(b.name,'th')); break;
+    case 'qty_asc':  items.sort((a,b)=> a.qty - b.qty || a.name.localeCompare(b.name,'th')); break;
+    case 'name_asc': items.sort((a,b)=> a.name.localeCompare(b.name,'th')); break;
+    case 'name_desc':items.sort((a,b)=> b.name.localeCompare(a.name,'th')); break;
+  }
+  return items.map(x=>x.g);
+}
+
+function setOrderSort(v){
+  orderSort = v;
+  renderOrderTab();
+}
+
 function renderOrderTab(){
   try {
   _cachedPendingMap = null; // reset cache ทุกครั้งที่ render ใหม่
@@ -3866,13 +3934,14 @@ function renderOrderTab(){
   });
   pantsByCat.forEach((gList, catName)=>{
     if(!showGroup('pants', catName)) return;
+    const sortedList = sortOrderGroups(gList, days);
     html+=`<div class="order-group">
       <div class="order-group-hdr">
         <span style="font-size:20px">👖</span>
         <span class="order-group-ttl">${catName} — 1 ไม้/สี · ทุกไม้ครบ N ล็อค</span>
-        <span class="order-group-badge">${gList.length} รุ่น</span>
+        <span class="order-group-badge">${sortedList.length} รุ่น</span>
       </div>`;
-    gList.forEach(g=>{ html+=renderPantsCard(g,days); });
+    sortedList.forEach(g=>{ html+=renderPantsCard(g,days); });
     html+='</div>';
   });
 
@@ -3885,13 +3954,14 @@ function renderOrderTab(){
   });
   beltByCat.forEach((gList, catName)=>{
     if(!showGroup('belt', catName)) return;
+    const sortedList = sortOrderGroups(gList, days);
     html+=`<div class="order-group">
       <div class="order-group-hdr">
         <span style="font-size:20px">🎗️</span>
         <span class="order-group-ttl">${catName} — สั่งรุ่นเดียว หลายสีพร้อมกัน</span>
-        <span class="order-group-badge">${gList.length} รุ่น</span>
+        <span class="order-group-badge">${sortedList.length} รุ่น</span>
       </div>`;
-    gList.forEach(g=>{ html+=renderBeltCard(g,days); });
+    sortedList.forEach(g=>{ html+=renderBeltCard(g,days); });
     html+='</div>';
   });
 
@@ -3904,13 +3974,14 @@ function renderOrderTab(){
   });
   otherByCat.forEach((gList, catName)=>{
     if(!showGroup('other', catName)) return;
+    const sortedList = sortOrderGroups(gList, days);
     html+=`<div class="order-group">
       <div class="order-group-hdr">
         <span style="font-size:20px">📦</span>
         <span class="order-group-ttl">${catName}</span>
-        <span class="order-group-badge">${gList.length} รุ่น</span>
+        <span class="order-group-badge">${sortedList.length} รุ่น</span>
       </div>`;
-    gList.forEach(g=>{ html+=renderBeltCard(g,days); });
+    sortedList.forEach(g=>{ html+=renderBeltCard(g,days); });
     html+='</div>';
   });
 
@@ -3940,6 +4011,8 @@ function renderOrderTab(){
     const pantsAll=appData.filter(d=>classifyCat(d.category||'')==='pants');
     const pantsGrps=groupByParent(pantsAll);
     pantsGrps.forEach(g=>{
+      // ข้าม parent SKU ที่ทั้งกลุ่มถูกทำเครื่องหมาย "ไม่เติมแล้ว"
+      if(isDiscontinued(g.parentSku)) return;
       const cp=getCostPerPiece(g.parentSku);
       if(!cp) return;
       const cxxl=getCostXXL(g.parentSku)||cp;
@@ -3948,6 +4021,8 @@ function renderOrderTab(){
       let pantsBrand=0;
       g.skus.forEach(item=>{
         if(!matchesFilter(item)) return;
+        // ข้าม SKU สีที่ "ไม่เติมแล้ว"
+        if(isDiscontinued(g.parentSku, item.color||'')) return;
         const sk=(item.sku||'').toLowerCase();
         const isXXL=(item.size||'').trim().toUpperCase()==='XXL';
         const onH=isStockLoaded()&&sk in stockMap?Math.max(0,Number(stockMap[sk])||0):0;
@@ -3968,6 +4043,8 @@ function renderOrderTab(){
     const beltAll=appData.filter(d=>{ const ct=classifyCat(d.category||''); return ct==='belt'||ct==='other'; });
     const beltGrps=groupByParent(beltAll);
     beltGrps.forEach(g=>{
+      // ข้าม parent SKU ที่ทั้งกลุ่มถูกทำเครื่องหมาย "ไม่เติมแล้ว"
+      if(isDiscontinued(g.parentSku)) return;
       const cfg2=orderConfig[g.parentSku]||{};
       const costs=cfg2.costs||{};
       if(!Object.keys(costs).length) return;
@@ -3975,6 +4052,8 @@ function renderOrderTab(){
       let beltBrand=0;
       g.skus.forEach(item=>{
         if(!matchesFilter(item)) return;
+        // ข้าม SKU สีที่ "ไม่เติมแล้ว"
+        if(isDiscontinued(g.parentSku, item.color||'')) return;
         const c=Number(costs[item.sku])||0;
         if(!c) return;
         const sk=(item.sku||'').toLowerCase();
@@ -4484,6 +4563,8 @@ function renderBeltCard(g, days){
     </div>`;
   }).join('');
   const totalOrder=skusSorted.reduce((s,item)=>{
+    // ข้าม SKU ที่ทำเครื่องหมาย "ไม่เติมแล้ว" — ไม่นับยอดสั่ง
+    if(isDiscontinued(g.parentSku, item.color||'')) return s;
     const skuKey2=(item.sku||'').toLowerCase();
     const onH2=isStockLoaded()&&skuKey2 in stockMap?Math.max(0,Number(stockMap[skuKey2])||0):0;
     const pend2=(getPendingQtyMap()[skuKey2]||0);
@@ -4518,6 +4599,7 @@ function renderBeltCard(g, days){
         const costs=cfg.costs||{};
         let totalCost=0;
         skusSorted.forEach(item=>{
+          if(isDiscontinued(g.parentSku, item.color||'')) return; // ข้าม SKU ที่ไม่เติมแล้ว
           const c=Number(costs[item.sku])||0;
           if(!c) return;
           const skuKey2=(item.sku||'').toLowerCase();
