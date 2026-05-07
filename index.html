@@ -15,53 +15,63 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Lamsang">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#d97706">
-<meta name="msapplication-TileColor" content="#d97706">
+<meta name="theme-color" content="#fcdcb6">
+<meta name="msapplication-TileColor" content="#fcdcb6">
 
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  /* ── Pastel Yellow Light Theme ── */
-  --bg:        #fefbf3;
-  --bg-light:  #fffdf8;
-  --bg-dark:   #f5edd6;
-  --bg-darker: #ede3c6;
+  /* ── Cosmos · Almond · Cotton Candy Pastel — all-light theme ── */
+  /* Base = milk ivory blend */
+  --bg:        #fdfaf5;   /* milk ivory */
+  --bg-light:  #fffefb;   /* pure milk for cards */
+  --bg-dark:   #faecd9;   /* peach cream for selected */
+  --bg-darker: #f5e1cd;   /* honey cream for borders */
 
-  /* Soft shadows for light neumorphism */
-  --so:  5px 5px 14px #e4d9c0, -4px -4px 12px #ffffff;
-  --si:  inset 4px 4px 10px #e4d9c0, inset -3px -3px 9px #ffffff;
-  --sm:  3px 3px 9px  #e4d9c0, -3px -3px 9px  #ffffff;
-  --sx:  2px 2px 5px  #e4d9c0, -2px -2px 5px  #ffffff;
-  --sp:  inset 2px 2px 7px #d8cdb4, inset -2px -2px 7px #fffff8;
+  /* Soft creamy neumorphism — very subtle */
+  --so:  6px 6px 16px #ece1d0, -5px -5px 14px #ffffff;
+  --si:  inset 4px 4px 10px #ece1d0, inset -3px -3px 9px #ffffff;
+  --sm:  3px 3px 10px #ece1d0, -3px -3px 10px #ffffff;
+  --sx:  2px 2px 6px  #ece1d0, -2px -2px 6px  #ffffff;
+  --sp:  inset 2px 2px 7px #e3d5be, inset -2px -2px 7px #fffaf0;
 
-  /* Brand accent colours — warmer tones */
-  --blue:   #d97706; --blue-s: #f59e0b; --blue-p: rgba(217,119,6,.14);
-  --red:    #ef4444; --red-p:  rgba(239,68,68,.13);
-  --green:  #16a34a; --green-p:rgba(22,163,74,.13);
-  --orange: #ea580c; --orange-p:rgba(234,88,12,.13);
-  --purple: #7c3aed; --purple-p:rgba(124,58,237,.13);
-  --gold:   #b45309;
+  /* Pastel accents — directly from palette image */
+  --blue:   #c0e4f6; --blue-s: #d8efff; --blue-p: rgba(192,228,246,.4);     /* Tropical Blue */
+  --red:    #ffb8da; --red-p:  rgba(255,184,218,.35);                       /* Cotton Candy */
+  --green:  #a2f4d5; --green-p:rgba(162,244,213,.35);                       /* Granny Apple */
+  --orange: #fcdcb6; --orange-p:rgba(252,220,182,.4);                       /* Soft peach */
+  --purple: #e0dff5; --purple-p:rgba(224,223,245,.4);                       /* Moon Raker */
+  --gold:   #fcf89d;                                                        /* Astra yellow */
 
-  --text:  #2d1f07;
-  --mid:   #78614a;
-  --muted: #a0896e;
-  --faint: #c8b89a;
+  /* DEEPER versions for text/icons (still soft, but readable) */
+  --red-d:    #d97394;   /* deeper cotton candy for text */
+  --green-d:  #5fb892;   /* deeper mint for text */
+  --orange-d: #d99a5a;   /* deeper peach for text */
+  --purple-d: #9b95c9;   /* deeper lilac for text */
+  --gold-d:   #c9b94d;   /* deeper astra for text */
+  --blue-d:   #6fa8c9;   /* deeper sky for text */
 
-  --row-even: rgba(217,119,6,.04);
-  --accent:   #d97706;
-  --surface:  #fffdf7;
+  /* Text — warm taupe (no black, no harsh dark brown) */
+  --text:  #5c4a4f;       /* soft taupe */
+  --mid:   #8b7378;       /* dusty taupe */
+  --muted: #a89599;       /* light taupe */
+  --faint: #d4c5c8;       /* faint taupe */
+
+  --row-even: rgba(252,238,227,.4);
+  --accent:   #f5d7b8;
+  --surface:  #fffefb;
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:'Anuphan',sans-serif;background:linear-gradient(160deg,#fdf8ee 0%,#f9f0d8 100%);color:var(--text);min-height:100vh;padding:20px 16px 70px;line-height:1.5;overflow-x:hidden;touch-action:pan-y}
+body{font-family:'Anuphan',sans-serif;background:linear-gradient(160deg,#fffaf5 0%,#fcefdc 35%,#fcebde 70%,#fbe5e9 100%);color:var(--text);min-height:100vh;padding:20px 16px 70px;line-height:1.5;overflow-x:hidden;touch-action:pan-y}
 .page{max-width:1480px;margin:0 auto;overflow-x:hidden}
 
 /* ─── LOADING ─── */
 .loading{position:fixed;inset:0;background:rgba(18,22,28,.96);backdrop-filter:blur(16px);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:20px}
 .loading.on{display:flex}
 .spin-wrap{width:68px;height:68px;background:var(--bg);border-radius:50%;box-shadow:var(--so);display:flex;align-items:center;justify-content:center}
-.spin{width:38px;height:38px;border:3px solid rgba(77,143,255,.2);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
+.spin{width:38px;height:38px;border:3px solid rgba(77,143,255,.2);border-top-color:var(--blue-d);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .spin-label{background:var(--bg);box-shadow:var(--sm);border-radius:14px;padding:10px 24px;font-size:17px;font-weight:700;color:var(--mid);letter-spacing:.3px}
 
@@ -69,64 +79,73 @@ body{font-family:'Anuphan',sans-serif;background:linear-gradient(160deg,#fdf8ee 
 .header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px}
 .brand{display:flex;align-items:center;gap:12px}
 .brand-logo{width:44px;height:44px;border-radius:14px;background:var(--bg);box-shadow:var(--so);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
-.brand-logo::after{content:'';position:absolute;inset:6px;border-radius:10px;background:linear-gradient(140deg,#fbbf24,#d97706);box-shadow:0 4px 14px rgba(217,119,6,.35)}
+.brand-logo::after{content:'';position:absolute;inset:6px;border-radius:10px;background:linear-gradient(140deg,#ffd9e8,#fcdcb6 50%,#a2f4d5);box-shadow:0 4px 14px rgba(217,154,90,.25)}
 .brand-logo svg{position:relative;z-index:1;width:18px;height:18px;stroke:#fff;stroke-width:2.5;fill:none}
-.brand-name{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.6px;line-height:1.1;font-family:'Anuphan',sans-serif}
+.brand-name{font-size:22px;font-weight:800;background:linear-gradient(135deg,#d99a5a 0%,#d97394 50%,#9b95c9 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.6px;line-height:1.1;font-family:'Anuphan',sans-serif}
 .brand-sub{font-size:13px;color:var(--muted);margin-top:2px;letter-spacing:.2px}
 .hdr-r{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
-.live-pill{display:flex;align-items:center;gap:7px;padding:7px 16px;border-radius:50px;background:rgba(22,163,74,.1);box-shadow:none;font-size:13px;font-weight:800;color:var(--green);letter-spacing:.8px;text-transform:uppercase;border:1px solid rgba(22,163,74,.25)}
+.live-pill{display:flex;align-items:center;gap:7px;padding:7px 16px;border-radius:50px;background:rgba(22,163,74,.1);box-shadow:none;font-size:13px;font-weight:800;color:var(--green-d);letter-spacing:.8px;text-transform:uppercase;border:1px solid rgba(22,163,74,.25)}
 .live-dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:lp 2.2s ease infinite}
 @keyframes lp{0%,100%{box-shadow:0 0 0 3px rgba(46,204,138,.25)}55%{box-shadow:0 0 0 7px rgba(46,204,138,.05)}}
 
 .neu-sel{appearance:none;background:var(--bg);border:none;box-shadow:var(--si);border-radius:14px;padding:10px 18px;font-size:17px;font-weight:600;font-family:'Anuphan',sans-serif;color:var(--text);outline:none;cursor:pointer;letter-spacing:.2px}
-.btn{display:flex;align-items:center;gap:6px;padding:9px 18px;border-radius:12px;font-size:15px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;border:1px solid rgba(217,119,6,.15);background:var(--surface);color:var(--blue);box-shadow:var(--sm);transition:all .18s}
+.btn{display:flex;align-items:center;gap:6px;padding:9px 18px;border-radius:12px;font-size:15px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;border:1px solid rgba(217,154,90,.15);background:var(--surface);color:var(--blue-d);box-shadow:var(--sm);transition:all .18s}
 .btn svg{width:14px;height:14px;stroke:currentColor;stroke-width:2.5;fill:none}
-.btn:hover{box-shadow:4px 4px 12px #e4d9c0,-3px -3px 10px #ffffff,0 0 0 2px rgba(217,119,6,.2);transform:translateY(-1px)}
+.btn:hover{box-shadow:4px 4px 12px #ece1d0,-3px -3px 10px #ffffff,0 0 0 2px rgba(217,154,90,.2);transform:translateY(-1px)}
 .btn:active{box-shadow:var(--sp);transform:none}
 
 /* ─── TABS ─── */
 .tab-bar{display:flex;gap:4px;margin-bottom:16px;background:var(--bg-dark);box-shadow:var(--si);border-radius:14px;padding:4px}
 .tab-btn{flex:1;padding:10px 12px;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;background:transparent;color:var(--muted);transition:all .22s;letter-spacing:.1px}
-.tab-btn.active{background:linear-gradient(135deg,#fbbf24,#d97706);box-shadow:0 3px 10px rgba(217,119,6,.3);color:#fff;transform:translateY(-1px)}
+.tab-btn.active{background:linear-gradient(135deg,#fce6cf 0%,#f8c9a0 100%);box-shadow:0 3px 10px rgba(217,154,90,.25),inset 0 0 0 1px rgba(255,255,255,.6);color:#7a4f2a;transform:translateY(-1px);font-weight:800}
 .tab-content{display:none}.tab-content.active{display:block}
 
 /* ─── KPI GRID ─── */
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:auto auto;gap:8px;margin-bottom:14px}
-.kpi{background:var(--surface);border-radius:16px;box-shadow:var(--sm);padding:14px 16px 12px;position:relative;overflow:hidden;transition:box-shadow .22s,transform .18s;cursor:default;border:1px solid rgba(217,119,6,.1)}
+.kpi{background:var(--surface);border-radius:16px;box-shadow:var(--sm);padding:14px 16px 12px;position:relative;overflow:hidden;transition:box-shadow .22s,transform .18s;cursor:default;border:1px solid rgba(217,154,90,.1)}
 /* Bento: สินค้าทั้งหมด + True Star = แถวบน 2 กล่อง | Velocity, Trend, Stock = แถวล่าง */
 .kpi.bento-wide{grid-column:span 2}
-.kpi:hover{box-shadow:6px 6px 18px #e4d9c0,-4px -4px 14px #ffffff,0 0 0 2px rgba(217,119,6,.15);transform:translateY(-2px)}
+.kpi:hover{box-shadow:6px 6px 18px #ece1d0,-4px -4px 14px #ffffff,0 0 0 2px rgba(217,154,90,.15);transform:translateY(-2px)}
+
+/* ── Cosmos Pastel — KPI cards ── */
+.kpi.c-red    {background:linear-gradient(160deg,#fff5f9 0%,#ffd9e8 100%);border-color:rgba(255,184,218,.5)}
+.kpi.c-orange {background:linear-gradient(160deg,#fff9f0 0%,#fce6cf 100%);border-color:rgba(252,220,182,.5)}
+.kpi.c-green  {background:linear-gradient(160deg,#f3fbf7 0%,#c5f3e0 100%);border-color:rgba(162,244,213,.5)}
+.kpi.c-gold   {background:linear-gradient(160deg,#fffdf0 0%,#faf6c6 100%);border-color:rgba(252,248,157,.55)}
+.kpi.c-purple {background:linear-gradient(160deg,#faf9fc 0%,#e8e6f7 100%);border-color:rgba(224,223,245,.6)}
+.kpi.c-blue   {background:linear-gradient(160deg,#f6fbfe 0%,#d4ebf8 100%);border-color:rgba(192,228,246,.55)}
+
 .kpi-clickable{cursor:pointer}
 .kpi-clickable::before{content:"↕";position:absolute;top:12px;right:14px;font-size:14px;opacity:0;color:var(--muted);transition:opacity .2s;font-style:normal;line-height:1}
 .kpi-clickable:hover::before{opacity:1}
 .kpi-clickable.kpi-active{box-shadow:var(--si);transform:none!important}
 .kpi-clickable.kpi-active .kpi-accent{opacity:1;width:5px}
-.kpi-clickable.kpi-active::before{content:"✓ เรียงอยู่";opacity:1;font-size:13px;color:var(--blue)}
+.kpi-clickable.kpi-active::before{content:"✓ เรียงอยู่";opacity:1;font-size:13px;color:var(--blue-d)}
 .kpi-accent{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:0 3px 3px 0}
-.kpi.c-blue  .kpi-accent{background:var(--blue)}
-.kpi.c-red   .kpi-accent{background:var(--red)}
-.kpi.c-green .kpi-accent{background:var(--green)}
-.kpi.c-purple .kpi-accent{background:var(--purple)}
-.kpi.c-orange .kpi-accent{background:var(--orange)}
-.kpi.c-gold  .kpi-accent{background:var(--gold)}
+.kpi.c-blue  .kpi-accent{background:var(--blue-d)}
+.kpi.c-red   .kpi-accent{background:var(--red-d)}
+.kpi.c-green .kpi-accent{background:var(--green-d)}
+.kpi.c-purple .kpi-accent{background:var(--purple-d)}
+.kpi.c-orange .kpi-accent{background:var(--orange-d)}
+.kpi.c-gold  .kpi-accent{background:var(--gold-d)}
 .kpi-ico{width:34px;height:34px;border-radius:10px;background:var(--bg);box-shadow:var(--sm);display:flex;align-items:center;justify-content:center;margin-bottom:10px;flex-shrink:0}
 .kpi-ico svg{width:16px;height:16px;stroke-width:2;fill:none}
-.kpi.c-blue   .kpi-ico svg{stroke:var(--blue)}
-.kpi.c-red    .kpi-ico svg{stroke:var(--red)}
-.kpi.c-green  .kpi-ico svg{stroke:var(--green)}
-.kpi.c-purple .kpi-ico svg{stroke:var(--purple)}
-.kpi.c-orange .kpi-ico svg{stroke:var(--orange)}
-.kpi.c-gold   .kpi-ico svg{stroke:var(--gold)}
+.kpi.c-blue   .kpi-ico svg{stroke:var(--blue-d)}
+.kpi.c-red    .kpi-ico svg{stroke:var(--red-d)}
+.kpi.c-green  .kpi-ico svg{stroke:var(--green-d)}
+.kpi.c-purple .kpi-ico svg{stroke:var(--purple-d)}
+.kpi.c-orange .kpi-ico svg{stroke:var(--orange-d)}
+.kpi.c-gold   .kpi-ico svg{stroke:var(--gold-d)}
 .kpi-lbl{font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
 .kpi-val{font-size:26px;font-weight:700;letter-spacing:-1.5px;line-height:1;font-feature-settings:"tnum"}
 .kpi-unit{font-size:14px;font-weight:500;letter-spacing:0;color:var(--muted);margin-left:3px}
-.kpi.c-blue   .kpi-val{color:var(--blue)}
-.kpi.c-red    .kpi-val{color:var(--red)}
-.kpi.c-green  .kpi-val{color:var(--green)}
-.kpi.c-purple .kpi-val{color:var(--purple)}
-.kpi.c-orange .kpi-val{color:var(--orange)}
-.kpi.c-gold   .kpi-val{color:var(--gold)}
+.kpi.c-blue   .kpi-val{color:var(--blue-d)}
+.kpi.c-red    .kpi-val{color:var(--red-d)}
+.kpi.c-green  .kpi-val{color:var(--green-d)}
+.kpi.c-purple .kpi-val{color:var(--purple-d)}
+.kpi.c-orange .kpi-val{color:var(--orange-d)}
+.kpi.c-gold   .kpi-val{color:var(--gold-d)}
 .kpi-note{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.3}
 
 /* ─── KPI SPLIT LAYOUT 40:60 ─── */
@@ -147,27 +166,27 @@ body{font-family:'Anuphan',sans-serif;background:linear-gradient(160deg,#fdf8ee 
 .kpi-top-rank{width:14px;height:14px;border-radius:50%;background:var(--bg-dark);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--muted);flex-shrink:0}
 .kpi-top-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
 .kpi-top-val{flex-shrink:0;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:11px}
-.kpi-top-item:first-child .kpi-top-rank{background:#d97706;color:#fff}
+.kpi-top-item:first-child .kpi-top-rank{background:#fcdcb6;color:#fff}
 .kpi-top-item:nth-child(2) .kpi-top-rank{background:#b0a080;color:#fff}
 .kpi-top-item:nth-child(3) .kpi-top-rank{background:#c89060;color:#fff}
 
 /* ─── FORMULA STRIP ─── */
-.f-strip{background:var(--bg-dark);border-radius:12px;padding:8px 16px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1px solid rgba(217,119,6,.12)}
+.f-strip{background:var(--bg-dark);border-radius:12px;padding:8px 16px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1px solid rgba(217,154,90,.12)}
 .f-lbl{font-size:15px;color:var(--mid);font-weight:700;letter-spacing:.2px}
-.f-chip{background:var(--surface);box-shadow:var(--sx);border-radius:8px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--blue);font-weight:600;letter-spacing:.2px;border:1px solid rgba(217,119,6,.1)}
-.f-chip.red{color:var(--red)}.f-chip.green{color:var(--green)}.f-chip.purple{color:var(--purple)}.f-chip.orange{color:var(--orange)}
+.f-chip{background:var(--surface);box-shadow:var(--sx);border-radius:8px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--blue-d);font-weight:600;letter-spacing:.2px;border:1px solid rgba(217,154,90,.1)}
+.f-chip.red{color:var(--red-d)}.f-chip.green{color:var(--green-d)}.f-chip.purple{color:var(--purple-d)}.f-chip.orange{color:var(--orange-d)}
 .f-div{width:1px;height:18px;background:rgba(255,255,255,.08)}
 
 /* ─── PANEL ─── */
-.panel{background:var(--surface);border-radius:18px;box-shadow:var(--so);overflow:hidden;margin-bottom:18px;border:1px solid rgba(217,119,6,.08)}
-.panel-hdr{padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;background:var(--bg-dark);border-bottom:1px solid rgba(217,119,6,.1)}
+.panel{background:var(--surface);border-radius:18px;box-shadow:var(--so);overflow:hidden;margin-bottom:18px;border:1px solid rgba(217,154,90,.08)}
+.panel-hdr{padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;background:var(--bg-dark);border-bottom:1px solid rgba(217,154,90,.1)}
 .panel-ttl{font-size:16px;font-weight:800;color:var(--text);letter-spacing:-.3px;font-family:'Anuphan',sans-serif}
 .panel-sub{font-size:13px;color:var(--muted);margin-top:2px;letter-spacing:.2px}
 .srch-wrap{position:relative}
 .srch-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:13px;height:13px;stroke:var(--faint);stroke-width:2.2;fill:none;pointer-events:none}
-.srch{background:var(--surface);border:1px solid rgba(217,119,6,.2);box-shadow:var(--si);border-radius:14px;padding:10px 16px 10px 38px;font-size:15px;font-family:'Anuphan',sans-serif;color:var(--text);width:240px;outline:none;transition:box-shadow .18s}
+.srch{background:var(--surface);border:1px solid rgba(217,154,90,.2);box-shadow:var(--si);border-radius:14px;padding:10px 16px 10px 38px;font-size:15px;font-family:'Anuphan',sans-serif;color:var(--text);width:240px;outline:none;transition:box-shadow .18s}
 .srch::placeholder{color:var(--faint)}
-.srch:focus{box-shadow:var(--si),0 0 0 2px rgba(217,119,6,.25);border-color:var(--blue)}
+.srch:focus{box-shadow:var(--si),0 0 0 2px rgba(217,154,90,.25);border-color:var(--blue-d)}
 
 /* ─── TABLE ─── */
 .tbl-wrap{overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;max-height:72vh;position:relative}
@@ -176,7 +195,7 @@ thead th{
   padding:9px 8px;
   font-size:12px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;
   color:var(--muted);background:var(--bg-dark);
-  border-bottom:2px solid rgba(217,119,6,.15);
+  border-bottom:2px solid rgba(217,154,90,.15);
   white-space:nowrap;
   line-height:1.2;text-align:center;
   position:sticky;top:0;z-index:10
@@ -184,14 +203,14 @@ thead th{
 tbody td{
   padding:6px 8px;
   font-size:14px;
-  border-bottom:1px solid rgba(217,119,6,.05);
+  border-bottom:1px solid rgba(217,154,90,.05);
   vertical-align:middle;
   transition:background .12s
 }
 /* row stripe now handled below */
 tbody tr:last-child td{border-bottom:none}
-tbody tr:hover td{background:rgba(217,119,6,.08)!important}
-tbody tr:active td{background:rgba(217,119,6,.15)!important}
+tbody tr:hover td{background:rgba(217,154,90,.08)!important}
+tbody tr:active td{background:rgba(217,154,90,.15)!important}
 .pname{font-weight:700;font-size:14px;color:var(--text);line-height:1.25;font-family:'Anuphan',sans-serif;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .psku{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--faint);margin-top:2px;letter-spacing:.2px}
 .mono{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:500;color:var(--text)}
@@ -239,21 +258,21 @@ td[data-col="lastsale"],td[data-col="peakday"]{text-align:right}
 
 /* ─── ORDER TAB ─── */
 .order-group{margin-bottom:28px}
-.order-group-hdr{display:flex;align-items:center;gap:10px;padding:14px 24px;background:var(--bg-dark);border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;z-index:3}
+.order-group-hdr{display:flex;align-items:center;gap:10px;padding:14px 24px;background:linear-gradient(180deg,#fff5ee 0%,#fae3d3 100%);border-bottom:1px solid rgba(217,154,90,.15);position:sticky;top:0;z-index:3}
 .order-group-ttl{font-size:18px;font-weight:800;color:var(--text);flex:1}
 .order-group-sub{font-size:15px;color:var(--muted)}
-.order-group-badge{background:rgba(77,143,255,.15);color:var(--blue);font-size:15px;font-weight:800;padding:3px 10px;border-radius:20px;border:1px solid rgba(77,143,255,.2)}
+.order-group-badge{background:rgba(77,143,255,.15);color:var(--blue-d);font-size:15px;font-weight:800;padding:3px 10px;border-radius:20px;border:1px solid rgba(77,143,255,.2)}
 
 /* Lot card (กางเกง) */
-.lot-card{background:var(--bg);box-shadow:var(--so);border-radius:20px;padding:20px;margin:16px 24px;transition:box-shadow .2s}
-.lot-card:hover{box-shadow:8px 8px 20px #0a0e14,-6px -6px 16px #252c36}
+.lot-card{background:linear-gradient(160deg,#fffbf6 0%,#fef0e3 100%);box-shadow:var(--so);border-radius:20px;padding:20px;margin:16px 24px;transition:box-shadow .2s;border:1px solid rgba(217,154,90,.08)}
+.lot-card:hover{box-shadow:8px 8px 22px #ece1d0,-6px -6px 18px #ffffff,0 0 0 1px rgba(217,154,90,.15)}
 .lot-card-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:8px}
 .lot-card-name{font-size:19px;font-weight:800;color:var(--text);letter-spacing:-.2px}
 .lot-card-sku{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--faint);margin-top:3px}
 .lot-card-avg{background:rgba(46,204,138,.1);border:1px solid rgba(46,204,138,.2);border-radius:10px;padding:6px 14px;text-align:right}
-.lot-card-avg-lbl{font-size:13px;font-weight:800;color:var(--green);opacity:.7;letter-spacing:.6px;text-transform:uppercase}
-.lot-card-avg-val{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--green);letter-spacing:-.5px}
-.lot-card-avg-unit{font-size:14px;color:var(--green);opacity:.7}
+.lot-card-avg-lbl{font-size:13px;font-weight:800;color:var(--green-d);opacity:.7;letter-spacing:.6px;text-transform:uppercase}
+.lot-card-avg-val{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--green-d);letter-spacing:-.5px}
+.lot-card-avg-unit{font-size:14px;color:var(--green-d);opacity:.7}
 
 .lot-row{display:grid;gap:10px;margin-bottom:12px}
 .lot-color-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -264,22 +283,22 @@ td[data-col="lastsale"],td[data-col="peakday"]{text-align:right}
 .lot-sizes{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .lot-size-box{background:var(--bg);box-shadow:var(--si);border-radius:10px;padding:6px 0;min-width:56px;text-align:center}
 .lot-size-lbl{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
-.lot-size-input{width:44px;font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--blue);background:none;border:none;outline:none;text-align:center;cursor:text;font-family:'Anuphan',sans-serif}
+.lot-size-input{width:44px;font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--blue-d);background:none;border:none;outline:none;text-align:center;cursor:text;font-family:'Anuphan',sans-serif}
 .lot-size-input:focus{color:var(--text)}
 .lot-add-btn{background:var(--bg);box-shadow:var(--sm);border:none;border-radius:8px;padding:5px 12px;font-size:16px;font-weight:700;color:var(--muted);cursor:pointer;font-family:'Anuphan',sans-serif;transition:all .15s}
-.lot-add-btn:hover{color:var(--blue);box-shadow:var(--so)}
+.lot-add-btn:hover{color:var(--blue-d);box-shadow:var(--so)}
 
 .lot-info-bar{background:var(--bg-dark);border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:10px}
 .lot-info-item{font-size:15px;color:var(--muted)}
 .lot-info-item b{color:var(--text);font-weight:700}
-.lot-warn{color:var(--orange)}
-.lot-ok{color:var(--green)}
-.lot-low{color:var(--red)}
+.lot-warn{color:var(--orange-d)}
+.lot-ok{color:var(--green-d)}
+.lot-low{color:var(--red-d)}
 
 /* Config card (per model lot count) */
 .lot-cfg-card{background:var(--bg);box-shadow:var(--sm);border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px;min-width:180px}
 .lot-cfg-name{font-size:16px;font-weight:700;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lot-cfg-input{width:44px;font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:700;color:var(--purple);background:var(--bg);box-shadow:var(--si);border:none;border-radius:8px;padding:5px 0;text-align:center;outline:none;cursor:pointer}
+.lot-cfg-input{width:44px;font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:700;color:var(--purple-d);background:var(--bg);box-shadow:var(--si);border:none;border-radius:8px;padding:5px 0;text-align:center;outline:none;cursor:pointer}
 
 /* Belt card */
 .belt-card{background:var(--bg);box-shadow:var(--so);border-radius:20px;padding:18px 20px;margin:12px 24px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;transition:box-shadow .2s}
@@ -288,10 +307,10 @@ td[data-col="lastsale"],td[data-col="peakday"]{text-align:right}
 .belt-name{font-size:18px;font-weight:700;color:var(--text)}
 .belt-sku{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--faint);margin-top:2px}
 .belt-colors{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.belt-color-pill{background:var(--bg);box-shadow:var(--sx);border-radius:6px;padding:3px 8px;font-size:15px;font-weight:700;color:var(--purple)}
-.belt-qty-box{text-align:center;background:var(--bg-dark);border-radius:14px;padding:12px 18px;min-width:130px}
+.belt-color-pill{background:var(--bg);box-shadow:var(--sx);border-radius:6px;padding:3px 8px;font-size:15px;font-weight:700;color:var(--purple-d)}
+.belt-qty-box{text-align:center;background:linear-gradient(160deg,#fff5ee 0%,#fae3d3 100%);border-radius:14px;padding:12px 18px;min-width:130px;border:1px solid rgba(217,154,90,.15)}
 .belt-qty-lbl{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:4px}
-.belt-qty-val{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:700;color:var(--orange)}
+.belt-qty-val{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:700;color:var(--orange-d)}
 .belt-qty-unit{font-size:14px;color:var(--muted)}
 
 /* Order summary */
@@ -301,29 +320,29 @@ td[data-col="lastsale"],td[data-col="peakday"]{text-align:right}
 .order-sum-row:last-child{border-bottom:none}
 .order-sum-name{font-size:17px;font-weight:600;color:var(--text)}
 .order-sum-detail{font-size:15px;color:var(--muted);margin-top:2px}
-.order-sum-qty{font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:700;color:var(--blue)}
+.order-sum-qty{font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:700;color:var(--blue-d)}
 
 /* ─── STOCK UPLOAD ─── */
 #stock-upload-input{display:none}
 .stock-upload-btn{position:relative;overflow:hidden}
 .stock-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:14px;font-weight:800}
-.stock-badge.oos {background:rgba(255,85,114,.18);color:var(--red);border:1px solid rgba(255,85,114,.3)}
-.stock-badge.instock{background:rgba(46,204,138,.18);color:var(--green);border:1px solid rgba(46,204,138,.3)}
+.stock-badge.oos {background:rgba(255,85,114,.18);color:var(--red-d);border:1px solid rgba(255,85,114,.3)}
+.stock-badge.instock{background:rgba(46,204,138,.18);color:var(--green-d);border:1px solid rgba(46,204,138,.3)}
 .stock-badge.unknown{background:rgba(100,120,140,.15);color:var(--muted);border:1px solid rgba(100,120,140,.2)}
 /* pill in table cell */
 td .stock-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:10px;font-size:14px;font-weight:700;margin-top:3px;white-space:nowrap}
-td .stock-pill.oos{background:rgba(255,85,114,.15);color:var(--red)}
-td .stock-pill.instock{background:rgba(46,204,138,.13);color:var(--green)}
+td .stock-pill.oos{background:rgba(255,85,114,.15);color:var(--red-d)}
+td .stock-pill.instock{background:rgba(46,204,138,.13);color:var(--green-d)}
 /* stock file info bar */
 #stock-file-bar{display:none;align-items:center;gap:10px;padding:8px 20px;background:rgba(46,204,138,.08);border-bottom:1px solid rgba(46,204,138,.15);font-size:15px;color:var(--muted)}
-#stock-file-bar b{color:var(--green)}
+#stock-file-bar b{color:var(--green-d)}
 /* ─── CART / ORDER SELECTION ─── */
 .cart-fab{position:fixed;bottom:28px;right:28px;z-index:500;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
 .cart-btn{display:flex;align-items:center;gap:10px;padding:14px 22px;background:var(--blue);color:#fff;border:none;border-radius:20px;font-size:18px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(77,143,255,.4);transition:all .2s}
 .cart-btn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(77,143,255,.5)}
 .cart-badge{background:var(--red);color:#fff;font-size:15px;font-weight:800;border-radius:10px;padding:1px 7px;margin-left:4px}
-.cart-select-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;font-size:14px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;border:1.5px solid rgba(77,143,255,.3);background:rgba(77,143,255,.08);color:var(--blue);transition:all .15s}
-.cart-select-btn.selected{background:rgba(77,143,255,.25);border-color:var(--blue);color:#fff}
+.cart-select-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;font-size:14px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;border:1.5px solid rgba(77,143,255,.3);background:rgba(77,143,255,.08);color:var(--blue-d);transition:all .15s}
+.cart-select-btn.selected{background:rgba(77,143,255,.25);border-color:var(--blue-d);color:#fff}
 .cart-select-btn:hover{background:rgba(77,143,255,.2)}
 /* Cart Modal */
 .cart-modal{position:fixed;inset:0;z-index:600;display:flex;align-items:flex-end;justify-content:flex-end}
@@ -334,42 +353,42 @@ td .stock-pill.instock{background:rgba(46,204,138,.13);color:var(--green)}
 .cart-modal-footer{padding:16px 24px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:10px}
 .cart-item{padding:12px 14px;background:var(--bg);border-radius:12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px}
 .cart-item-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;padding:0;line-height:1;flex-shrink:0}
-.cart-item-remove:hover{color:var(--red)}
+.cart-item-remove:hover{color:var(--red-d)}
 .order-hist-card{background:var(--bg);border-radius:14px;margin-bottom:10px;overflow:hidden;box-shadow:var(--sm)}
 .order-hist-hdr{padding:14px 18px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:background .15s}
 .order-hist-hdr:hover{background:rgba(255,255,255,.02)}
 /* ─── DISCONTINUE TOGGLE ─── */
 .disc-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:'Anuphan',sans-serif;transition:all .15s}
 .disc-btn.active{background:rgba(100,116,139,.2);color:var(--muted);border:1px solid rgba(100,116,139,.25)}
-.disc-btn.active:hover{background:rgba(255,85,114,.15);color:var(--red)}
+.disc-btn.active:hover{background:rgba(255,85,114,.15);color:var(--red-d)}
 .disc-btn.inactive{background:rgba(255,85,114,.0);color:var(--faint);border:1px solid rgba(255,255,255,.08)}
-.disc-btn.inactive:hover{background:rgba(255,85,114,.1);color:var(--red);border-color:rgba(255,85,114,.2)}
+.disc-btn.inactive:hover{background:rgba(255,85,114,.1);color:var(--red-d);border-color:rgba(255,85,114,.2)}
 .disc-collapsed{opacity:.45;pointer-events:none}
 /* ─── DROPDOWN ─── */
 .dd-item{padding:8px 12px;border-radius:8px;font-size:16px;font-weight:600;color:var(--muted);cursor:pointer;transition:background .1s}
 .dd-item:hover{background:rgba(77,143,255,.1);color:var(--text)}
-.dd-item.dd-active{background:rgba(77,143,255,.18);color:var(--blue);font-weight:800}
+.dd-item.dd-active{background:rgba(77,143,255,.18);color:var(--blue-d);font-weight:800}
 .dd-group-hdr{padding:8px 12px 4px;font-size:13px;font-weight:800;color:var(--faint);letter-spacing:.8px;text-transform:uppercase;margin-top:4px}
 /* ─── LOT VISUALIZATION ─── */
 .lot-vis-roll{background:var(--bg-dark);border-radius:14px;padding:12px 14px;border:1px solid rgba(255,255,255,.06)}
 .lot-vis-roll-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:16px;font-weight:800;color:var(--text)}
 .lot-vis-lots{display:flex;gap:6px;flex-wrap:wrap}
 .lot-vis-lot{background:var(--bg);box-shadow:var(--sm);border-radius:10px;padding:8px 10px;min-width:60px;border-top:3px solid var(--blue)}
-.lot-vis-lot-num{font-size:13px;font-weight:800;color:var(--blue);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;text-align:center}
+.lot-vis-lot-num{font-size:13px;font-weight:800;color:var(--blue-d);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;text-align:center}
 
 /* ─── CONVEX / CONCAVE — DISABLED (v3.0: ลดลายตา) ─── */
 /* col-convex/col-concave ถูกปิดแล้ว ใช้ row stripe แทน */
 
 /* ─── STOCK AVG (middle green) ─── */
 .stk-avg-box{border-radius:12px;padding:8px 12px;min-width:130px;background:rgba(46,204,138,.07);border:1px solid rgba(46,204,138,.18)}
-.stk-avg-main{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--green);letter-spacing:-.5px}
-.stk-avg-sub{font-size:14px;color:var(--green);opacity:.7;margin-top:3px}
+.stk-avg-main{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--green-d);letter-spacing:-.5px}
+.stk-avg-sub{font-size:14px;color:var(--green-d);opacity:.7;margin-top:3px}
 .stk-avg-mini{height:4px;border-radius:2px;background:rgba(46,204,138,.12);margin-top:8px;overflow:hidden}
 .stk-avg-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#26c47c,var(--green));transition:width .5s ease}
 
 /* ─── STOCK BOX ─── */
 .stk-box{border-radius:12px;padding:8px 12px;min-width:140px}
-.stk-main{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--purple);letter-spacing:-.5px}
+.stk-main{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--purple-d);letter-spacing:-.5px}
 .stk-sub{font-size:14px;color:var(--muted);margin-top:3px;letter-spacing:.2px}
 .stk-mini{height:4px;border-radius:2px;background:var(--bg);box-shadow:inset 2px 2px 5px #090c11,inset -2px -2px 5px #232830;margin-top:8px;overflow:hidden}
 .stk-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#7c60f8,var(--purple));transition:width .5s ease}
@@ -393,21 +412,21 @@ td .stock-pill.instock{background:rgba(46,204,138,.13);color:var(--green)}
 /* ─── BADGE ─── */
 .badge{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:50px;font-size:15px;font-weight:800;letter-spacing:.3px;background:var(--bg);white-space:nowrap}
 .badge svg{width:11px;height:11px;stroke:currentColor;stroke-width:2.8;fill:none}
-.b-ok{box-shadow:var(--sm);color:var(--green)}
-.b-warn{box-shadow:var(--sm);color:var(--orange)}
-.b-danger{box-shadow:var(--sm);color:var(--red)}
+.b-ok{box-shadow:var(--sm);color:var(--green-d)}
+.b-warn{box-shadow:var(--sm);color:var(--orange-d)}
+.b-danger{box-shadow:var(--sm);color:var(--red-d)}
 
 /* ─── ALERT (legacy) ─── */
 .alert-sec{background:var(--bg);border-radius:22px;box-shadow:var(--so);border-top:4px solid var(--red);padding:24px;margin-bottom:28px;display:none}
 .alert-sec.on{display:block}
-.alert-ttl{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700;color:var(--red);margin-bottom:18px}
-.alert-ttl svg{width:17px;height:17px;stroke:var(--red);stroke-width:2.2;fill:none}
+.alert-ttl{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700;color:var(--red-d);margin-bottom:18px}
+.alert-ttl svg{width:17px;height:17px;stroke:var(--red-d);stroke-width:2.2;fill:none}
 .alert-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
 .a-card{background:var(--bg);border-radius:16px;box-shadow:var(--sm);padding:16px;transition:box-shadow .2s}
 .a-card:hover{box-shadow:6px 6px 16px #07090d,-4px -4px 12px #252c36}
 .a-name{font-size:17px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:8px}
 .a-stats{display:flex;justify-content:space-between;font-size:16px;color:var(--mid);margin-bottom:8px}
-.a-rec{background:var(--bg);box-shadow:var(--si);border-radius:10px;padding:8px 12px;font-size:16px;font-weight:700;color:var(--red);text-align:center}
+.a-rec{background:var(--bg);box-shadow:var(--si);border-radius:10px;padding:8px 12px;font-size:16px;font-weight:700;color:var(--red-d);text-align:center}
 
 /* ─── INSIGHT TAB ─── */
 .insight-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;margin-bottom:28px}
@@ -417,7 +436,7 @@ td .stock-pill.instock{background:rgba(46,204,138,.13);color:var(--green)}
 .i-card-sub{font-size:15px;color:var(--muted);margin-bottom:18px;line-height:1.4}
 .i-row{display:flex;align-items:center;gap:12px;margin-bottom:11px}
 .i-rank{width:24px;height:24px;border-radius:50%;background:var(--bg);box-shadow:var(--sx);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--mid);flex-shrink:0}
-.i-rank.gold{color:var(--gold);box-shadow:var(--sx),0 0 0 2px rgba(168,120,0,.2)}
+.i-rank.gold{color:var(--gold-d);box-shadow:var(--sx),0 0 0 2px rgba(168,120,0,.2)}
 .i-rank.silver{color:#586877}
 .i-rank.bronze{color:#7a4020}
 .i-info{flex:1;min-width:0}
@@ -453,13 +472,13 @@ tbody tr{animation:rf .28s ease both}
 /* ─── COLUMN CHECKBOXES ─── */
 .col-chk-row{display:flex;align-items:center;gap:9px;padding:6px 10px;border-radius:10px;cursor:pointer;font-size:16px;font-weight:600;color:var(--mid);transition:background .12s;user-select:none;line-height:1.3}
 .col-chk-row:hover{background:var(--bg-dark)}
-.col-chk-row input[type=checkbox]{width:15px;height:15px;accent-color:var(--blue);cursor:pointer;flex-shrink:0}
+.col-chk-row input[type=checkbox]{width:15px;height:15px;accent-color:var(--blue-d);cursor:pointer;flex-shrink:0}
 
 /* ─── FILTER CHIPS ─── */
 .fchip{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:8px;font-size:15px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;border:none;background:var(--bg);box-shadow:var(--sm);color:var(--mid);transition:all .14s;user-select:none;letter-spacing:.2px}
-.fchip.on{box-shadow:var(--si);color:var(--blue)}
+.fchip.on{box-shadow:var(--si);color:var(--blue-d)}
 .fchip:active{box-shadow:var(--sp)}
-.active-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:15px;font-weight:700;background:rgba(77,143,255,.12);color:var(--blue);border:1.5px solid rgba(77,143,255,.25);white-space:nowrap}
+.active-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:15px;font-weight:700;background:rgba(77,143,255,.12);color:var(--blue-d);border:1.5px solid rgba(77,143,255,.25);white-space:nowrap}
 .active-chip-x{cursor:pointer;font-size:16px;line-height:1;opacity:.55;transition:opacity .12s}
 .active-chip-x:hover{opacity:1}
 
@@ -467,19 +486,19 @@ tbody tr{animation:rf .28s ease both}
 .col-toggle-bar{display:flex;flex-wrap:wrap;gap:7px;padding:12px 20px;background:var(--bg-dark);border-bottom:1px solid rgba(255,255,255,.06)}
 .col-toggle-lbl{font-size:14px;font-weight:800;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:flex;align-items:center;margin-right:4px}
 .ctog{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:10px;font-size:15px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;border:1px solid transparent;background:var(--bg);box-shadow:var(--sm);color:var(--mid);transition:all .14s;user-select:none;letter-spacing:.2px}
-.ctog.on{box-shadow:var(--si);color:var(--blue);background:rgba(77,143,255,.15);border-color:rgba(77,143,255,.4)}
+.ctog.on{box-shadow:var(--si);color:var(--blue-d);background:rgba(77,143,255,.15);border-color:rgba(77,143,255,.4)}
 .ctog:hover:not(.on){color:var(--text)}
 .ctog:active{box-shadow:var(--sp)}
 
 /* ─── SORTABLE HEADERS ─── */
 th.sortable{cursor:pointer;user-select:none;white-space:normal;word-break:keep-all;transition:color .12s}
-th.sortable:hover{color:var(--blue)}
+th.sortable:hover{color:var(--blue-d)}
 th.sortable .sort-ico{display:inline-block;margin-left:5px;opacity:.3;font-size:12px;vertical-align:middle}
 th.sortable.asc  .sort-ico::after{content:'▲'}
 th.sortable.desc .sort-ico::after{content:'▼'}
 th.sortable:not(.asc):not(.desc) .sort-ico::after{content:'⇅'}
 th.sortable.asc  .sort-ico,
-th.sortable.desc .sort-ico{opacity:1;color:var(--blue)}
+th.sortable.desc .sort-ico{opacity:1;color:var(--blue-d)}
 
 /* ─── CHART MODAL ─── */
 .modal-overlay{position:fixed;inset:0;background:rgba(13,30,56,.42);backdrop-filter:blur(10px);z-index:10000;display:none;align-items:center;justify-content:center;padding:20px}
@@ -501,7 +520,7 @@ th.sortable.desc .sort-ico{opacity:1;color:var(--blue)}
 canvas{display:block;width:100%!important}
 .stockout-banner{background:var(--bg);border-radius:14px;box-shadow:var(--sm);border-left:4px solid var(--red);padding:13px 18px;margin-bottom:16px;display:none}
 .stockout-banner.on{display:block}
-.stockout-banner-ttl{font-size:17px;font-weight:700;color:var(--red);margin-bottom:4px}
+.stockout-banner-ttl{font-size:17px;font-weight:700;color:var(--red-d);margin-bottom:4px}
 .stockout-banner-body{font-size:16px;color:var(--mid);line-height:1.6}
 .seg-legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center}
 .seg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
@@ -514,13 +533,13 @@ canvas{display:block;width:100%!important}
 .sel-results{display:flex;flex-wrap:wrap;gap:12px}
 .sel-stat{background:var(--bg);box-shadow:var(--sm);border-radius:14px;padding:12px 20px;min-width:160px}
 .sel-stat-lbl{font-size:13px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
-.sel-stat-val{font-size:28px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--blue);letter-spacing:-1px}
+.sel-stat-val{font-size:28px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--blue-d);letter-spacing:-1px}
 .sel-stat-unit{font-size:15px;color:var(--muted);margin-top:3px}
 .sel-hint{font-size:15px;color:var(--faint);margin-top:12px;line-height:1.5}
 .sel-clear{display:inline-flex;align-items:center;gap:5px;margin-top:10px;padding:6px 14px;border-radius:10px;font-size:15px;font-weight:700;font-family:'Anuphan',sans-serif;cursor:pointer;border:none;background:var(--bg);box-shadow:var(--sm);color:var(--muted);transition:all .14s}
-.sel-clear:hover{box-shadow:var(--so);color:var(--red)}
+.sel-clear:hover{box-shadow:var(--so);color:var(--red-d)}
 
-::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--bg-dark)}::-webkit-scrollbar-thumb{background:rgba(217,119,6,.3);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:rgba(217,119,6,.5)}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--bg-dark)}::-webkit-scrollbar-thumb{background:rgba(217,154,90,.3);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:rgba(217,154,90,.5)}
 
 /* ── Typography System ── */
 .brand-name { font-family: 'Anuphan', sans-serif; }
@@ -535,45 +554,45 @@ thead th    { font-family: 'Sarabun', sans-serif; }
 
 /* ── Warm badge overrides ── */
 .badge.b-ok     { background: rgba(22,163,74,.12);   color: #15803d; border: 1px solid rgba(22,163,74,.25); }
-.badge.b-warn   { background: rgba(234,88,12,.12);   color: #c2410c; border: 1px solid rgba(234,88,12,.25); }
+.badge.b-warn   { background: rgba(240,168,117,.12);   color: #c2410c; border: 1px solid rgba(240,168,117,.25); }
 .badge.b-danger { background: rgba(239,68,68,.12);   color: #dc2626; border: 1px solid rgba(239,68,68,.25); }
 
 /* ── Warm filter chip ── */
-button.fchip { background: var(--surface); border: 1.5px solid rgba(217,119,6,.2); color: var(--mid); border-radius: 20px; padding: 5px 14px; font-size: 13px; font-family: 'Anuphan',sans-serif; font-weight: 600; cursor: pointer; transition: all .15s; }
+button.fchip { background: var(--surface); border: 1.5px solid rgba(217,154,90,.2); color: var(--mid); border-radius: 20px; padding: 5px 14px; font-size: 13px; font-family: 'Anuphan',sans-serif; font-weight: 600; cursor: pointer; transition: all .15s; }
 button.fchip:hover { border-color: var(--blue); color: var(--blue); }
-button.fchip.on { background: rgba(217,119,6,.15); border-color: var(--blue); color: var(--blue); font-weight: 700; }
+button.fchip.on { background: rgba(217,154,90,.15); border-color: var(--blue); color: var(--blue); font-weight: 700; }
 
 /* ── Loading overlay warm ── */
 .loading { background: rgba(253,248,238,.96); backdrop-filter: blur(16px); }
-.spin { border-color: rgba(217,119,6,.2); border-top-color: var(--blue); }
+.spin { border-color: rgba(217,154,90,.2); border-top-color: var(--blue); }
 .spin-label { background: var(--surface); box-shadow: var(--sm); color: var(--mid); }
 .spin-wrap { background: var(--surface); box-shadow: var(--so); }
 
 /* ── Order history card ── */
-.order-hist-card { background: var(--surface); border: 1px solid rgba(217,119,6,.12); border-radius: 16px; }
-.order-hist-hdr:hover { background: rgba(217,119,6,.05); }
+.order-hist-card { background: var(--surface); border: 1px solid rgba(217,154,90,.12); border-radius: 16px; }
+.order-hist-hdr:hover { background: rgba(217,154,90,.05); }
 
 /* ── Lot card warm ── */
-.lot-card { background: var(--surface); border: 1px solid rgba(217,119,6,.1); }
-.lot-vis-roll { background: var(--bg-dark); border: 1px solid rgba(217,119,6,.1); }
+.lot-card { background: var(--surface); border: 1px solid rgba(217,154,90,.1); }
+.lot-vis-roll { background: var(--bg-dark); border: 1px solid rgba(217,154,90,.1); }
 
 /* ── Col popup / filter popup warm ── */
-#colPopup, #filterPopup { background: var(--surface); border: 1px solid rgba(217,119,6,.15); box-shadow: 8px 8px 24px rgba(180,130,50,.15), -4px -4px 14px rgba(255,255,255,.8); }
+#colPopup, #filterPopup { background: var(--surface); border: 1px solid rgba(217,154,90,.15); box-shadow: 8px 8px 24px rgba(180,130,50,.15), -4px -4px 14px rgba(255,255,255,.8); }
 .col-chk-row { color: var(--mid); }
-.col-chk-row:hover { background: rgba(217,119,6,.06); border-radius: 8px; }
+.col-chk-row:hover { background: rgba(217,154,90,.06); border-radius: 8px; }
 
 /* ── Cart modal warm ── */
 .cart-modal-panel { background: var(--surface); }
-.cart-btn { background: linear-gradient(135deg,#fbbf24,#d97706); box-shadow: 0 4px 16px rgba(217,119,6,.35); }
-.cart-select-btn { background: rgba(217,119,6,.08); border-color: rgba(217,119,6,.25); color: var(--blue); }
-.cart-select-btn.selected { background: rgba(217,119,6,.2); border-color: var(--blue); color: #92400e; }
+.cart-btn { background: linear-gradient(135deg,#fce6cf 0%,#f8c9a0 100%); box-shadow: 0 4px 16px rgba(217,154,90,.35); }
+.cart-select-btn { background: rgba(217,154,90,.08); border-color: rgba(217,154,90,.25); color: var(--blue); }
+.cart-select-btn.selected { background: rgba(217,154,90,.2); border-color: var(--blue); color: #a87a55; }
 
 /* ── Tab bar history badge warm ── */
 #history-badge { background: var(--green); }
 
 /* ── Stock status bar warm ── */
 #stock-status-bar { background: rgba(22,163,74,.06) !important; border-color: rgba(22,163,74,.15) !important; }
-#fb-status-bar    { background: rgba(217,119,6,.06) !important; border-color: rgba(217,119,6,.12) !important; }
+#fb-status-bar    { background: rgba(217,154,90,.06) !important; border-color: rgba(217,154,90,.12) !important; }
 
 
 /* ═══════════════════════════════════════════════════════
@@ -600,7 +619,7 @@ body {
   background: rgba(253,248,238,.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(217,119,6,.12);
+  border-top: 1px solid rgba(217,154,90,.12);
   display: none;
   padding: 8px 0 calc(8px + var(--safe-bottom));
   box-shadow: 0 -4px 20px rgba(180,130,50,.1);
@@ -632,8 +651,8 @@ body {
   transition: all .18s;
 }
 .bnav-item span { font-size: 10px; font-weight: 700; letter-spacing: .3px; }
-.bnav-item.active { color: #d97706; }
-.bnav-item.active svg { stroke: #d97706; filter: drop-shadow(0 2px 4px rgba(217,119,6,.3)); }
+.bnav-item.active { color: #fcdcb6; }
+.bnav-item.active svg { stroke: #fcdcb6; filter: drop-shadow(0 2px 4px rgba(217,154,90,.3)); }
 .bnav-item:active { transform: scale(.92); }
 
 /* ── Mobile App Header ── */
@@ -644,7 +663,7 @@ body {
   background: rgba(253,248,238,.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(217,119,6,.1);
+  border-bottom: 1px solid rgba(217,154,90,.1);
   padding: calc(var(--safe-top) + 10px) 16px 10px;
   display: none;
   align-items: center;
@@ -662,7 +681,7 @@ body {
   width: 38px; height: 38px;
   border-radius: 50%;
   background: var(--bg-dark);
-  border: 1px solid rgba(217,119,6,.15);
+  border: 1px solid rgba(217,154,90,.15);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   box-shadow: var(--sx);
@@ -776,7 +795,7 @@ body {
 .mob-card {
   background: var(--surface);
   border-radius: 16px;
-  border: 0.5px solid rgba(217,119,6,.12);
+  border: 0.5px solid rgba(217,154,90,.12);
   margin-bottom: 10px;
   overflow: hidden;
   box-shadow: 0 2px 10px rgba(180,130,50,.08);
@@ -848,15 +867,15 @@ body {
   font-weight: 700;
   background: var(--bg-dark);
   color: var(--mid);
-  border: 0.5px solid rgba(217,119,6,.1);
+  border: 0.5px solid rgba(217,154,90,.1);
 }
 .mob-pill.ok { background: rgba(22,163,74,.1); color: #15803d; border-color: rgba(22,163,74,.2); }
-.mob-pill.warn { background: rgba(234,88,12,.1); color: #c2410c; border-color: rgba(234,88,12,.2); }
+.mob-pill.warn { background: rgba(240,168,117,.1); color: #c2410c; border-color: rgba(240,168,117,.2); }
 .mob-pill.danger { background: rgba(239,68,68,.1); color: #dc2626; border-color: rgba(239,68,68,.2); }
 .mob-pill.disc { background: rgba(100,116,139,.1); color: #64748b; border-color: rgba(100,116,139,.2); }
 
 .mob-card-expand {
-  border-top: 0.5px solid rgba(217,119,6,.1);
+  border-top: 0.5px solid rgba(217,154,90,.1);
   padding: 12px 14px;
   display: none;
   grid-template-columns: 1fr 1fr;
@@ -867,7 +886,7 @@ body {
   background: var(--bg-dark);
   border-radius: 10px;
   padding: 8px 10px;
-  border: 0.5px solid rgba(217,119,6,.08);
+  border: 0.5px solid rgba(217,154,90,.08);
 }
 .mob-stat-lbl { font-size: 9px; font-weight: 700; color: var(--muted); letter-spacing: .4px; text-transform: uppercase; margin-bottom: 3px; }
 .mob-stat-val { font-size: 15px; font-weight: 800; color: var(--text); }
@@ -877,7 +896,7 @@ body {
   width: 20px; height: 20px;
   border-radius: 50%;
   background: var(--bg-dark);
-  border: 0.5px solid rgba(217,119,6,.15);
+  border: 0.5px solid rgba(217,154,90,.15);
   display: flex; align-items: center; justify-content: center;
   transition: transform .2s;
   flex-shrink: 0;
@@ -1319,8 +1338,8 @@ html, body {
 
 /* ── Config pill trigger ── */
 .mob-pill-config {
-  background: rgba(217,119,6,.08) !important;
-  border: 1.5px dashed rgba(217,119,6,.3) !important;
+  background: rgba(217,154,90,.08) !important;
+  border: 1.5px dashed rgba(217,154,90,.3) !important;
   color: var(--blue) !important;
   cursor: pointer !important;
   transition: background .15s, transform .12s !important;
@@ -1333,7 +1352,7 @@ html, body {
   border-radius: 10px;
   padding: 4px 6px;
 }
-.mob-card-right:active { transform: scale(0.92); background: rgba(217,119,6,.08); }
+.mob-card-right:active { transform: scale(0.92); background: rgba(217,154,90,.08); }
 
 /* ── Config sheet cards ── */
 .mob-cfg-card {
@@ -1344,7 +1363,7 @@ html, body {
   padding: 12px 6px 10px;
   border-radius: 14px;
   background: var(--bg-dark);
-  border: 1.5px solid rgba(217,119,6,.1);
+  border: 1.5px solid rgba(217,154,90,.1);
   cursor: pointer;
   transition: all .15s ease;
   position: relative;
@@ -1352,9 +1371,9 @@ html, body {
 }
 .mob-cfg-card:active { transform: scale(0.94); }
 .mob-cfg-card.active {
-  background: rgba(217,119,6,.12);
-  border-color: #d97706;
-  box-shadow: 0 0 0 3px rgba(217,119,6,.15);
+  background: rgba(217,154,90,.12);
+  border-color: #fcdcb6;
+  box-shadow: 0 0 0 3px rgba(217,154,90,.15);
 }
 .mob-cfg-icon { font-size: 20px; line-height: 1; }
 .mob-cfg-name { font-size: 10px; font-weight: 700; color: var(--mid); line-height: 1.2; }
@@ -1363,7 +1382,7 @@ html, body {
   top: 6px; right: 6px;
   width: 16px; height: 16px;
   border-radius: 50%;
-  background: #d97706;
+  background: #fcdcb6;
   color: #fff;
   font-size: 9px;
   font-weight: 800;
@@ -1375,7 +1394,7 @@ html, body {
 
 /* ── Mob stat tap hint ── */
 .mob-stat-tap { cursor: pointer; transition: background .12s; }
-.mob-stat-tap:active { background: rgba(217,119,6,.12) !important; }
+.mob-stat-tap:active { background: rgba(217,154,90,.12) !important; }
 
 /* ── Card expand animation ── */
 .mob-card-expand {
@@ -1440,7 +1459,7 @@ html, body {
   background: var(--surface);
   box-shadow: 0 4px 16px rgba(180,130,50,.2), 0 1px 4px rgba(0,0,0,.08);
   display: flex; align-items: center; justify-content: center;
-  border: 1.5px solid rgba(217,119,6,.2);
+  border: 1.5px solid rgba(217,154,90,.2);
   transition: transform .25s cubic-bezier(.34,1.56,.64,1), opacity .2s;
   opacity: 0;
   pointer-events: none;
@@ -1449,8 +1468,8 @@ html, body {
   opacity: 1;
 }
 #ptr-indicator.ready {
-  border-color: #d97706;
-  background: rgba(217,119,6,.1);
+  border-color: #fcdcb6;
+  background: rgba(217,154,90,.1);
 }
 #ptr-indicator.refreshing {
   opacity: 1;
@@ -1462,7 +1481,7 @@ html, body {
   transition: transform .3s ease;
 }
 #ptr-indicator.ready #ptr-icon {
-  stroke: #d97706;
+  stroke: #fcdcb6;
 }
 #ptr-indicator.refreshing #ptr-icon {
   animation: spin .7s linear infinite;
@@ -1480,9 +1499,9 @@ html, body {
   font-family: 'Anuphan', sans-serif;
 }
 .ord-status-pill.pending {
-  background: rgba(217,119,6,.12);
-  color: #92400e;
-  border: 1px solid rgba(217,119,6,.25);
+  background: rgba(217,154,90,.12);
+  color: #a87a55;
+  border: 1px solid rgba(217,154,90,.25);
 }
 .ord-status-pill.received {
   background: rgba(22,163,74,.1);
@@ -1493,7 +1512,7 @@ html, body {
 
 .order-hist-card {
   transition: box-shadow .2s, border-color .3s, background .3s;
-  border-left: 3px solid #d97706;
+  border-left: 3px solid #fcdcb6;
 }
 .order-hist-card:active { box-shadow: 0 1px 4px rgba(180,130,50,.1); }
 
@@ -1550,7 +1569,7 @@ html, body {
 /* Main card */
 .lot-card {
   background: var(--surface) !important;
-  border: 1px solid rgba(217,119,6,.1) !important;
+  border: 1px solid rgba(217,154,90,.1) !important;
   border-radius: 20px !important;
   padding: 20px !important;
   margin: 12px 0 !important;
@@ -1580,8 +1599,8 @@ html, body {
 
 /* Roll container */
 .lot-vis-roll {
-  background: rgba(217,119,6,.04) !important;
-  border: 1px solid rgba(217,119,6,.1) !important;
+  background: rgba(217,154,90,.04) !important;
+  border: 1px solid rgba(217,154,90,.1) !important;
   border-radius: 14px !important;
   padding: 12px !important;
 }
@@ -1621,7 +1640,7 @@ html, body {
   padding: 8px 12px;
   border-radius: 10px;
   background: var(--surface);
-  border: 1px solid rgba(217,119,6,.1);
+  border: 1px solid rgba(217,154,90,.1);
   min-width: 130px;
   flex: 1;
   transition: border-color .15s;
@@ -1662,14 +1681,14 @@ html, body {
   font-weight: 700 !important;
   font-family: 'Anuphan', sans-serif !important;
   cursor: pointer !important;
-  border: 1.5px solid rgba(217,119,6,.25) !important;
-  background: rgba(217,119,6,.08) !important;
+  border: 1.5px solid rgba(217,154,90,.25) !important;
+  background: rgba(217,154,90,.08) !important;
   color: var(--blue) !important;
   transition: all .15s !important;
   white-space: nowrap !important;
 }
 .cart-select-btn:hover {
-  background: rgba(217,119,6,.18) !important;
+  background: rgba(217,154,90,.18) !important;
   border-color: var(--blue) !important;
   transform: scale(1.04) !important;
 }
@@ -1731,7 +1750,7 @@ tbody tr:nth-child(even) td:nth-child(2),
 tbody tr:nth-child(even) td:nth-child(3),
 tbody tr:nth-child(even) td:nth-child(4) { background: #fbf6ec; }
 
-tbody tr:hover td { background: rgba(217,119,6,.08) !important; }
+tbody tr:hover td { background: rgba(217,154,90,.08) !important; }
 
 /* Column resize handle */
 thead th { position: relative; user-select: none; }
@@ -1746,7 +1765,7 @@ thead th .col-resize-handle {
 }
 thead th .col-resize-handle:hover,
 thead th.resizing .col-resize-handle {
-  background: rgba(217,119,6,.4);
+  background: rgba(217,154,90,.4);
   border-radius: 2px;
 }
 
@@ -1754,36 +1773,36 @@ thead th.resizing .col-resize-handle {
 :root {
   --blue:   #c2620a;
   --green:  #15803d;
-  --orange: #d97706;
+  --orange: #fcdcb6;
   --red:    #dc2626;
   --purple: #7c3aed;
-  --gold:   #b45309;
+  --gold:   #d99a5a;
   --muted:  #92724a;
   --faint:  #c8ae8a;
   --mid:    #7a6040;
   --text:   #2d1e0a;
 }
-.kpi.c-blue   .kpi-val { color: #d97706; }
-.kpi.c-gold   .kpi-val { color: #b45309; }
+.kpi.c-blue   .kpi-val { color: #fcdcb6; }
+.kpi.c-gold   .kpi-val { color: #d99a5a; }
 .kpi.c-green  .kpi-val { color: #15803d; }
-.kpi.c-orange .kpi-val { color: #d97706; }
+.kpi.c-orange .kpi-val { color: #fcdcb6; }
 .kpi.c-purple .kpi-val { color: #7c3aed; }
 /* Pastel badges */
 .badge.b-ok     { background: #f0fdf4; color: #15803d; border-color: #86efac; }
 .badge.b-warn   { background: #fff7ed; color: #c2410c; border-color: #fdba74; }
 .badge.b-danger { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
 /* Pastel tab active */
-.tab-btn.active { background: linear-gradient(135deg,#f59e0b,#d97706) !important; }
-/* Pastel panel header */
-.panel-hdr { background: #f5edd6 !important; }
+.tab-btn.active { background: linear-gradient(135deg,#fcdcb6 0%,#f8c9a0 100%) !important; }
+/* Pastel panel header — peach milk */
+.panel-hdr { background: linear-gradient(180deg,#fff5ee 0%,#fce8db 100%) !important; }
 /* Pastel KPI border accent */
-.kpi.c-blue   .kpi-accent { background: #d97706; }
-.kpi.c-green  .kpi-accent { background: #16a34a; }
-.kpi.c-orange .kpi-accent { background: #f59e0b; }
+.kpi.c-blue   .kpi-accent { background: #fcdcb6; }
+.kpi.c-green  .kpi-accent { background: #7fb89c; }
+.kpi.c-orange .kpi-accent { background: #fcdcb6; }
 .kpi.c-purple .kpi-accent { background: #8b5cf6; }
-.kpi.c-gold   .kpi-accent { background: #b45309; }
+.kpi.c-gold   .kpi-accent { background: #d99a5a; }
 /* Row border */
-tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
+tbody td { border-bottom: 1px solid rgba(217,154,90,.08) !important; }
 
 /* ── Status badge: compact 2-line ── */
 .badge {
@@ -1813,18 +1832,18 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
   font-weight: 700;
   font-family: 'Anuphan', sans-serif;
   cursor: pointer;
-  border: 1.5px solid rgba(217,119,6,.18);
+  border: 1.5px solid rgba(217,154,90,.18);
   background: var(--bg-dark);
   color: var(--mid);
   transition: all .15s;
   white-space: nowrap;
 }
-.hist-stab:hover { background: rgba(217,119,6,.1); border-color: #d97706; }
+.hist-stab:hover { background: rgba(217,154,90,.1); border-color: #fcdcb6; }
 .hist-stab.active {
-  background: linear-gradient(135deg,#fbbf24,#d97706);
-  border-color: #d97706;
+  background: linear-gradient(135deg,#fce6cf 0%,#f8c9a0 100%);
+  border-color: #fcdcb6;
   color: #fff;
-  box-shadow: 0 2px 8px rgba(217,119,6,.25);
+  box-shadow: 0 2px 8px rgba(217,154,90,.25);
 }
 .hist-stab.active .hist-stab-badge { background: rgba(255,255,255,.3) !important; color: #fff; }
 .hist-stab-badge {
@@ -1837,7 +1856,7 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
   border-radius: 9px;
   font-size: 11px;
   font-weight: 800;
-  background: rgba(217,119,6,.2);
+  background: rgba(217,154,90,.2);
   color: var(--mid);
 }
 /* Cancelled card style */
@@ -1936,7 +1955,7 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
   /* Table hover highlight enhancement */
   tbody tr { transition: background .15s ease; }
   tbody tr:hover td {
-    background: rgba(217,119,6,.06) !important;
+    background: rgba(217,154,90,.06) !important;
   }
 }
 
@@ -1947,7 +1966,7 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
 .cart-btn:focus-visible,
 .disc-btn:focus-visible,
 .cart-select-btn:focus-visible {
-  outline: 3px solid rgba(217,119,6,.5);
+  outline: 3px solid rgba(217,154,90,.5);
   outline-offset: 2px;
 }
 
@@ -2138,14 +2157,14 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
       <svg viewBox="0 0 24 24"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
       ซิงก์ข้อมูล
     </button>
-    <button id="pwa-install-btn" class="btn" onclick="pwaInstall()" style="display:none;gap:7px;background:linear-gradient(135deg,#fbbf24,#d97706);color:#fff;border:none;box-shadow:0 3px 12px rgba(217,119,6,.35)">
+    <button id="pwa-install-btn" class="btn" onclick="pwaInstall()" style="display:none;gap:7px;background:linear-gradient(135deg,#fce6cf 0%,#f8c9a0 100%);color:#fff;border:none;box-shadow:0 3px 12px rgba(217,154,90,.35)">
       <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       ติดตั้งแอป
     </button>
     <!-- Stock file upload -->
     <input type="file" id="stock-upload-input" accept=".xlsx,.xls,.csv" onchange="handleStockUpload(this)">
     <button class="btn stock-upload-btn" onclick="$('stock-upload-input').click()" id="stock-hdr-btn"
-      title="อัพโหลดไฟล์สต๊อกสินค้า (.xlsx) เพื่อตรวจสถานะจริง" style="color:var(--blue)">
+      title="อัพโหลดไฟล์สต๊อกสินค้า (.xlsx) เพื่อตรวจสถานะจริง" style="color:var(--blue-d)">
       <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
         <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
@@ -2164,7 +2183,7 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
     <div class="kpi-accent"></div>
     <div class="kpi-split">
       <div class="kpi-left">
-        <div class="kpi-lbl" style="color:var(--red)">🔴 ต้องสั่งด่วน</div>
+        <div class="kpi-lbl" style="color:var(--red-d)">🔴 ต้องสั่งด่วน</div>
         <div class="kpi-val" style="margin:2px 0"><span id="k-urgent">—</span><span class="kpi-unit">SKUs</span></div>
         <div class="kpi-note" id="k-urgent-note">หมดสต๊อก + Trend ขาขึ้น</div>
         <div id="kpi-top-urgent" class="kpi-top-list"></div>
@@ -2180,7 +2199,7 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
     <div class="kpi-accent"></div>
     <div class="kpi-split">
       <div class="kpi-left">
-        <div class="kpi-lbl" style="color:var(--orange)">💰 ต้องใช้เงินสั่งซื้อ</div>
+        <div class="kpi-lbl" style="color:var(--orange-d)">💰 ต้องใช้เงินสั่งซื้อ</div>
         <div class="kpi-val" style="margin:2px 0"><span id="k-ordercost">—</span><span class="kpi-unit">฿</span></div>
         <div class="kpi-note" id="k-ordercost-note">รวมทุกแบรนด์ในแท็บแบบสั่งสินค้า</div>
         <div id="kpi-top-ordercost" class="kpi-top-list"></div>
@@ -2236,23 +2255,23 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
   <div style="display:flex;align-items:center;gap:6px">
     <span style="color:var(--muted)">🚀</span>
     <span style="color:var(--muted)">Vel สูงสุด:</span>
-    <span style="font-weight:800;color:var(--green)" id="mini-vel">—</span>
+    <span style="font-weight:800;color:var(--green-d)" id="mini-vel">—</span>
     <span style="color:var(--muted);font-size:12px">ชิ้น/วัน</span>
   </div>
   <span style="color:var(--faint)">·</span>
   <div style="display:flex;align-items:center;gap:6px">
     <span style="color:var(--muted)">📊</span>
     <span style="color:var(--muted)">สต๊อกแนะนำรวม:</span>
-    <span style="font-weight:800;color:var(--purple)" id="mini-totalstock">—</span>
+    <span style="font-weight:800;color:var(--purple-d)" id="mini-totalstock">—</span>
     <span style="color:var(--muted);font-size:12px" id="mini-stocknote">/ 30 วัน</span>
   </div>
   <span style="color:var(--faint)">·</span>
   <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
     <span style="color:var(--muted)">📦</span>
     <span style="color:var(--muted)">สต๊อกจริง:</span>
-    <span style="font-size:11px;color:var(--red);font-weight:700" id="mini-bar-out"></span>
-    <span style="font-size:11px;color:var(--orange);font-weight:700" id="mini-bar-low"></span>
-    <span style="font-size:11px;color:var(--green);font-weight:700" id="mini-bar-ok"></span>
+    <span style="font-size:11px;color:var(--red-d);font-weight:700" id="mini-bar-out"></span>
+    <span style="font-size:11px;color:var(--orange-d);font-weight:700" id="mini-bar-low"></span>
+    <span style="font-size:11px;color:var(--green-d);font-weight:700" id="mini-bar-ok"></span>
   </div>
 </div>
 
@@ -2274,7 +2293,7 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
         <span id="fb-status-txt" style="font-weight:700;color:var(--text)"></span>
         <span id="fb-status-sub" style="color:var(--muted)"></span>
         <div style="margin-left:auto;display:flex;gap:4px">
-          <button class="btn" onclick="loadStockFromFirebase()" style="font-size:11px;padding:2px 7px;color:var(--blue)" title="รีโหลด">🔄</button>
+          <button class="btn" onclick="loadStockFromFirebase()" style="font-size:11px;padding:2px 7px;color:var(--blue-d)" title="รีโหลด">🔄</button>
           <button class="btn" onclick="clearFirebaseStock()" style="font-size:11px;padding:2px 7px;color:var(--muted)" title="ล้าง">✕</button>
         </div>
       </div>
@@ -2282,18 +2301,18 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
         <span id="cache-status-lbl"></span>
       </div>
       <div id="stock-status-bar" style="display:none;align-items:center;gap:10px;font-size:12px;flex-wrap:wrap;padding:6px 12px;background:rgba(22,163,74,.06);border-radius:10px;box-shadow:var(--sx)">
-        <span style="font-weight:800;color:var(--green)">📦 สต๊อกจริง:</span>
+        <span style="font-weight:800;color:var(--green-d)">📦 สต๊อกจริง:</span>
         <span id="stk-loaded-name" style="color:var(--muted)"></span>
         <span id="stk-stat-total" class="f-chip" style="font-size:11px"></span>
         <span id="stk-stat-out"   class="f-chip red" style="font-size:11px"></span>
         <span id="stk-stat-low"   class="f-chip orange" style="font-size:11px"></span>
-        <span id="stk-stat-ok"    class="f-chip" style="font-size:11px;color:var(--green)"></span>
+        <span id="stk-stat-ok"    class="f-chip" style="font-size:11px;color:var(--green-d)"></span>
         <div style="display:flex;gap:6px;margin-left:auto;align-items:center">
           <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px;cursor:pointer">
-            <input type="checkbox" id="stk-filter-out" onchange="renderAll(getFilteredData())" style="accent-color:var(--red)">
+            <input type="checkbox" id="stk-filter-out" onchange="renderAll(getFilteredData())" style="accent-color:var(--red-d)">
             แสดงเฉพาะสินค้าหมด
           </label>
-          <button onclick="clearStockFile()" style="font-size:12px;color:var(--red);background:none;border:none;cursor:pointer;font-family:Anuphan,sans-serif;font-weight:700">✕ ล้างสต๊อก</button>
+          <button onclick="clearStockFile()" style="font-size:12px;color:var(--red-d);background:none;border:none;cursor:pointer;font-family:Anuphan,sans-serif;font-weight:700">✕ ล้างสต๊อก</button>
         </div>
       </div>
   </div>
@@ -2323,7 +2342,7 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
           <div id="filterPopup" style="display:none;position:absolute;top:calc(100% + 8px);right:0;z-index:500;background:var(--bg);box-shadow:10px 10px 26px #07090d,-5px -5px 16px #252c36;border-radius:18px;padding:16px 18px;min-width:280px;max-width:340px;animation:modalIn .2s ease">
             <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
               🔍 ฟิลเตอร์
-              <button onclick="clearAllFilters()" style="font-size:12px;font-weight:700;color:var(--red);background:none;border:none;cursor:pointer;font-family:Anuphan,sans-serif">ล้างทั้งหมด</button>
+              <button onclick="clearAllFilters()" style="font-size:12px;font-weight:700;color:var(--red-d);background:none;border:none;cursor:pointer;font-family:Anuphan,sans-serif">ล้างทั้งหมด</button>
             </div>
             <!-- Name dropdown -->
             <div style="margin-bottom:10px">
@@ -2377,7 +2396,7 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
             <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
               📋 แสดง / ซ่อนคอลัมน์
               <div style="display:flex;gap:8px">
-                <button onclick="setAllCols(true)"  style="font-size:12px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;font-family:Anuphan,sans-serif">ทั้งหมด</button>
+                <button onclick="setAllCols(true)"  style="font-size:12px;font-weight:700;color:var(--blue-d);background:none;border:none;cursor:pointer;font-family:Anuphan,sans-serif">ทั้งหมด</button>
                 <button onclick="setAllCols(false)" style="font-size:12px;font-weight:700;color:var(--muted);background:none;border:none;cursor:pointer;font-family:Anuphan,sans-serif">ซ่อนทั้งหมด</button>
               </div>
             </div>
@@ -2497,7 +2516,7 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
             <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
               📋 แสดง / ซ่อนคอลัมน์
               <div style="display:flex;gap:8px">
-                <button onclick="setAllRiskCols(true)"  style="font-size:12px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;font-family:Anuphan,sans-serif">ทั้งหมด</button>
+                <button onclick="setAllRiskCols(true)"  style="font-size:12px;font-weight:700;color:var(--blue-d);background:none;border:none;cursor:pointer;font-family:Anuphan,sans-serif">ทั้งหมด</button>
                 <button onclick="setAllRiskCols(false)" style="font-size:12px;font-weight:700;color:var(--muted);background:none;border:none;cursor:pointer;font-family:Anuphan,sans-serif">ซ่อน</button>
               </div>
             </div>
@@ -2586,15 +2605,15 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
         <div class="panel-sub">วิเคราะห์จากค่าเฉลี่ย (สต๊อกแนะนำ + MaxVel7×30) ÷ 2</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button class="btn" onclick="toggleCartModal()" style="color:var(--green);gap:6px">
+        <button class="btn" onclick="toggleCartModal()" style="color:var(--green-d);gap:6px">
           <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
           ดูตะกร้า (<span id="cart-count-order">0</span>)
         </button>
-        <button class="btn" onclick="resetAllOverrides()" style="color:var(--orange);gap:6px" title="ล้างการแก้ไขทั้งหมด แล้วคำนวนจำนวนใหม่อัตโนมัติ">
+        <button class="btn" onclick="resetAllOverrides()" style="color:var(--orange-d);gap:6px" title="ล้างการแก้ไขทั้งหมด แล้วคำนวนจำนวนใหม่อัตโนมัติ">
           <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
           คำนวนใหม่
         </button>
-        <button class="btn" onclick="exportOrderCSV()" style="color:var(--blue)">
+        <button class="btn" onclick="exportOrderCSV()" style="color:var(--blue-d)">
           <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export CSV
         </button>
@@ -2650,10 +2669,10 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
     </div>
 
     <!-- Cost summary banner -->
-    <div id="order-cost-banner" style="display:none;padding:10px 24px;background:linear-gradient(135deg,rgba(234,88,12,.08),rgba(217,119,6,.05));border-bottom:1px solid rgba(234,88,12,.15)">
+    <div id="order-cost-banner" style="display:none;padding:10px 24px;background:linear-gradient(135deg,rgba(240,168,117,.08),rgba(217,154,90,.05));border-bottom:1px solid rgba(240,168,117,.15)">
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-        <span data-cost-lbl style="font-size:13px;font-weight:800;color:var(--orange);letter-spacing:.4px">💰 ต้นทุนรวมประมาณการ</span>
-        <span id="order-cost-total" style="font-size:22px;font-weight:800;color:var(--orange);font-family:'IBM Plex Mono',monospace"></span>
+        <span data-cost-lbl style="font-size:13px;font-weight:800;color:var(--orange-d);letter-spacing:.4px">💰 ต้นทุนรวมประมาณการ</span>
+        <span id="order-cost-total" style="font-size:22px;font-weight:800;color:var(--orange-d);font-family:'IBM Plex Mono',monospace"></span>
         <span style="font-size:12px;color:var(--muted)">(เฉพาะสินค้าที่ตั้งราคาไว้)</span>
       </div>
     </div>
@@ -2676,7 +2695,7 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
         <div class="panel-sub">คลิกเพื่อดูรายละเอียด หรือแก้ไข/ลบได้</div>
       </div>
       <div style="display:flex;gap:8px">
-        <button class="btn" onclick="loadOrderHistory()" style="color:var(--blue);gap:5px">
+        <button class="btn" onclick="loadOrderHistory()" style="color:var(--blue-d);gap:5px">
           <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
           รีเฟรช
         </button>
@@ -2688,7 +2707,7 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
         ทั้งหมด <span id="hist-cnt-all" class="hist-stab-badge">0</span>
       </button>
       <button class="hist-stab" data-stab="pending" onclick="setHistoryTab('pending',this)">
-        🚚 กำลังสั่งซื้อ <span id="hist-cnt-pending" class="hist-stab-badge" style="background:#d97706">0</span>
+        🚚 กำลังสั่งซื้อ <span id="hist-cnt-pending" class="hist-stab-badge" style="background:#fcdcb6">0</span>
       </button>
       <button class="hist-stab" data-stab="received" onclick="setHistoryTab('received',this)">
         ✅ ได้รับแล้ว <span id="hist-cnt-received" class="hist-stab-badge" style="background:#16a34a">0</span>
@@ -2723,7 +2742,7 @@ tbody td { border-bottom: 1px solid rgba(217,119,6,.08) !important; }
         <div style="font-size:13px;color:var(--muted);margin-top:2px" id="cart-modal-count">0 รายการ</div>
       </div>
       <div style="display:flex;gap:8px">
-        <button class="btn" onclick="clearCart()" style="color:var(--red);font-size:13px">🗑 ล้างทั้งหมด</button>
+        <button class="btn" onclick="clearCart()" style="color:var(--red-d);font-size:13px">🗑 ล้างทั้งหมด</button>
         <button class="btn" onclick="toggleCartModal()" style="color:var(--muted)">✕</button>
       </div>
     </div>
@@ -2973,7 +2992,7 @@ function pwaInstall(){
     const ctx = c.getContext('2d');
     // Background gradient
     const g = ctx.createLinearGradient(0,0,180,180);
-    g.addColorStop(0,'#fbbf24'); g.addColorStop(1,'#b45309');
+    g.addColorStop(0,'#fce6cf'); g.addColorStop(1,'#d99a5a');
     // Rounded rect
     ctx.beginPath();
     const r=36; ctx.moveTo(r,0); ctx.lineTo(180-r,0); ctx.arcTo(180,0,180,r,r);
@@ -3758,7 +3777,7 @@ function renderLotConfig(){
   });
   let cfgHtml='';
   cfgByCat.forEach((gList, catName)=>{
-    cfgHtml += `<div style="width:100%;font-size:12px;font-weight:800;color:var(--blue);letter-spacing:.6px;text-transform:uppercase;margin:8px 0 6px;padding-bottom:4px;border-bottom:1px solid rgba(77,143,255,.2)">👖 ${catName}</div>`;
+    cfgHtml += `<div style="width:100%;font-size:12px;font-weight:800;color:var(--blue-d);letter-spacing:.6px;text-transform:uppercase;margin:8px 0 6px;padding-bottom:4px;border-bottom:1px solid rgba(77,143,255,.2)">👖 ${catName}</div>`;
     cfgHtml += gList.map(g=>{
       const lotsPerRoll=getLotsPerRoll(g.parentSku);
       const piecesPerLot=getPiecesPerLot(g.parentSku);
@@ -3773,9 +3792,9 @@ function renderLotConfig(){
               onchange="setLotsPerRoll('${esc}',+this.value)" onclick="event.stopPropagation()" style="width:38px">
           </div>
           <div style="display:flex;align-items:center;gap:5px">
-            <span style="font-size:11px;color:var(--green);white-space:nowrap;min-width:52px">ตัว/ล็อค</span>
+            <span style="font-size:11px;color:var(--green-d);white-space:nowrap;min-width:52px">ตัว/ล็อค</span>
             <input class="lot-cfg-input" type="number" min="1" max="50" value="${piecesPerLot}"
-              onchange="setPiecesPerLot('${esc}',+this.value)" onclick="event.stopPropagation()" style="width:38px;color:var(--green)">
+              onchange="setPiecesPerLot('${esc}',+this.value)" onclick="event.stopPropagation()" style="width:38px;color:var(--green-d)">
           </div>
 
         </div>
@@ -4119,7 +4138,7 @@ function renderOrderTab(){
     }catch(e){}
   })();
 
-  } catch(ex){ console.error('renderOrderTab error:',ex); const oc=$('order-content'); if(oc) oc.innerHTML='<div class="empty" style="padding:60px;color:var(--red)">เกิดข้อผิดพลาด: '+ex.message+'</div>'; }
+  } catch(ex){ console.error('renderOrderTab error:',ex); const oc=$('order-content'); if(oc) oc.innerHTML='<div class="empty" style="padding:60px;color:var(--red-d)">เกิดข้อผิดพลาด: '+ex.message+'</div>'; }
 }
 
 // ── PANTS CARD ──
@@ -4169,7 +4188,7 @@ function renderPantsCard(g, days){
     colorsHtml += `<div style="margin-bottom:12px;padding:10px 14px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:12px">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
         <span style="font-size:14px">🔒</span>
-        <span style="font-size:13px;font-weight:800;color:var(--purple)">จัดกลุ่ม Layout (ข้ามสี · ≥${minG} ไม้/กลุ่ม)</span>
+        <span style="font-size:13px;font-weight:800;color:var(--purple-d)">จัดกลุ่ม Layout (ข้ามสี · ≥${minG} ไม้/กลุ่ม)</span>
         <span style="font-size:12px;color:var(--muted)">${totalRollsAll} ไม้ → ${groupedData.groups.length} กลุ่ม</span>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
@@ -4177,7 +4196,7 @@ function renderPantsCard(g, days){
         const colors = [...new Set(gl.members.map(m=>m.col))];
         const colLabel = colors.length>2 ? colors.slice(0,2).join(', ')+' +' : colors.join(', ');
         return `<div style="background:var(--bg);border:1px solid rgba(124,58,237,.15);border-radius:10px;padding:6px 10px;flex:1;min-width:160px">
-          <div style="font-size:12px;font-weight:800;color:var(--purple);margin-bottom:3px">กลุ่ม ${String.fromCharCode(65+gi)} · ${gl.members.length} ไม้</div>
+          <div style="font-size:12px;font-weight:800;color:var(--purple-d);margin-bottom:3px">กลุ่ม ${String.fromCharCode(65+gi)} · ${gl.members.length} ไม้</div>
           <div style="font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--text);font-weight:600">${gl.layoutStr}</div>
           <div style="font-size:11px;color:var(--faint);margin-top:2px">🎨 ${colLabel}</div>
         </div>`;
@@ -4250,15 +4269,15 @@ function renderPantsCard(g, days){
       const lotColor=noNeed?'var(--green)':isOv?'var(--orange)':'var(--blue)';
       const cellCls = noNeed?'cell-ok':isOOS?'cell-oos':isLow?'cell-low':'';
       const stockLine = !hasFile ? ''
-        : noNeed ? `<span class="lsc-stock-txt" style="color:var(--green)">✓ มี ${onHand} ตัว</span>`
-        : isOOS  ? `<span class="lsc-stock-txt" style="color:var(--red)">หมด</span>`
-        : isLow  ? `<span class="lsc-stock-txt" style="color:var(--orange)">เหลือ ${onHand} ตัว</span>`
+        : noNeed ? `<span class="lsc-stock-txt" style="color:var(--green-d)">✓ มี ${onHand} ตัว</span>`
+        : isOOS  ? `<span class="lsc-stock-txt" style="color:var(--red-d)">หมด</span>`
+        : isLow  ? `<span class="lsc-stock-txt" style="color:var(--orange-d)">เหลือ ${onHand} ตัว</span>`
         : `<span class="lsc-stock-txt" style="color:var(--mid)">มี ${onHand} ตัว</span>`;
       const demLine = item&&item._noSales
-        ? `<span class="lsc-dem" style="color:var(--orange)">⚠ ไม่มีข้อมูล</span>`
+        ? `<span class="lsc-dem" style="color:var(--orange-d)">⚠ ไม่มีข้อมูล</span>`
         : `<span class="lsc-dem">ต้องการ ${d} ตัว/${days}ว${noNeed?' · พอ':net>0?' · ขาด '+net:''}</span>`;
       const pendingLine = pending>0
-        ? `<span class="lsc-stock-txt" style="color:var(--purple);font-weight:800">🚚 สั่งซื้อแล้ว ${pending} ตัว</span>`
+        ? `<span class="lsc-stock-txt" style="color:var(--purple-d);font-weight:800">🚚 สั่งซื้อแล้ว ${pending} ตัว</span>`
         : '';
       const recLine = monthlyAvg ? `<span class="lsc-rec">แนะนำ ${monthlyAvg} ตัว/เดือน</span>` : '';
       return`<div class="lot-size-cell ${cellCls}">
@@ -4287,7 +4306,7 @@ function renderPantsCard(g, days){
       // Group badge
       const grpInfo = r._groupedData?.rollGroupMap?.get(`${col}__${ri}`);
       const grpBadge = grpInfo
-        ? `<span style="font-size:10px;font-weight:800;background:rgba(124,58,237,.15);color:var(--purple);border-radius:4px;padding:1px 6px;border:1px solid rgba(124,58,237,.2)">กลุ่ม ${String.fromCharCode(65+grpInfo.groupIndex)}</span>`
+        ? `<span style="font-size:10px;font-weight:800;background:rgba(124,58,237,.15);color:var(--purple-d);border-radius:4px;padding:1px 6px;border:1px solid rgba(124,58,237,.2)">กลุ่ม ${String.fromCharCode(65+grpInfo.groupIndex)}</span>`
         : '';
       // group normal + extra per size, in SIZE_ORDER
       const allSzInRoll=[...new Set(roll.chunk.map(x=>x.sz))].sort((a,b)=>{
@@ -4302,10 +4321,10 @@ function renderPantsCard(g, days){
         const pcs=total*piecesPerLot;
         return`<div style="display:flex;align-items:center;gap:0;padding:5px 8px;background:var(--bg);border-radius:7px;margin-bottom:3px">
           <span style="font-size:13px;font-weight:800;color:var(--text);min-width:32px">${sz}</span>
-          <span style="font-size:15px;font-weight:700;color:var(--blue);font-family:'IBM Plex Mono',monospace;min-width:28px">${total}</span>
+          <span style="font-size:15px;font-weight:700;color:var(--blue-d);font-family:'IBM Plex Mono',monospace;min-width:28px">${total}</span>
           <span style="font-size:12px;color:var(--muted)">ล็อค</span>
           <span style="font-size:12px;color:var(--faint);margin-left:6px">${pcs}ตัว</span>
-          ${extra>0?`<span style="margin-left:auto;font-size:11px;background:rgba(255,170,68,.18);color:var(--orange);border-radius:4px;padding:1px 5px">+${extra} เกิน</span>`:''}
+          ${extra>0?`<span style="margin-left:auto;font-size:11px;background:rgba(255,170,68,.18);color:var(--orange-d);border-radius:4px;padding:1px 5px">+${extra} เกิน</span>`:''}
         </div>`;
       }).join('');
       const hasExtra=Object.keys(roll.extraCounts).length>0;
@@ -4318,8 +4337,8 @@ function renderPantsCard(g, days){
         <div class="lot-vis-roll-hdr" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">
           <span style="font-size:13px;font-weight:800;color:var(--text)">ไม้ ${ri+1}</span>
           ${grpBadge}
-          <span style="font-size:12px;color:var(--blue);font-weight:700;font-family:'IBM Plex Mono',monospace">${rollPieces}ตัว</span>
-          ${hasExtra?`<span style="font-size:10px;color:var(--orange);font-weight:700">+เกิน</span>`:''}
+          <span style="font-size:12px;color:var(--blue-d);font-weight:700;font-family:'IBM Plex Mono',monospace">${rollPieces}ตัว</span>
+          ${hasExtra?`<span style="font-size:10px;color:var(--orange-d);font-weight:700">+เกิน</span>`:''}
           <button class="cart-select-btn ${rollInCart?'selected':''}" style="margin-left:auto"
             data-psku="${g.parentSku}" data-name="${escName2}" data-col="${escCol2}"
             data-ri="${ri}" data-rd="${rollDataB64}" data-ppl="${piecesPerLot}" data-incart="${rollInCart?1:0}"
@@ -4340,10 +4359,10 @@ function renderPantsCard(g, days){
     colorsHtml+=`<div style="margin-bottom:16px;padding:${colDisc?'10px':'14px'} 16px;background:var(--bg-dark);border-radius:16px;${colDisc?'opacity:.55':''}">
       <div style="display:flex;align-items:center;gap:10px;${colDisc?'':'margin-bottom:14px;'}flex-wrap:wrap">
         <div style="font-size:16px;font-weight:800;color:var(--text)">🎨 ${col}</div>
-        ${!colDisc?`<div style="background:rgba(77,143,255,.12);border:1px solid rgba(77,143,255,.2);border-radius:8px;padding:3px 10px;font-size:13px;font-weight:700;color:var(--blue)">${colAvg} ตัว/${days}วัน</div>`:''}
-        ${!colDisc&&r.extraSlots>0?`<div style="background:rgba(255,170,68,.1);border:1px solid rgba(255,170,68,.2);border-radius:8px;padding:3px 8px;font-size:12px;color:var(--orange)">สั่งเกิน +${r.extraSlots} ล็อค</div>`:''}
+        ${!colDisc?`<div style="background:rgba(77,143,255,.12);border:1px solid rgba(77,143,255,.2);border-radius:8px;padding:3px 10px;font-size:13px;font-weight:700;color:var(--blue-d)">${colAvg} ตัว/${days}วัน</div>`:''}
+        ${!colDisc&&r.extraSlots>0?`<div style="background:rgba(255,170,68,.1);border:1px solid rgba(255,170,68,.2);border-radius:8px;padding:3px 8px;font-size:12px;color:var(--orange-d)">สั่งเกิน +${r.extraSlots} ล็อค</div>`:''}
         ${!colDisc?`<div style="margin-left:auto;background:rgba(46,204,138,.1);border:1px solid rgba(46,204,138,.2);border-radius:8px;padding:4px 14px;text-align:right">
-          <div style="font-size:22px;font-weight:800;color:var(--green);font-family:'IBM Plex Mono',monospace">${r.totalRolls}<span style="font-size:13px;font-weight:400"> ไม้</span></div>
+          <div style="font-size:22px;font-weight:800;color:var(--green-d);font-family:'IBM Plex Mono',monospace">${r.totalRolls}<span style="font-size:13px;font-weight:400"> ไม้</span></div>
           <div style="font-size:12px;color:${coverColor}">ครอบคลุม ~${coverMonths} เดือน</div>
         </div>`:'<div style="margin-left:auto"></div>'}
         <button class="disc-btn ${colDisc?'active':'inactive'}"
@@ -4359,15 +4378,15 @@ function renderPantsCard(g, days){
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px">${sizeRows}</div>
         <div style="margin-top:8px;font-size:13px;color:var(--muted)">
           รวม <b style="color:var(--text)">${r.totalLots} ล็อค</b> ที่ต้องการ →
-          <b style="color:var(--purple)">${r.totalRolls} ไม้ × ${lotsPerRoll} ล็อค = ${r.totalRolls*lotsPerRoll} ล็อคจริง</b>
-          ${r.extraSlots>0?`<span style="color:var(--orange)"> (+${r.extraSlots} เกิน)</span>`:''}
-          ${(()=>{ if(r.totalRolls<=1) return ''; const fr=r.totalRolls-1; const nlpr=Math.ceil(r.totalLots/fr); if(nlpr<=lotsPerRoll) return ''; return `<span style="font-size:12px;color:var(--blue);margin-left:6px">💡 ตั้ง <b>${nlpr} ล็อค/ไม้</b> จะได้แค่ ${fr} ไม้</span>`; })()}
+          <b style="color:var(--purple-d)">${r.totalRolls} ไม้ × ${lotsPerRoll} ล็อค = ${r.totalRolls*lotsPerRoll} ล็อคจริง</b>
+          ${r.extraSlots>0?`<span style="color:var(--orange-d)"> (+${r.extraSlots} เกิน)</span>`:''}
+          ${(()=>{ if(r.totalRolls<=1) return ''; const fr=r.totalRolls-1; const nlpr=Math.ceil(r.totalLots/fr); if(nlpr<=lotsPerRoll) return ''; return `<span style="font-size:12px;color:var(--blue-d);margin-left:6px">💡 ตั้ง <b>${nlpr} ล็อค/ไม้</b> จะได้แค่ ${fr} ไม้</span>`; })()}
         </div>
       </div>
 
       <div>
         <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px">
-          📋 แผนไม้ ${r._groupedData?'<span style="font-weight:700;color:var(--purple)">🔒 จัดกลุ่ม Layout ข้ามสี</span>':'<span style="font-weight:400;color:var(--faint)">(เล็ก↔ใหญ่อยู่ด้วยกัน)</span>'}
+          📋 แผนไม้ ${r._groupedData?'<span style="font-weight:700;color:var(--purple-d)">🔒 จัดกลุ่ม Layout ข้ามสี</span>':'<span style="font-weight:400;color:var(--faint)">(เล็ก↔ใหญ่อยู่ด้วยกัน)</span>'}
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">${rollCards}</div>
       </div>
@@ -4395,19 +4414,19 @@ function renderPantsCard(g, days){
           title="ชื่อที่โรงงานใช้">
           🏭 ${getFactoryName(g.parentSku)||'ตั้งชื่อโรงงาน'}
         </button>
-        <button class="btn" style="font-size:11px;padding:3px 9px;gap:4px;${isLocked?'background:rgba(124,58,237,.12);color:var(--purple);border-color:rgba(124,58,237,.3)':'color:var(--faint)'}"
+        <button class="btn" style="font-size:11px;padding:3px 9px;gap:4px;${isLocked?'background:rgba(124,58,237,.12);color:var(--purple-d);border-color:rgba(124,58,237,.3)':'color:var(--faint)'}"
           onclick="event.stopPropagation();setLayoutLock('${esc}',${!isLocked})"
           title="${isLocked?'ปิดจัดกลุ่ม Layout — แต่ละสีคำนวณแยก':'เปิดจัดกลุ่ม Layout — ไม้ข้ามสีที่ demand คล้ายกันจะใช้ layout เดียวกัน (เงื่อนไขโรงงาน)'}">
           ${isLocked?'🔒 Layout กลุ่ม':'🔓 Layout อิสระ'}
         </button>
-        ${isLocked?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--purple)">
+        ${isLocked?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--purple-d)">
           ≥<input type="number" min="2" max="10" value="${getMinRollsPerGroup(g.parentSku)}"
-            style="width:32px;height:22px;font-size:12px;font-weight:700;text-align:center;border:1px solid rgba(124,58,237,.3);border-radius:5px;background:var(--bg);color:var(--purple);outline:none;font-family:inherit"
+            style="width:32px;height:22px;font-size:12px;font-weight:700;text-align:center;border:1px solid rgba(124,58,237,.3);border-radius:5px;background:var(--bg);color:var(--purple-d);outline:none;font-family:inherit"
             onchange="setMinRollsPerGroup('${esc}',+this.value)"
             onclick="event.stopPropagation()">ไม้/กลุ่ม
         </span>`:''}
         ${Object.keys((orderConfig[g.parentSku]||{}).lotsOverride||{}).length>0?
-          `<button class="btn" style="font-size:11px;padding:3px 9px;color:var(--orange);gap:4px"
+          `<button class="btn" style="font-size:11px;padding:3px 9px;color:var(--orange-d);gap:4px"
             onclick="event.stopPropagation();resetModelOverrides('${esc}')"
             title="ล้างการแก้ไขจำนวนล็อค แล้วคำนวนใหม่">🔄 คำนวนใหม่</button>`:''
         }
@@ -4415,19 +4434,19 @@ function renderPantsCard(g, days){
       <div class="lot-card-avg">
         <div class="lot-card-avg-lbl">รวมสั่งทั้งหมด</div>
         <div><span class="lot-card-avg-val">${grandPieces}</span><span class="lot-card-avg-unit"> ตัว</span></div>
-        <div style="font-size:12px;color:var(--green);margin-top:2px">${grandRolls} ไม้ · เฉลี่ย ${totalAvgAll} ตัว/${days}วัน</div>
-        <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(234,88,12,.2)">
+        <div style="font-size:12px;color:var(--green-d);margin-top:2px">${grandRolls} ไม้ · เฉลี่ย ${totalAvgAll} ตัว/${days}วัน</div>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(240,168,117,.2)">
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
             <div>
-              <div style="font-size:10px;font-weight:800;color:var(--orange);letter-spacing:.3px;margin-bottom:4px">฿/ตัว</div>
+              <div style="font-size:10px;font-weight:800;color:var(--orange-d);letter-spacing:.3px;margin-bottom:4px">฿/ตัว</div>
               <input class="lot-cfg-input" type="number" min="0" step="1" value="${getCostPerPiece(g.parentSku)||''}" placeholder="0"
-                style="width:58px;font-size:15px;color:var(--orange)"
+                style="width:58px;font-size:15px;color:var(--orange-d)"
                 onchange="setCostPerPiece('${esc}',+this.value)" onclick="event.stopPropagation()">
             </div>
             <div>
-              <div style="font-size:10px;font-weight:800;color:var(--purple);letter-spacing:.3px;margin-bottom:4px">฿/XXL</div>
+              <div style="font-size:10px;font-weight:800;color:var(--purple-d);letter-spacing:.3px;margin-bottom:4px">฿/XXL</div>
               <input class="lot-cfg-input" type="number" min="0" step="1" value="${getCostXXL(g.parentSku)||''}" placeholder="เท่ากัน"
-                style="width:68px;font-size:15px;color:var(--purple)"
+                style="width:68px;font-size:15px;color:var(--purple-d)"
                 onchange="setCostXXL('${esc}',+this.value)" onclick="event.stopPropagation()">
             </div>
           </div>
@@ -4439,8 +4458,8 @@ function renderPantsCard(g, days){
             const total=cp*normalPcs + cxxl*grandXXLPieces;
             const hasXXL=grandXXLPieces>0&&getCostXXL(g.parentSku)>0&&getCostXXL(g.parentSku)!==cp;
             return `<div style="margin-top:6px">
-              <div style="font-size:10px;color:var(--orange);font-weight:800;letter-spacing:.4px">💰 ต้นทุนประมาณ</div>
-              <div style="font-size:16px;font-weight:800;color:var(--orange);font-family:'IBM Plex Mono',monospace">${total.toLocaleString('th-TH')} ฿</div>
+              <div style="font-size:10px;color:var(--orange-d);font-weight:800;letter-spacing:.4px">💰 ต้นทุนประมาณ</div>
+              <div style="font-size:16px;font-weight:800;color:var(--orange-d);font-family:'IBM Plex Mono',monospace">${total.toLocaleString('th-TH')} ฿</div>
               ${hasXXL?`<div style="font-size:10px;color:var(--faint);margin-top:2px">${normalPcs} ตัว×${cp}฿ + XXL ${grandXXLPieces} ตัว×${cxxl}฿</div>`:''}
             </div>`;
           })()}
@@ -4483,12 +4502,12 @@ function renderBeltCard(g, days){
     const cardBg=isOOS?'rgba(255,85,114,.07)':isLow?'rgba(255,170,68,.06)':isOk?'rgba(46,204,138,.06)':`var(--bg-dark)`;
     const cardBdr=isOOS?'1px solid rgba(255,85,114,.3)':isLow?'1px solid rgba(255,170,68,.3)':isOk?'1px solid rgba(46,204,138,.25)':`1px solid transparent`;
     const inputColor=isOOS?'var(--red)':isLow?'var(--orange)':isOk?'var(--green)':`var(--blue)`;
-    const stockBadge=isOOS?`<span style="font-size:11px;color:var(--red);font-weight:800">🔴 หมด</span>`:
-                     isLow?`<span style="font-size:11px;color:var(--orange);font-weight:800">🟡 เหลือ ${onHand} (ต้องการ ${demand15d}/15วัน)</span>`:
-                     isOk ?`<span style="font-size:11px;color:var(--green)">✓ พอ (${onHand})</span>`:
+    const stockBadge=isOOS?`<span style="font-size:11px;color:var(--red-d);font-weight:800">🔴 หมด</span>`:
+                     isLow?`<span style="font-size:11px;color:var(--orange-d);font-weight:800">🟡 เหลือ ${onHand} (ต้องการ ${demand15d}/15วัน)</span>`:
+                     isOk ?`<span style="font-size:11px;color:var(--green-d)">✓ พอ (${onHand})</span>`:
                      onHand!==null?`<span style="font-size:11px;color:var(--muted)">มี ${onHand}</span>`:``;
     const pendingBadge=pending>0
-      ?`<span style="font-size:11px;color:var(--purple);font-weight:800">🚚 สั่งแล้ว ${pending}</span>`
+      ?`<span style="font-size:11px;color:var(--purple-d);font-weight:800">🚚 สั่งแล้ว ${pending}</span>`
       :``;
     const itemDisc = isDiscontinued(g.parentSku, item.color||'');
     if(itemDisc) return`<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--bg-dark);border:1px solid rgba(255,255,255,.06);border-radius:10px;min-width:190px;opacity:.55">
@@ -4500,20 +4519,20 @@ function renderBeltCard(g, days){
     const beltInCart = isInCart(g.parentSku, item.sku);
     // ── Status pill (สถานะสต๊อกจริง) ──
     const statusPill = isOOS
-      ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(239,68,68,.15);color:var(--red);border-radius:8px;font-size:11px;font-weight:800">🔴 หมด</span>`
+      ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(239,68,68,.15);color:var(--red-d);border-radius:8px;font-size:11px;font-weight:800">🔴 หมด</span>`
       : isLow
-      ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(234,88,12,.15);color:var(--orange);border-radius:8px;font-size:11px;font-weight:800">🟡 เหลือ ${onHand}</span>`
+      ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(240,168,117,.15);color:var(--orange-d);border-radius:8px;font-size:11px;font-weight:800">🟡 เหลือ ${onHand}</span>`
       : isOk
-      ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(22,163,74,.12);color:var(--green);border-radius:8px;font-size:11px;font-weight:700">✓ มี ${onHand}</span>`
+      ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(22,163,74,.12);color:var(--green-d);border-radius:8px;font-size:11px;font-weight:700">✓ มี ${onHand}</span>`
       : onHand!==null
-      ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(120,97,74,.1);color:var(--muted);border-radius:8px;font-size:11px;font-weight:700">📦 ${onHand}</span>`
+      ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(176,136,145,.1);color:var(--muted);border-radius:8px;font-size:11px;font-weight:700">📦 ${onHand}</span>`
       : `<span style="font-size:11px;color:var(--faint)">—</span>`;
     const pendingPill = pending>0
-      ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(124,58,237,.13);color:var(--purple);border-radius:8px;font-size:11px;font-weight:800">🚚 สั่งแล้ว ${pending}</span>`
+      ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(124,58,237,.13);color:var(--purple-d);border-radius:8px;font-size:11px;font-weight:800">🚚 สั่งแล้ว ${pending}</span>`
       : ``;
     // ── Qty input (เน้นใหญ่) ──
-    const qtyHighlight = saved>0 ? 'rgba(217,119,6,.12)' : 'rgba(120,97,74,.06)';
-    const qtyBorder = saved>0 ? `2px solid ${inputColor}` : '1px solid rgba(120,97,74,.15)';
+    const qtyHighlight = saved>0 ? 'rgba(217,154,90,.12)' : 'rgba(176,136,145,.06)';
+    const qtyBorder = saved>0 ? `2px solid ${inputColor}` : '1px solid rgba(176,136,145,.15)';
     return`<div style="display:flex;align-items:stretch;gap:0;padding:0;background:${cardBg};border:${cardBdr};border-radius:12px;min-width:260px;overflow:hidden">
       <!-- Left: Info -->
       <div style="flex:1;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0">
@@ -4531,7 +4550,7 @@ function renderBeltCard(g, days){
         </div>
         <!-- Demand line (smaller, secondary info) -->
         <div style="font-size:11px;color:var(--muted);line-height:1.3">
-          ขาย ${Math.ceil(rawAvg)} ชิ้น/${days}วัน${onHand!==null&&(net>0||pending>0)?` · ${pending>0?`สั่งแล้ว ${pending} · `:''}<span style="color:var(--orange);font-weight:700">ขาด ${net}</span>`:''}
+          ขาย ${Math.ceil(rawAvg)} ชิ้น/${days}วัน${onHand!==null&&(net>0||pending>0)?` · ${pending>0?`สั่งแล้ว ${pending} · `:''}<span style="color:var(--orange-d);font-weight:700">ขาด ${net}</span>`:''}
         </div>
         <!-- SKU + cart button -->
         <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
@@ -4546,7 +4565,7 @@ function renderBeltCard(g, days){
         </div>
       </div>
       <!-- Right: BIG qty input -->
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:${qtyHighlight};padding:10px 14px;border-left:1px dashed rgba(120,97,74,.2);min-width:90px">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:${qtyHighlight};padding:10px 14px;border-left:1px dashed rgba(176,136,145,.2);min-width:90px">
         <div style="font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">สั่ง</div>
         <input class="lot-cfg-input" type="number" min="0" step="10" value="${saved}"
           style="width:64px;font-size:24px!important;font-weight:800;color:${inputColor};border:${qtyBorder};border-radius:8px;text-align:center;padding:4px 4px;margin:2px 0"
@@ -4554,9 +4573,9 @@ function renderBeltCard(g, days){
         <div style="font-size:10px;color:var(--muted);font-weight:600">ชิ้น</div>
         <!-- Cost (collapsed, smaller) -->
         <details style="margin-top:6px;width:100%">
-          <summary style="font-size:10px;color:var(--orange);cursor:pointer;text-align:center;list-style:none;font-weight:700">฿/ชิ้น ⚙</summary>
+          <summary style="font-size:10px;color:var(--orange-d);cursor:pointer;text-align:center;list-style:none;font-weight:700">฿/ชิ้น ⚙</summary>
           <input class="lot-cfg-input" type="number" min="0" step="1" value="${(cfg.costs||{})[item.sku]||''}" placeholder="0"
-            style="width:64px;font-size:13px;color:var(--orange);text-align:center;margin-top:4px"
+            style="width:64px;font-size:13px;color:var(--orange-d);text-align:center;margin-top:4px"
             onchange="setBeltCost('${esc}','${item.sku}',+this.value)" onclick="event.stopPropagation()">
         </details>
       </div>
@@ -4584,7 +4603,7 @@ function renderBeltCard(g, days){
           ${beltDisc?'🚫 ไม่เติมแล้ว':'ยังเติมอยู่'}
         </button>
         ${Object.keys((orderConfig[g.parentSku]||{}).qtys||{}).length>0?
-          `<button class="btn" style="font-size:11px;padding:3px 9px;color:var(--orange);gap:4px"
+          `<button class="btn" style="font-size:11px;padding:3px 9px;color:var(--orange-d);gap:4px"
             onclick="event.stopPropagation();resetModelOverrides('${esc}')"
             title="ล้างการแก้ไขจำนวน แล้วคำนวนใหม่">🔄 คำนวนใหม่</button>`:''}
       </div>
@@ -4609,7 +4628,7 @@ function renderBeltCard(g, days){
           totalCost+=c*qty;
         });
         if(!totalCost) return '';
-        return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(234,88,12,.2)"><div style="font-size:10px;color:var(--orange);font-weight:800;letter-spacing:.4px">💰 ต้นทุนประมาณ</div><div style="font-size:16px;font-weight:800;color:var(--orange);font-family:'IBM Plex Mono',monospace">${totalCost.toLocaleString('th-TH')} ฿</div></div>`;
+        return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(240,168,117,.2)"><div style="font-size:10px;color:var(--orange-d);font-weight:800;letter-spacing:.4px">💰 ต้นทุนประมาณ</div><div style="font-size:16px;font-weight:800;color:var(--orange-d);font-family:'IBM Plex Mono',monospace">${totalCost.toLocaleString('th-TH')} ฿</div></div>`;
       })()}
     </div>
   </div>`;
@@ -4779,7 +4798,7 @@ function renderCartModal(){
   let html='';
   Object.values(grouped).forEach(g=>{
     html+=`<div style="margin-bottom:18px">
-      <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(217,119,6,.12)">${g.type==='pants'?'👖':'🎗️'} ${g.name}</div>`;
+      <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(217,154,90,.12)">${g.type==='pants'?'👖':'🎗️'} ${g.name}</div>`;
 
     g.items.forEach(item=>{
       if(item.type==='pants'){
@@ -4798,11 +4817,11 @@ function renderCartModal(){
           return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:36px">
             <span style="font-size:10px;font-weight:700;color:var(--muted)">${sz}</span>
             <input id="${inputId}" type="number" min="0" max="999" value="${total}"
-              style="width:36px;height:30px;font-size:13px;font-weight:700;text-align:center;border:1.5px solid rgba(217,119,6,.2);border-radius:6px;background:var(--bg);color:var(--text);outline:none;font-family:inherit"
-              onfocus="this.style.borderColor='#d97706'"
-              onblur="this.style.borderColor='rgba(217,119,6,.2)';cartUpdateSize('${item.parentSku}','${item.color}',${item.rollIndex},'${sz}',+this.value)"
+              style="width:36px;height:30px;font-size:13px;font-weight:700;text-align:center;border:1.5px solid rgba(217,154,90,.2);border-radius:6px;background:var(--bg);color:var(--text);outline:none;font-family:inherit"
+              onfocus="this.style.borderColor='#fcdcb6'"
+              onblur="this.style.borderColor='rgba(217,154,90,.2)';cartUpdateSize('${item.parentSku}','${item.color}',${item.rollIndex},'${sz}',+this.value)"
               onkeydown="if(event.key==='Enter')this.blur()">
-            ${extra>0?`<span style="font-size:9px;color:var(--orange)">+${extra}</span>`:''}
+            ${extra>0?`<span style="font-size:9px;color:var(--orange-d)">+${extra}</span>`:''}
           </div>`;
         }).join('');
 
@@ -4815,7 +4834,7 @@ function renderCartModal(){
         html+=`<div class="cart-item" style="flex-direction:column;gap:6px">
           <div style="display:flex;align-items:center;justify-content:space-between">
             <div>
-              <span style="font-size:13px;font-weight:800;color:var(--blue)">${item.color}</span>
+              <span style="font-size:13px;font-weight:800;color:var(--blue-d)">${item.color}</span>
               <span style="font-size:12px;color:var(--muted)"> · ${item.rollLabel}</span>
             </div>
             <button class="cart-item-remove" onclick="cartRemoveRoll('${item.parentSku}','${item.color}',${item.rollIndex})">✕</button>
@@ -4823,7 +4842,7 @@ function renderCartModal(){
           <div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--bg-dark);border-radius:10px">
             ${sizeGrid}
           </div>
-          <div id="cart-summary-${item.parentSku}-${item.color}-${item.rollIndex}" style="font-size:12px;color:var(--green);font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div id="cart-summary-${item.parentSku}-${item.color}-${item.rollIndex}" style="font-size:12px;color:var(--green-d);font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <span>${item.pieces} ตัว · ${item.lots} ล็อค</span>
             ${(()=>{
               const cp=getCostPerPiece(item.parentSku);
@@ -4836,7 +4855,7 @@ function renderCartModal(){
               const xxlPcs=xxlL*ppl, normPcs=(totL-xxlL)*ppl;
               const total=cp*normPcs+cxxl*xxlPcs;
               const hasXXL=xxlPcs>0&&cxxl!==cp;
-              return `<span style="font-size:13px;font-weight:800;color:var(--orange);font-family:'IBM Plex Mono',monospace">= ${total.toLocaleString('th-TH')} ฿</span>${hasXXL?`<span style="font-size:10px;color:var(--faint)">XXL ${cxxl}฿/ตัว</span>`:`<span style="font-size:11px;color:var(--faint)">@ ${cp.toLocaleString('th-TH')} ฿/ตัว</span>`}`;
+              return `<span style="font-size:13px;font-weight:800;color:var(--orange-d);font-family:'IBM Plex Mono',monospace">= ${total.toLocaleString('th-TH')} ฿</span>${hasXXL?`<span style="font-size:10px;color:var(--faint)">XXL ${cxxl}฿/ตัว</span>`:`<span style="font-size:11px;color:var(--faint)">@ ${cp.toLocaleString('th-TH')} ฿/ตัว</span>`}`;
             })()}
           </div>
         </div>`;
@@ -4846,17 +4865,17 @@ function renderCartModal(){
         html+=`<div class="cart-item">
           <div style="flex:1">
             <div style="display:flex;align-items:center;justify-content:space-between">
-              <div style="font-size:13px;font-weight:800;color:var(--orange)">${item.color}</div>
+              <div style="font-size:13px;font-weight:800;color:var(--orange-d)">${item.color}</div>
               ${_bcp?`<span style="font-size:12px;color:var(--faint)">@ ${_bcp.toLocaleString('th-TH')} ฿/ชิ้น</span>`:''}
             </div>
             <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">
               <input type="number" min="0" max="9999" value="${item.qty}"
-                style="width:70px;height:30px;font-size:14px;font-weight:700;text-align:center;border:1.5px solid rgba(217,119,6,.2);border-radius:6px;background:var(--bg);color:var(--text);outline:none;font-family:inherit"
-                onfocus="this.style.borderColor='#d97706'"
-                onblur="this.style.borderColor='rgba(217,119,6,.2)';cartUpdateBeltQty('${item.parentSku}','${item.skuKey}',+this.value)"
+                style="width:70px;height:30px;font-size:14px;font-weight:700;text-align:center;border:1.5px solid rgba(217,154,90,.2);border-radius:6px;background:var(--bg);color:var(--text);outline:none;font-family:inherit"
+                onfocus="this.style.borderColor='#fcdcb6'"
+                onblur="this.style.borderColor='rgba(217,154,90,.2)';cartUpdateBeltQty('${item.parentSku}','${item.skuKey}',+this.value)"
                 onkeydown="if(event.key==='Enter')this.blur()">
               <span style="font-size:12px;color:var(--muted)">ชิ้น</span>
-              ${_bcp?`<span id="${`belt-cost-${item.parentSku}-${item.skuKey||''}`.replace(/[^a-zA-Z0-9-]/g,'_')}" style="font-size:14px;font-weight:800;color:var(--orange);font-family:'IBM Plex Mono',monospace;margin-left:auto">${_bct?'= '+_bct.toLocaleString('th-TH')+' ฿':''}</span>`:''}
+              ${_bcp?`<span id="${`belt-cost-${item.parentSku}-${item.skuKey||''}`.replace(/[^a-zA-Z0-9-]/g,'_')}" style="font-size:14px;font-weight:800;color:var(--orange-d);font-family:'IBM Plex Mono',monospace;margin-left:auto">${_bct?'= '+_bct.toLocaleString('th-TH')+' ฿':''}</span>`:''}
             </div>
           </div>
           <button class="cart-item-remove" onclick="cartRemoveBelt('${item.parentSku}','${item.skuKey}')">✕</button>
@@ -4886,11 +4905,11 @@ function renderCartModal(){
       if(cp && item.qty) grandCartCost += cp * item.qty;
     }
   });
-  html+=`<div style="padding:12px 14px;background:rgba(217,119,6,.08);border-radius:12px;margin-top:8px;border:1px solid rgba(217,119,6,.15)">
+  html+=`<div style="padding:12px 14px;background:rgba(217,154,90,.08);border-radius:12px;margin-top:8px;border:1px solid rgba(217,154,90,.15)">
     <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">รวมทั้งหมด</div>
-    ${totalPants?`<div style="font-size:15px;font-weight:700;color:var(--blue)">👖 ${totalPants.toLocaleString()} ตัว</div>`:''}
-    ${totalBelt?`<div style="font-size:15px;font-weight:700;color:var(--orange)">🎗️ ${totalBelt.toLocaleString()} ชิ้น</div>`:''}
-    <div id="cart-cost-wrap" style="${grandCartCost?'':'display:none'}margin-top:8px;padding-top:8px;border-top:1px solid rgba(234,88,12,.2);display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:var(--orange);font-weight:800">💰 ต้นทุนประมาณ</span><span id="cart-grand-cost" style="font-size:18px;font-weight:800;color:var(--orange);font-family:'IBM Plex Mono',monospace">${grandCartCost?grandCartCost.toLocaleString('th-TH')+' ฿':''}</span></div>
+    ${totalPants?`<div style="font-size:15px;font-weight:700;color:var(--blue-d)">👖 ${totalPants.toLocaleString()} ตัว</div>`:''}
+    ${totalBelt?`<div style="font-size:15px;font-weight:700;color:var(--orange-d)">🎗️ ${totalBelt.toLocaleString()} ชิ้น</div>`:''}
+    <div id="cart-cost-wrap" style="${grandCartCost?'':'display:none'}margin-top:8px;padding-top:8px;border-top:1px solid rgba(240,168,117,.2);display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:var(--orange-d);font-weight:800">💰 ต้นทุนประมาณ</span><span id="cart-grand-cost" style="font-size:18px;font-weight:800;color:var(--orange-d);font-family:'IBM Plex Mono',monospace">${grandCartCost?grandCartCost.toLocaleString('th-TH')+' ฿':''}</span></div>
   </div>`;
   body.innerHTML=html;
 }
@@ -4924,7 +4943,7 @@ function cartUpdateSize(parentSku, color, rollIndex, sz, newVal){
     const costTotal=cp?(cp*(totL-xxlL)*ppl+cxxl*xxlL*ppl):0;
     const hasXXL=xxlL>0&&cxxl!==cp;
     summEl.innerHTML=`<span>${item.pieces} ตัว · ${item.lots} ล็อค</span>`
-      +(costTotal?`<span style="font-size:13px;font-weight:800;color:var(--orange);font-family:'IBM Plex Mono',monospace">= ${costTotal.toLocaleString('th-TH')} ฿</span>`
+      +(costTotal?`<span style="font-size:13px;font-weight:800;color:var(--orange-d);font-family:'IBM Plex Mono',monospace">= ${costTotal.toLocaleString('th-TH')} ฿</span>`
         +(hasXXL?`<span style="font-size:10px;color:var(--faint)">XXL ${cxxl}฿/ตัว</span>`:`<span style="font-size:11px;color:var(--faint)">@ ${cp} ฿/ตัว</span>`):'');
   }
   _updateCartCostSummary();
@@ -5141,7 +5160,7 @@ async function loadOrderHistory(){
     }
   } catch(e){
     console.error('[History] Load failed:', e);
-    area.innerHTML=`<div class="empty" style="padding:40px;color:var(--red)">โหลดไม่สำเร็จ: ${e.message}</div>`;
+    area.innerHTML=`<div class="empty" style="padding:40px;color:var(--red-d)">โหลดไม่สำเร็จ: ${e.message}</div>`;
   }
 }
 
@@ -5207,7 +5226,7 @@ function renderOrderHistory(){
     // Card accent color based on status
     const cardStyle = isReceived
       ? 'border-left: 3px solid #16a34a; background: rgba(22,163,74,.03);'
-      : 'border-left: 3px solid #d97706;';
+      : 'border-left: 3px solid #fcdcb6;';
 
     return`<div class="order-hist-card${order.cancelled?' cancelled':''}" id="hist-${order.key}" style="${cardStyle}animation:cardIn .3s ease both;animation-delay:${Math.min(_globalIdx*0.05,0.4)}s">
       <div class="order-hist-hdr" onclick="toggleHistDetail('${order.key}')">
@@ -5225,16 +5244,16 @@ function renderOrderHistory(){
           </div>
           <!-- Row 3: totals + item count -->
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            ${totalPants?`<span style="font-size:12px;color:var(--blue)">👖 ${totalPants.toLocaleString()} ตัว</span>`:''}
-            ${totalBelt?`<span style="font-size:12px;color:var(--orange)">🎗️ ${totalBelt.toLocaleString()} ชิ้น</span>`:''}
-            ${order.totalCost?`<span style="font-size:12px;font-weight:800;color:var(--orange);font-family:'IBM Plex Mono',monospace">💰 ${order.totalCost.toLocaleString('th-TH')} ฿</span>`:''}
-            <span style="font-size:11px;background:rgba(217,119,6,.1);color:var(--blue);padding:2px 7px;border-radius:6px">${itemCount} รายการ · ${order.days||15}วัน</span>
+            ${totalPants?`<span style="font-size:12px;color:var(--blue-d)">👖 ${totalPants.toLocaleString()} ตัว</span>`:''}
+            ${totalBelt?`<span style="font-size:12px;color:var(--orange-d)">🎗️ ${totalBelt.toLocaleString()} ชิ้น</span>`:''}
+            ${order.totalCost?`<span style="font-size:12px;font-weight:800;color:var(--orange-d);font-family:'IBM Plex Mono',monospace">💰 ${order.totalCost.toLocaleString('th-TH')} ฿</span>`:''}
+            <span style="font-size:11px;background:rgba(217,154,90,.1);color:var(--blue-d);padding:2px 7px;border-radius:6px">${itemCount} รายการ · ${order.days||15}วัน</span>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">
           <div style="display:flex;gap:5px">
-            <button class="btn" style="font-size:11px;padding:3px 8px;color:var(--blue)" onclick="event.stopPropagation();reloadCartFromHistory('${order.key}')">🔄</button>
-            <button class="btn" style="font-size:11px;padding:3px 8px;color:var(--red)" onclick="event.stopPropagation();deleteOrderHistory('${order.key}')">🗑</button>
+            <button class="btn" style="font-size:11px;padding:3px 8px;color:var(--blue-d)" onclick="event.stopPropagation();reloadCartFromHistory('${order.key}')">🔄</button>
+            <button class="btn" style="font-size:11px;padding:3px 8px;color:var(--red-d)" onclick="event.stopPropagation();deleteOrderHistory('${order.key}')">🗑</button>
           </div>
           <span id="hist-arrow-${order.key}" style="color:var(--muted);font-size:14px;transition:transform .25s">▾</span>
         </div>
@@ -5332,7 +5351,7 @@ function renderHistDetail(order){
     {bg:'#f8e6ff', hdr:'#8c1ea0', row1:'#fdf2ff', row2:'#f0d4ff'},
   ];
 
-  let html=`<div style="padding:12px 14px 16px;background:var(--bg-dark);border-top:1px solid rgba(217,119,6,.1);overflow-x:auto">`;
+  let html=`<div style="padding:12px 14px 16px;background:var(--bg-dark);border-top:1px solid rgba(217,154,90,.1);overflow-x:auto">`;
 
   // Date + check-all header
   const pendingCount = Object.keys(pending).length;
@@ -5340,7 +5359,7 @@ function renderHistDetail(order){
     <span style="font-size:20px;font-weight:800;color:var(--text)">📅 ${dateStr}</span>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       ${hasPending ? `
-        <span style="font-size:12px;font-weight:700;color:#b45309;background:#fef3c7;padding:4px 10px;border-radius:12px;border:1px solid #fcd34d">
+        <span style="font-size:12px;font-weight:700;color:#d99a5a;background:#fef3c7;padding:4px 10px;border-radius:12px;border:1px solid #fcd34d">
           ⏳ รอยืนยัน ${pendingCount} รายการ
         </span>
         <button class="btn" onclick="commitPendingReceived('${order.key}')"
@@ -5391,11 +5410,11 @@ function renderHistDetail(order){
         const rcvd=effectiveRcv(ik);
         const isPending = (ik in pending);
         const rowBg = bi%2===0 ? pal.row1 : pal.row2;
-        html+=`<tr style="background:${rowBg}${rcvd?';opacity:.6':''}${isPending?';outline:2px dashed #f59e0b;outline-offset:-2px':''}">
+        html+=`<tr style="background:${rowBg}${rcvd?';opacity:.6':''}${isPending?';outline:2px dashed #fcdcb6;outline-offset:-2px':''}">
           <td style="padding:7px 12px;font-weight:700;color:#1e293b;font-size:13px">${item.name}</td>
           <td style="padding:7px 0 7px 16px;color:#334155;font-size:13px">${item.color}</td>
           <td></td>
-          <td colspan="${nSz}" style="padding:7px 8px;font-weight:800;color:#d97706;font-size:15px">${item.qty} ชิ้น</td>
+          <td colspan="${nSz}" style="padding:7px 8px;font-weight:800;color:#fcdcb6;font-size:15px">${item.qty} ชิ้น</td>
           <td style="padding:7px 10px;font-size:11px;color:#16a34a;text-align:right;white-space:nowrap">🚚 ${deliveryStr}</td>
           <td style="padding:7px 8px;text-align:center">
             <input type="checkbox" ${rcvd?'checked':''} style="width:16px;height:16px;accent-color:#16a34a;cursor:pointer"
@@ -5426,7 +5445,7 @@ function renderHistDetail(order){
         const isPending = (ik in pending);
         const rowBg = rowIdx%2===0 ? pal.row1 : pal.row2;
         rowIdx++;
-        html+=`<tr style="background:${rowBg}${rcvd?';opacity:.55':''}${isPending?';outline:2px dashed #f59e0b;outline-offset:-2px':''}">
+        html+=`<tr style="background:${rowBg}${rcvd?';opacity:.55':''}${isPending?';outline:2px dashed #fcdcb6;outline-offset:-2px':''}">
           <td style="padding:7px 12px;font-weight:700;color:#1e293b;font-size:13px;white-space:nowrap">${g.name}</td>
           <td style="padding:7px 0 7px 16px;color:#334155;font-weight:600;font-size:13px;white-space:nowrap">${color} / ${roll.rollLabel}</td>
           <td></td>
@@ -6524,10 +6543,10 @@ function updateCacheStatus(state, count=0, age=''){
   if(!lbl||!bar) return;
   if(state==='saved'){
     bar.style.display='flex';
-    lbl.innerHTML=`<span style="color:var(--green)">✅ Cache บันทึกแล้ว — ${count.toLocaleString()} SKUs</span>`;
+    lbl.innerHTML=`<span style="color:var(--green-d)">✅ Cache บันทึกแล้ว — ${count.toLocaleString()} SKUs</span>`;
   } else if(state==='loaded'){
     bar.style.display='flex';
-    lbl.innerHTML=`<span style="color:var(--blue)">⚡ โหลดจาก Cache — ${count.toLocaleString()} SKUs · บันทึก${age}</span>
+    lbl.innerHTML=`<span style="color:var(--blue-d)">⚡ โหลดจาก Cache — ${count.toLocaleString()} SKUs · บันทึก${age}</span>
       <button class="btn" onclick="syncData()" style="font-size:12px;padding:3px 10px;color:var(--muted);margin-left:8px">🔄 ซิงก์ใหม่จาก Sheets</button>`;
   }
 }
@@ -7003,7 +7022,7 @@ function makeCheckList(container, arr, type){
     const checked = activeFilters[type].has(v);
     const esc = v.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     return`<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text);transition:background .1s" onmouseover="this.style.background='rgba(77,143,255,.1)'" onmouseout="this.style.background=''">
-      <input type="checkbox" ${checked?'checked':''} style="width:14px;height:14px;accent-color:var(--blue);cursor:pointer"
+      <input type="checkbox" ${checked?'checked':''} style="width:14px;height:14px;accent-color:var(--blue-d);cursor:pointer"
         onchange="onFilterCheck('${type}','${esc}',this.checked)">
       ${v}
     </label>`;
@@ -7069,7 +7088,7 @@ function toggleFilterPopup(){
       sheet.innerHTML = '<div id="mob-filter-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,.4)" onclick="closeAllPopups()"></div>'
                       + '<div id="mob-filter-body" style="position:relative;width:100%;background:var(--surface);border-radius:22px 22px 0 0;max-height:75vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 24px rgba(180,130,50,.18);animation:slideUpSheet .22s ease">'
                       +   '<div style="width:36px;height:4px;background:var(--faint);border-radius:2px;margin:10px auto 4px"></div>'
-                      +   '<div style="padding:10px 18px 4px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(217,119,6,.1)">'
+                      +   '<div style="padding:10px 18px 4px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(217,154,90,.1)">'
                       +     '<span style="font-size:15px;font-weight:800;color:var(--text)">🔍 ฟิลเตอร์</span>'
                       +     '<button onclick="closeAllPopups()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);padding:2px 6px">✕</button>'
                       +   '</div>'
@@ -7104,7 +7123,7 @@ function toggleFilterPopup(){
       confirmBtn = document.createElement('button');
       confirmBtn.className = 'mob-filter-confirm';
       confirmBtn.textContent = '✅ ยืนยัน';
-      confirmBtn.style.cssText = 'width:100%;padding:13px;margin-top:14px;border-radius:14px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;font-size:15px;font-weight:800;font-family:Anuphan,sans-serif;cursor:pointer';
+      confirmBtn.style.cssText = 'width:100%;padding:13px;margin-top:14px;border-radius:14px;background:linear-gradient(135deg,#fcdcb6 0%,#f8c9a0 100%);color:#fff;border:none;font-size:15px;font-weight:800;font-family:Anuphan,sans-serif;cursor:pointer';
       confirmBtn.onclick = ()=>{ closeAllPopups(); renderAll(getFilteredData()); };
       cnt.appendChild(confirmBtn);
     }
@@ -7410,8 +7429,8 @@ function renderAll(data){
           ${item.category?`<div style="margin-top:1px"><span style="font-size:11px;color:var(--faint);font-weight:500">${item.category}</span></div>`:''}
         </td>
         ${td('sku',  `<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted)">${item.sku}${item.parentSku&&item.parentSku!==item.sku?'<br><span style="font-size:12px;color:var(--faint)">'+item.parentSku+'</span>':''}</span>`)}
-        ${td('color',item.color?`<span style="font-size:13px;font-weight:600;color:var(--purple)">${item.color}</span>`:'<span style="color:var(--faint)">—</span>')}
-        ${td('size', item.size ?`<span style="font-size:13px;font-weight:600;color:var(--blue)">${item.size}</span>`:'<span style="color:var(--faint)">—</span>')}
+        ${td('color',item.color?`<span style="font-size:13px;font-weight:600;color:var(--purple-d)">${item.color}</span>`:'<span style="color:var(--faint)">—</span>')}
+        ${td('size', item.size ?`<span style="font-size:13px;font-weight:600;color:var(--blue-d)">${item.size}</span>`:'<span style="color:var(--faint)">—</span>')}
         ${td('star', `<div class="star-wrap">
             <div style="display:flex;align-items:center;gap:8px">
               <span class="star-score" style="color:${starColor}">${item.starScore}</span>
@@ -7421,14 +7440,14 @@ function renderAll(data){
           </div>`)}
         ${td('vel', `<span class="vnum" style="color:${isHigh?'var(--red)':'var(--blue)'}">` +
           `${item.adjVel.toFixed(2)}</span><div style="font-size:12px;color:var(--muted)">ชิ้น/วัน</div>`, 'tr')}
-        ${td('vel7', `<span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--purple)">${item.vel7.toFixed(2)}</span><div style="font-size:12px;color:var(--muted)">ชิ้น/วัน</div>`, 'tr')}
-        ${td('maxvel7', `<span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--red)">${(item.maxVel7||0).toFixed(2)}</span><div style="font-size:12px;color:var(--muted)">ชิ้น/วัน</div>`, 'tr')}
+        ${td('vel7', `<span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--purple-d)">${item.vel7.toFixed(2)}</span><div style="font-size:12px;color:var(--muted)">ชิ้น/วัน</div>`, 'tr')}
+        ${td('maxvel7', `<span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--red-d)">${(item.maxVel7||0).toFixed(2)}</span><div style="font-size:12px;color:var(--muted)">ชิ้น/วัน</div>`, 'tr')}
         ${td('trend',   trendHtml)}
         ${td('gap',     gapHtml)}
         ${td('consist', cvHtml)}
         ${td('totalsold',`<span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--text)">${item.totalSold.toLocaleString()}</span><div style="font-size:12px;color:var(--muted)">${item.activeDays} วันที่ขาย</div>`,'tr')}
         ${td('activevel',`<span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--mid)">${item.activeVelAvg.toFixed(2)}</span><div style="font-size:12px;color:var(--muted)">ชิ้น/วัน</div>`,'tr')}
-        ${td('peakval', `<span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;color:var(--gold)">${item.peakSold}</span><div style="font-size:12px;color:var(--muted)">ชิ้น/วัน</div>`,'tr')}
+        ${td('peakval', `<span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;color:var(--gold-d)">${item.peakSold}</span><div style="font-size:12px;color:var(--muted)">ชิ้น/วัน</div>`,'tr')}
         ${td('lastsale',`<span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:${lastColor}">${lastTxt}</span>`)}
         ${td('peakday', `<span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:${peakDayColor}">${peakDayTxt}</span>`)}
         ${td('stock',   `<div class="stk-box">
@@ -7438,10 +7457,10 @@ function renderAll(data){
           </div>`)}
         ${td('stockavg', `<div class="stk-avg-box">
             <span class="stk-avg-main">${item.stockAvg.toLocaleString()}</span>
-            <span style="font-size:12px;color:var(--green);opacity:.8"> ชิ้น/เดือน</span>
+            <span style="font-size:12px;color:var(--green-d);opacity:.8"> ชิ้น/เดือน</span>
           </div>`)}
         ${td('stockmaxvel7', `<div class="stk-box">
-            <span class="stk-main" style="color:var(--red)">${item.stockMaxVel7.toLocaleString()}</span>
+            <span class="stk-main" style="color:var(--red-d)">${item.stockMaxVel7.toLocaleString()}</span>
             <span style="font-size:12px;color:var(--mid)"> ชิ้น/เดือน</span>
             <div class="stk-sub">จาก MaxVel7 × 30</div>
           </div>`)}
@@ -7661,31 +7680,31 @@ function openMobCardConfig(type){
     <div class="mob-cfg-backdrop" onclick="closeMobCardConfig()" style="position:absolute;inset:0;background:rgba(0,0,0,.5)"></div>
     <div class="mob-cfg-sheet" style="position:relative;background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;padding-bottom:0;animation:slideUpSheet .25s ease">
       <div style="width:40px;height:4px;background:var(--faint);border-radius:2px;margin:12px auto 4px;flex-shrink:0"></div>
-      <div style="padding:10px 20px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(217,119,6,.1);flex-shrink:0">
+      <div style="padding:10px 20px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(217,154,90,.1);flex-shrink:0">
         <div style="font-size:16px;font-weight:800;color:var(--text)">⚙️ ตั้งค่าการ์ด</div>
-        <button onclick="closeMobCardConfig()" style="width:32px;height:32px;border-radius:50%;background:var(--bg-dark);border:1px solid rgba(217,119,6,.15);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
+        <button onclick="closeMobCardConfig()" style="width:32px;height:32px;border-radius:50%;background:var(--bg-dark);border:1px solid rgba(217,154,90,.15);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
       </div>
       <!-- Scrollable content -->
       <div style="flex:1;overflow-y:auto;padding:12px 20px 8px">
         <!-- Section 1: Pills -->
-        <div style="font-size:12px;font-weight:800;color:var(--blue);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">📌 Pill แสดงบนการ์ด <span style="font-weight:400;color:var(--muted)">(เลือกได้ 3)</span></div>
+        <div style="font-size:12px;font-weight:800;color:var(--blue-d);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">📌 Pill แสดงบนการ์ด <span style="font-weight:400;color:var(--muted)">(เลือกได้ 3)</span></div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:16px" id="cfg-sec-pills">
           ${buildSection('pills',3)}
         </div>
         <!-- Section 2: Right value -->
-        <div style="font-size:12px;font-weight:800;color:var(--blue);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">📊 ค่าหลักขวาบนการ์ด <span style="font-weight:400;color:var(--muted)">(เลือก 1)</span></div>
+        <div style="font-size:12px;font-weight:800;color:var(--blue-d);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">📊 ค่าหลักขวาบนการ์ด <span style="font-weight:400;color:var(--muted)">(เลือก 1)</span></div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:16px" id="cfg-sec-right">
           ${buildSection('right',1)}
         </div>
         <!-- Section 3: Expand stats -->
-        <div style="font-size:12px;font-weight:800;color:var(--blue);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">📋 ข้อมูลเพิ่มเติม (กดขยาย) <span style="font-weight:400;color:var(--muted)">(เลือกได้ 6)</span></div>
+        <div style="font-size:12px;font-weight:800;color:var(--blue-d);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">📋 ข้อมูลเพิ่มเติม (กดขยาย) <span style="font-weight:400;color:var(--muted)">(เลือกได้ 6)</span></div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:8px" id="cfg-sec-expand">
           ${buildSection('expand',6)}
         </div>
       </div>
       <!-- Confirm button — sticky bottom -->
-      <div style="padding:12px 20px calc(12px + env(safe-area-inset-bottom));border-top:1px solid rgba(217,119,6,.1);flex-shrink:0;background:var(--surface)">
-        <button onclick="confirmMobCardConfig()" style="width:100%;padding:14px;border-radius:16px;background:linear-gradient(135deg,#fbbf24,#d97706);color:#fff;border:none;font-size:16px;font-weight:800;font-family:'Anuphan',sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(217,119,6,.3);transition:transform .1s,box-shadow .1s;letter-spacing:.2px" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''">
+      <div style="padding:12px 20px calc(12px + env(safe-area-inset-bottom));border-top:1px solid rgba(217,154,90,.1);flex-shrink:0;background:var(--surface)">
+        <button onclick="confirmMobCardConfig()" style="width:100%;padding:14px;border-radius:16px;background:linear-gradient(135deg,#fce6cf 0%,#f8c9a0 100%);color:#fff;border:none;font-size:16px;font-weight:800;font-family:'Anuphan',sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(217,154,90,.3);transition:transform .1s,box-shadow .1s;letter-spacing:.2px" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''">
           ✅ ยืนยัน
         </button>
       </div>
@@ -7791,7 +7810,7 @@ function updateMobCfgPreview(type){
     prev.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">${cur.map(k=>`<div style="background:var(--bg);border-radius:8px;padding:5px 8px;font-size:11px"><div style="font-size:9px;color:var(--muted)">${SLOT_ICON[k]||'📌'}</div>${ALL_SLOT_NAMES[k]||k}</div>`).join('')}</div>`;
   } else {
     const k=cur[0]||'maxvel7';
-    prev.innerHTML = `<div style="font-size:22px;font-weight:800;color:var(--blue)">1.86</div><div style="font-size:11px;color:var(--muted)">${ALL_SLOT_NAMES[k]||k}</div>`;
+    prev.innerHTML = `<div style="font-size:22px;font-weight:800;color:var(--blue-d)">1.86</div><div style="font-size:11px;color:var(--muted)">${ALL_SLOT_NAMES[k]||k}</div>`;
   }
 }
 
@@ -7846,7 +7865,7 @@ function renderKpiTopLists(sorted, days){
         </div>`;
       }).join('');
     } else {
-      elU.innerHTML = `<div style="font-size:12px;color:var(--green);padding:4px 0">✓ ไม่มีสินค้าที่ต้องสั่งด่วน</div>`;
+      elU.innerHTML = `<div style="font-size:12px;color:var(--green-d);padding:4px 0">✓ ไม่มีสินค้าที่ต้องสั่งด่วน</div>`;
     }
   }
 
@@ -7888,7 +7907,7 @@ function renderKpiTopLists(sorted, days){
 
 function drawKpiCharts(sorted, days){
   if(!sorted||!sorted.length) return;
-  const AMBER='#d97706', GREEN='#16a34a', RED='#ef4444', ORANGE='#ea580c';
+  const AMBER='#fcdcb6', GREEN='#16a34a', RED='#ef4444', ORANGE='#ea580c';
 
   // Helper: destroy old + set FIXED pixel size before Chart.js
   function freshCanvas(id, w, h){
@@ -7926,7 +7945,7 @@ function drawKpiCharts(sorted, days){
     _kpiCharts['urgent'] = new Chart(urgentC, {
       type:'doughnut',
       data:{ datasets:[{ data: hasData?[out,low,ok]:[1],
-        backgroundColor: hasData?[RED,ORANGE,GREEN]:['rgba(217,119,6,.2)'],
+        backgroundColor: hasData?[RED,ORANGE,GREEN]:['rgba(217,154,90,.2)'],
         borderWidth:0, borderRadius:2 }] },
       options:{ ...baseOpts, cutout:'68%' }
     });
@@ -7942,7 +7961,7 @@ function drawKpiCharts(sorted, days){
         type:'bar',
         data:{ labels: top4.map((_,i)=>''),
           datasets:[{ data: top4.map(b=>Math.round(b.cost)),
-            backgroundColor: top4.map((_,i)=>`rgba(234,88,12,${1-i*0.18})`),
+            backgroundColor: top4.map((_,i)=>`rgba(240,168,117,${1-i*0.18})`),
             borderRadius:2, borderSkipped:false }] },
         options:{ ...baseOpts,
           indexAxis: 'y',
@@ -7953,7 +7972,7 @@ function drawKpiCharts(sorted, days){
       // empty state
       _kpiCharts['ordercost'] = new Chart(costC, {
         type:'doughnut',
-        data:{ datasets:[{ data:[1], backgroundColor:['rgba(234,88,12,.15)'], borderWidth:0 }] },
+        data:{ datasets:[{ data:[1], backgroundColor:['rgba(240,168,117,.15)'], borderWidth:0 }] },
         options:{ ...baseOpts, cutout:'70%' }
       });
     }
@@ -7984,7 +8003,7 @@ function drawKpiCharts(sorted, days){
     _kpiCharts['star'] = new Chart(starC, {
       type:'doughnut',
       data:{ datasets:[{ data:[topScore, 100-topScore],
-        backgroundColor:[topScore>=70?GREEN:topScore>=50?AMBER:RED,'rgba(217,119,6,.1)'],
+        backgroundColor:[topScore>=70?GREEN:topScore>=50?AMBER:RED,'rgba(217,154,90,.1)'],
         borderWidth:0, circumference:180, rotation:270 }] },
       options:{ ...baseOpts, cutout:'60%' }
     });
@@ -8096,7 +8115,7 @@ function renderRiskTab(sorted, days){
 
   if(!items.length){
     tbody.innerHTML=`<tr><td colspan="13"><div class="empty" style="padding:40px">
-      <svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:var(--green);fill:none;stroke-width:1.5;display:block;margin:0 auto 10px"><polyline points="20 6 9 17 4 12"/></svg>
+      <svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:var(--green-d);fill:none;stroke-width:1.5;display:block;margin:0 auto 10px"><polyline points="20 6 9 17 4 12"/></svg>
       ไม่พบรายการเสี่ยง (Score &gt; ${threshold})
     </div></td></tr>`;
     applyRiskColVisibility(); return;
@@ -8125,24 +8144,24 @@ function renderRiskTab(sorted, days){
     _rColIdx = 0;
     const rStkStatus = getStockStatus(item.sku);
     const rStkAmt    = getStockAmount(item.sku);
-    const rStkBadge  = rStkStatus==='out'  ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,85,114,.18);color:var(--red);font-size:11px;font-weight:800;border-radius:4px;padding:1px 6px;margin-left:4px">🔴 หมดสต๊อก${rStkAmt!==null?' ('+rStkAmt+')':''}</span>`
-                     : rStkStatus==='low'  ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,170,68,.18);color:var(--orange);font-size:11px;font-weight:800;border-radius:4px;padding:1px 6px;margin-left:4px">🟡 เหลือน้อย (${rStkAmt})</span>`
-                     : rStkStatus==='ok'   ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(46,204,138,.12);color:var(--green);font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:4px">🟢 ${rStkAmt}</span>`
+    const rStkBadge  = rStkStatus==='out'  ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,85,114,.18);color:var(--red-d);font-size:11px;font-weight:800;border-radius:4px;padding:1px 6px;margin-left:4px">🔴 หมดสต๊อก${rStkAmt!==null?' ('+rStkAmt+')':''}</span>`
+                     : rStkStatus==='low'  ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,170,68,.18);color:var(--orange-d);font-size:11px;font-weight:800;border-radius:4px;padding:1px 6px;margin-left:4px">🟡 เหลือน้อย (${rStkAmt})</span>`
+                     : rStkStatus==='ok'   ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(46,204,138,.12);color:var(--green-d);font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:4px">🟢 ${rStkAmt}</span>`
                      : '';
     const rRowBg = rStkStatus==='out' ? 'background:rgba(255,85,114,.06)!important;' : rStkStatus==='low' ? 'background:rgba(255,170,68,.05)!important;' : '';
     return`<tr style="animation-delay:${i*.02}s;cursor:pointer;${rRowBg}" onclick="openChart('${item.sku}')">
       <td><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--muted)">${i+1}</span></td>
       <td>
-        <div class="pname">${item.name} <span style="font-size:12px;color:var(--blue)">📊</span>${rStkBadge}</div>
+        <div class="pname">${item.name} <span style="font-size:12px;color:var(--blue-d)">📊</span>${rStkBadge}</div>
         ${item.category?`<div style="margin-top:2px"><span style="font-size:12px;background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:1px 6px;color:var(--mid);font-weight:600">${item.category}</span></div>`:''}
       </td>
       ${rtd('rscore',`<div style="text-align:center"><span style="font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:700;color:${scoreColor}">${item.stockoutScore}</span><div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">${isHigh?'เสี่ยงสูง':'ติดตาม'}</div></div>`,'tc')}
       ${rtd('rsku',  `<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted)">${item.sku}</span>`)}
-      ${rtd('rcolor',item.color?`<span style="font-size:14px;font-weight:700;color:var(--purple)">🎨 ${item.color}</span>`:'<span style="color:var(--faint)">—</span>')}
-      ${rtd('rsize', item.size ?`<span style="font-size:14px;font-weight:700;color:var(--blue)">📐 ${item.size}</span>`:'<span style="color:var(--faint)">—</span>')}
+      ${rtd('rcolor',item.color?`<span style="font-size:14px;font-weight:700;color:var(--purple-d)">🎨 ${item.color}</span>`:'<span style="color:var(--faint)">—</span>')}
+      ${rtd('rsize', item.size ?`<span style="font-size:14px;font-weight:700;color:var(--blue-d)">📐 ${item.size}</span>`:'<span style="color:var(--faint)">—</span>')}
       ${rtd('rvel',  `<span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:${isHigh?'var(--red)':'var(--blue)'}">${item.adjVel.toFixed(2)}</span><div style="font-size:12px;color:var(--muted)">ชิ้น/วัน</div>`,'tr')}
-      ${rtd('rvel7', `<span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--purple)">${item.vel7.toFixed(2)}</span><div style="font-size:12px;color:var(--muted)">ชิ้น/วัน</div>`,'tr')}
-      ${rtd('rmaxvel7', `<span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--red)">${(item.maxVel7||0).toFixed(2)}</span><div style="font-size:12px;color:var(--muted)">ชิ้น/วัน</div>`,'tr')}
+      ${rtd('rvel7', `<span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--purple-d)">${item.vel7.toFixed(2)}</span><div style="font-size:12px;color:var(--muted)">ชิ้น/วัน</div>`,'tr')}
+      ${rtd('rmaxvel7', `<span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--red-d)">${(item.maxVel7||0).toFixed(2)}</span><div style="font-size:12px;color:var(--muted)">ชิ้น/วัน</div>`,'tr')}
       ${rtd('rtrend',trendHtml)}
       ${rtd('rgap',  `<span class="gap-pill" style="color:${gapColor}">${gapIcon} ${item.maxGap}วัน</span>`)}
       ${rtd('rconsist',cvHtml)}
@@ -8155,7 +8174,7 @@ function renderRiskTab(sorted, days){
 
       </div>`)}
       ${rtd('rstockmaxvel7',`<div class="stk-box">
-        <span class="stk-main" style="color:var(--red)">${item.stockMaxVel7.toLocaleString()}</span>
+        <span class="stk-main" style="color:var(--red-d)">${item.stockMaxVel7.toLocaleString()}</span>
         <span style="font-size:12px;color:var(--mid)"> ชิ้น/เดือน</span>
         <div class="stk-sub">MaxVel7 × 30</div>
 
@@ -8279,8 +8298,8 @@ function colorSizeTags(item, size='sm'){
   const fs = size==='xs' ? '9px' : '10px';
   const py = size==='xs' ? '1px' : '2px';
   const tags = [];
-  if(item.color) tags.push(`<span style="font-size:${fs};background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:${py} 6px;color:var(--purple);font-weight:700">🎨 ${item.color}</span>`);
-  if(item.size)  tags.push(`<span style="font-size:${fs};background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:${py} 6px;color:var(--blue);font-weight:700">📐 ${item.size}</span>`);
+  if(item.color) tags.push(`<span style="font-size:${fs};background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:${py} 6px;color:var(--purple-d);font-weight:700">🎨 ${item.color}</span>`);
+  if(item.size)  tags.push(`<span style="font-size:${fs};background:var(--bg);box-shadow:var(--sx);border-radius:4px;padding:${py} 6px;color:var(--blue-d);font-weight:700">📐 ${item.size}</span>`);
   return tags.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">${tags.join('')}</div>` : '';
 }
 
