@@ -3320,16 +3320,18 @@ function getAvg(item,days=15){
   const e60      = item.early60 || {total:0, days:1};
   const earlyTot = Number(e60.total)||0;
   const earlyDays= Math.max(1, Number(e60.days)||1);
+  // smart rate: ตัด stockout zeros (ของหมดทำให้ยอด=0)
+  const smartRate30 = Number(item.smartRate30)||0;
+
   const recentRate = recent30 / 30;
   const earlyRate  = earlyTot / earlyDays;
   const weighted   = 0.5 * recentRate + 0.5 * earlyRate;
-  const baseRate = Math.max(recentRate, weighted, rawVel * 0.7);
+  const baseRate = Math.max(recentRate, weighted, rawVel * 0.7, smartRate30);
   if(baseRate > 0) return Math.max(1, Math.ceil(baseRate * days));
-  // Fallback 1: cache เก่ายังไม่มี recent30/early60 และ rawVel ก็ 0 (SKU เพิ่งเพิ่ม)
-  // ใช้ activeVelAvg (ยอดขาย/จำนวนวันที่มีออเดอร์) ถ้ามี
+  // Fallback (cache เก่ามากที่ไม่มีทั้ง rawVel/recent30) — ใช้ activeVelAvg
   const av = Number(item.activeVelAvg)||0;
   if(av > 0) return Math.max(1, Math.ceil(av * 0.7 * days));
-  // Fallback 2: ใช้ stockAvg/30 × days (ค่าเก่าจาก v1)
+  // Fallback 2: ใช้ stockAvg/30 × days
   const monthly = Math.max(0, item.stockAvg||Math.ceil(((item.recStock||0)+(item.stockMaxVel7||0))/2));
   return Math.max(1, Math.ceil(monthly*(days/30)));
 }
@@ -6183,6 +6185,60 @@ async function syncData(){
           });
           return sum;
         })(),
+        smartRate30: (()=>{
+          // อัตราขาย/วัน 30 วันล่าสุด แบบ "ตัด stockout zeros"
+          // Logic: ถ้ามี 0 ติดกัน > 3 วัน และยอดขายเฉลี่ย 3 วันหลัง > 3 วันก่อน
+          //         → ตัด zeros ออก (เป็น stockout จริง)
+          // ถ้าไม่เข้าเงื่อนไข → นับ 0 ตามปกติ
+          if(!sortedAllDates.length) return 0;
+          const lastDateStr = sortedAllDates[sortedAllDates.length-1];
+          const lastT = parseDate(lastDateStr);
+          if(isNaN(lastT)) return 0;
+          // สร้าง array 30 วันล่าสุด (ทุกวัน รวมวันที่ขาย=0)
+          const arr = [];
+          for(let i=29; i>=0; i--){
+            const t = lastT - i*24*60*60*1000;
+            const dt = new Date(t);
+            const dStr = dt.toISOString().slice(0,10); // YYYY-MM-DD
+            arr.push(Number(dailySales[dStr]||0));
+          }
+          const n = arr.length;
+          // หา streaks ของ zeros และ skip ตามเงื่อนไข
+          const skip = new Array(n).fill(false);
+          let i = 0;
+          while(i < n){
+            if(arr[i] === 0){
+              let j = i;
+              while(j < n && arr[j] === 0) j++;
+              const streak = j - i;
+              if(streak > 3){
+                // ดูยอด 3 วันก่อน streak
+                const beforeStart = Math.max(0, i-3);
+                let beforeSum = 0, beforeCnt = 0;
+                for(let k=beforeStart; k<i; k++){ beforeSum += arr[k]; beforeCnt++; }
+                const beforeAvg = beforeCnt ? beforeSum/beforeCnt : 0;
+                // ดูยอด 3 วันหลัง streak
+                const afterEnd = Math.min(n, j+3);
+                let afterSum = 0, afterCnt = 0;
+                for(let k=j; k<afterEnd; k++){ afterSum += arr[k]; afterCnt++; }
+                const afterAvg = afterCnt ? afterSum/afterCnt : 0;
+                // ตัดทิ้งถ้ายอดหลังสูงกว่ายอดก่อน (เด้งกลับ = stockout)
+                if(afterAvg > beforeAvg){
+                  for(let k=i; k<j; k++) skip[k] = true;
+                }
+              }
+              i = j;
+            } else {
+              i++;
+            }
+          }
+          // คำนวณอัตรา = sum / valid_days
+          let total = 0, validDays = 0;
+          for(let k=0; k<n; k++){
+            if(!skip[k]){ total += arr[k]; validDays++; }
+          }
+          return validDays>0 ? +(total/validDays).toFixed(3) : 0;
+        })(),
         early60: (()=>{
           // ยอดขายช่วง 31-90 วันก่อน (60 วัน — ก่อน recent30)
           // ใช้สำหรับ trend-aware weighted formula
@@ -6331,15 +6387,18 @@ function calcStock(item, days, mult){
   const e60       = item.early60 || {total:0, days:1};
   const earlyTot  = Number(e60.total) || 0;
   const earlyDays = Math.max(1, Number(e60.days) || 1);
+  // Smart rate: ตัด stockout zeros ออก ถ้ายอดเด้งกลับสูงกว่าก่อน 0
+  const smartRate30 = Number(item.smartRate30) || 0;
 
-  const recentRate = recent30 / 30;                   // ชิ้น/วัน (30 วันล่าสุด)
+  const recentRate = recent30 / 30;                   // ชิ้น/วัน (30 วันล่าสุด - รวม 0)
   const earlyRate  = earlyTot / earlyDays;            // ชิ้น/วัน (ช่วง 31-90 วันก่อน)
   const weighted   = 0.5 * recentRate + 0.5 * earlyRate;
 
   // ขาขึ้น: recentRate > weighted → ใช้ recent เต็ม
   // ขาลง:  recentRate < weighted → ใช้ weighted (ลดลงครึ่งทาง)
   // กัน underestimate ด้วย rawVel × 0.7 (สำหรับสินค้าขายเป็นช่วงๆ)
-  const baseRate = Math.max(recentRate, weighted, rawVel * 0.7);
+  // ถ้า smartRate30 สูงกว่า → มี stockout จริง, ใช้ smart rate (ของหมดทำให้ยอดถูกตัด)
+  const baseRate = Math.max(recentRate, weighted, rawVel * 0.7, smartRate30);
 
   const safety = mult || item.safetyMult || 1.5;
   const finalSafety = Math.max(safety, 1.5);
@@ -6449,6 +6508,7 @@ function serializeAppData(data){
     lastSaleDate:item.lastSaleDate, peakDate:item.peakDate,
     peakSold:item.peakSold, vel7:item.vel7,
     activeVelAvg:item.activeVelAvg, maxVel7:item.maxVel7, recent30:item.recent30||0,
+    smartRate30: item.smartRate30||0,
     early60: item.early60 || {total:0,days:1},
     _noSales:item._noSales||false
     // dailySales omitted — too large; chart will fetch on demand if needed
@@ -6488,7 +6548,7 @@ async function loadAppDataCache(){
     // ตรวจสอบ cache เก่าที่ขาด field สูตร v3 (recent30/early60)
     const skusWithSales = appData.filter(d => (d.totalSold||0) > 0);
     const missingV3 = skusWithSales.filter(d => 
-      d.recent30 === undefined || d.early60 === undefined
+      d.recent30 === undefined || d.early60 === undefined || d.smartRate30 === undefined
     );
     if(skusWithSales.length > 0 && missingV3.length / skusWithSales.length > 0.5){
       console.warn(`[Cache] ⚠️ Cache เก่าขาด field v3 (${missingV3.length}/${skusWithSales.length} SKU) — ควรซิงก์ข้อมูลใหม่`);
