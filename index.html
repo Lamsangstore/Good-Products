@@ -4585,7 +4585,7 @@ function renderBeltCard(g, days){
     // ── Qty input (เน้นใหญ่) ──
     const qtyHighlight = saved>0 ? 'rgba(217,154,90,.12)' : 'rgba(176,136,145,.06)';
     const qtyBorder = saved>0 ? `2px solid ${inputColor}` : '1px solid rgba(176,136,145,.15)';
-    return`<div style="display:flex;align-items:stretch;gap:0;padding:0;background:${cardBg};border:${cardBdr};border-radius:12px;min-width:260px;overflow:hidden">
+    return`<div style="display:flex;align-items:stretch;gap:0;padding:0;background:${cardBg};border:${cardBdr};border-radius:12px;min-width:285px;overflow:hidden">
       <!-- Left: Info -->
       <div style="flex:1;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0">
         <!-- Title row -->
@@ -4617,17 +4617,17 @@ function renderBeltCard(g, days){
         </div>
       </div>
       <!-- Right: BIG qty input -->
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:${qtyHighlight};padding:10px 14px;border-left:1px dashed rgba(176,136,145,.2);min-width:90px">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:${qtyHighlight};padding:10px 12px;border-left:1px dashed rgba(176,136,145,.2);min-width:104px">
         <div style="font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">สั่ง</div>
         <input class="lot-cfg-input" type="number" min="0" step="10" value="${saved}"
-          style="width:64px;font-size:24px!important;font-weight:800;color:${inputColor};border:${qtyBorder};border-radius:8px;text-align:center;padding:4px 4px;margin:2px 0"
+          style="width:84px;font-size:${String(saved).length>=4?'19px':String(saved).length===3?'22px':'24px'}!important;font-weight:800;color:${inputColor};border:${qtyBorder};border-radius:8px;text-align:center;padding:4px 6px;margin:2px 0;min-width:0"
           onchange="setBeltQty('${esc}','${item.sku}',+this.value)" onclick="event.stopPropagation()">
         <div style="font-size:10px;color:var(--muted);font-weight:600">ชิ้น</div>
         <!-- Cost (collapsed, smaller) -->
         <details style="margin-top:6px;width:100%">
           <summary style="font-size:10px;color:var(--orange-d);cursor:pointer;text-align:center;list-style:none;font-weight:700">฿/ชิ้น ⚙</summary>
           <input class="lot-cfg-input" type="number" min="0" step="1" value="${(cfg.costs||{})[item.sku]||''}" placeholder="0"
-            style="width:64px;font-size:13px;color:var(--orange-d);text-align:center;margin-top:4px"
+            style="width:84px;font-size:13px;color:var(--orange-d);text-align:center;margin-top:4px"
             onchange="setBeltCost('${esc}','${item.sku}',+this.value)" onclick="event.stopPropagation()">
         </details>
       </div>
