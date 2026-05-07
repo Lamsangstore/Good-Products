@@ -2646,6 +2646,16 @@ tbody td { border-bottom: 1px solid rgba(217,154,90,.08) !important; }
           <option value="name_desc">🔤 ชื่อ: ฮ → ก</option>
         </select>
       </div>
+      <!-- Safety buffer slider -->
+      <div style="display:flex;align-items:center;gap:8px;background:var(--bg);box-shadow:var(--si);border-radius:10px;padding:5px 12px;margin-left:8px"
+        title="ปรับระดับการเผื่อสต๊อก: 1.0=ไม่เผื่อ, 1.5=เผื่อปกติ, 2.0=เผื่อเยอะ">
+        <span style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;white-space:nowrap">เผื่อ:</span>
+        <input type="range" id="order-safety" min="1.0" max="2.0" step="0.1" value="1.5"
+          oninput="setOrderSafety(this.value)"
+          style="width:90px;cursor:pointer;accent-color:var(--orange-d)">
+        <span id="orderSafetyVal" style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:800;color:var(--orange-d);min-width:34px">×1.5</span>
+        <span id="orderSafetyLbl" style="font-size:12px;color:var(--mid);font-weight:600;white-space:nowrap">⚖️ เผื่อปกติ</span>
+      </div>
       <div style="flex:1"></div>
       <!-- Lot config popup trigger — only show when pants category selected -->
       <button class="btn" onclick="toggleLotConfigPopup()" id="lot-cfg-btn" style="color:var(--muted);gap:5px;display:none" title="ตั้งค่าล็อคกางเกง">
@@ -3114,6 +3124,32 @@ function hideL(){ $('loading').classList.remove('on') }
 
 let orderCatFilter = 'all';
 let orderSort = 'qty_desc'; // 'qty_desc' | 'qty_asc' | 'name_asc' | 'name_desc'
+// Safety buffer สำหรับการคำนวณ "ขาด" ใน Order tab
+// 1.0 = ขายแบบเป๊ะ ไม่เผื่อ, 1.2 = เผื่อนิด, 1.5 = เผื่อปกติ, 2.0 = เผื่อเยอะ
+window.orderSafety = (()=>{
+  try { const v = parseFloat(localStorage.getItem('orderSafety')); return (v>=1.0 && v<=3.0) ? v : 1.5; }
+  catch(e){ return 1.5; }
+})();
+function setOrderSafety(v){
+  v = parseFloat(v);
+  if(!(v>=1.0 && v<=3.0)) v = 1.5;
+  window.orderSafety = v;
+  try { localStorage.setItem('orderSafety', String(v)); }catch(e){}
+  // อัพเดต UI labels
+  const lbl = document.getElementById('orderSafetyLbl');
+  if(lbl) lbl.textContent = formatSafetyLabel(v);
+  const valEl = document.getElementById('orderSafetyVal');
+  if(valEl) valEl.textContent = '×' + v.toFixed(1);
+  // re-render
+  renderOrderTab();
+}
+function formatSafetyLabel(v){
+  if(v < 1.1) return '🪶 เป๊ะ ไม่เผื่อ';
+  if(v < 1.3) return '🌿 เผื่อนิด';
+  if(v < 1.6) return '⚖️ เผื่อปกติ';
+  if(v < 1.9) return '🛡️ เผื่อเยอะ';
+  return '🔥 Peak season';
+}
 let orderCatType   = 'all'; // 'all' | 'pants' | 'belt' | 'other' | specific category string
 const ORDER_STORE_KEY = 'orderConfig';
 let orderConfig = {};
@@ -3312,7 +3348,7 @@ function groupByParent(items){
 
   return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'th'));
 }
-function getAvg(item,days=15){
+function getAvg(item,days=15,safety){
   if(!item) return 0;
   if(item._noSales) return 1; // ไม่มีข้อมูลยอดขาย — demand = 1 เพื่อให้คำนวณล็อคได้
   // ใช้สูตร weighted (ตรงกับ calcStock v3) เพื่อความสม่ำเสมอ
@@ -3328,13 +3364,17 @@ function getAvg(item,days=15){
   const earlyRate  = earlyTot / earlyDays;
   const weighted   = 0.5 * recentRate + 0.5 * earlyRate;
   const baseRate = Math.max(recentRate, weighted, rawVel * 0.7, smartRate30);
-  if(baseRate > 0) return Math.max(1, Math.ceil(baseRate * days));
+  // Safety multiplier — ดึงจาก global orderSafety (ตั้งโดย slider ที่ Order tab)
+  // หรือใช้ค่าที่ส่งเข้ามาเฉพาะการ์ด/บางจุด
+  const safetyMult = safety!==undefined ? safety : (window.orderSafety || 1.0);
+
+  if(baseRate > 0) return Math.max(1, Math.ceil(baseRate * days * safetyMult));
   // Fallback (cache เก่ามากที่ไม่มีทั้ง rawVel/recent30) — ใช้ activeVelAvg
   const av = Number(item.activeVelAvg)||0;
-  if(av > 0) return Math.max(1, Math.ceil(av * 0.7 * days));
+  if(av > 0) return Math.max(1, Math.ceil(av * 0.7 * days * safetyMult));
   // Fallback 2: ใช้ stockAvg/30 × days
   const monthly = Math.max(0, item.stockAvg||Math.ceil(((item.recStock||0)+(item.stockMaxVel7||0))/2));
-  return Math.max(1, Math.ceil(monthly*(days/30)));
+  return Math.max(1, Math.ceil(monthly*(days/30) * safetyMult));
 }
 
 // ── config ──
@@ -3911,6 +3951,15 @@ function setOrderSort(v){
 function renderOrderTab(){
   try {
   _cachedPendingMap = null; // reset cache ทุกครั้งที่ render ใหม่
+  // Sync safety slider UI with state (in case loaded from localStorage)
+  const sf = $('order-safety');
+  if(sf && +sf.value !== window.orderSafety){
+    sf.value = window.orderSafety;
+    const valEl = $('orderSafetyVal');
+    if(valEl) valEl.textContent = '×' + Number(window.orderSafety).toFixed(1);
+    const lblEl = $('orderSafetyLbl');
+    if(lblEl) lblEl.textContent = formatSafetyLabel(window.orderSafety);
+  }
   if(!appData || !appData.length){
     const oc=$('order-content'); if(oc) oc.innerHTML='<div class="empty" style="padding:60px">กรุณาซิงก์ข้อมูลก่อน</div>';
     return;
@@ -7968,7 +8017,9 @@ function renderKpiTopLists(sorted, days){
 
 function drawKpiCharts(sorted, days){
   if(!sorted||!sorted.length) return;
-  const AMBER='#fcdcb6', GREEN='#16a34a', RED='#ef4444', ORANGE='#ea580c';
+  // Pastel palette ตรงกับ theme
+  const C_RED='#d97394', C_ORANGE='#d99a5a', C_GREEN='#5fb892', C_GOLD='#c9b94d', C_PURPLE='#9b95c9', C_BLUE='#6fa8c9';
+  const C_RED_BG='rgba(217,115,148,.18)', C_ORANGE_BG='rgba(217,154,90,.18)', C_GREEN_BG='rgba(95,184,146,.18)', C_GOLD_BG='rgba(201,185,77,.18)';
 
   // Helper: destroy old + set FIXED pixel size before Chart.js
   function freshCanvas(id, w, h){
@@ -7985,89 +8036,227 @@ function drawKpiCharts(sorted, days){
     return c;
   }
 
+  // Helper: update inline legend below canvas
+  function setLegend(canvasId, html){
+    const c = document.getElementById(canvasId);
+    if(!c) return;
+    let leg = c.parentElement.querySelector('.kpi-mini-legend');
+    if(!leg){
+      leg = document.createElement('div');
+      leg.className = 'kpi-mini-legend';
+      leg.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px 10px;justify-content:center;margin-top:6px;font-size:10px;line-height:1.3';
+      c.parentElement.appendChild(leg);
+    }
+    leg.innerHTML = html;
+  }
+
   const baseOpts = {
     responsive: false,
     maintainAspectRatio: false,
-    animation: { duration: 800, easing: 'easeOutBack' },
-    plugins: { legend:{display:false}, tooltip:{enabled:false} }
+    animation: { duration: 600, easing: 'easeOutQuad' },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        enabled: true,
+        backgroundColor: 'rgba(74,42,47,.92)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        titleFont: { family: 'Anuphan', size: 12, weight: '700' },
+        bodyFont:  { family: 'Anuphan', size: 12 },
+        padding: 8, cornerRadius: 8, displayColors: true, boxPadding: 4
+      }
+    }
   };
 
-  // ── Card 1: Donut — urgent stock breakdown (out/low/ok) ──
-  const urgentC = freshCanvas('kpi-chart-urgent', 120, 120);
+  // ── Card 1: Donut — สถานะสต๊อก (หมด / น้อย / พอ) ──
+  const urgentC = freshCanvas('kpi-chart-urgent', 110, 110);
   if(urgentC){
-    let out=0,low=0,ok=0,unk=0;
+    let out=0,low=0,ok=0;
     if(isStockLoaded()){
       sorted.forEach(item=>{
         const s=getStockStatus(item.sku);
-        if(s==='out')out++; else if(s==='low')low++; else if(s==='ok')ok++; else unk++;
+        if(s==='out')out++; else if(s==='low')low++; else if(s==='ok')ok++;
       });
-    } else { unk = sorted.length; }
-    const hasData = out||low||ok;
-    _kpiCharts['urgent'] = new Chart(urgentC, {
-      type:'doughnut',
-      data:{ datasets:[{ data: hasData?[out,low,ok]:[1],
-        backgroundColor: hasData?[RED,ORANGE,GREEN]:['rgba(217,154,90,.2)'],
-        borderWidth:0, borderRadius:2 }] },
-      options:{ ...baseOpts, cutout:'68%' }
-    });
-  }
-
-  // ── Card 2: Horizontal bar — top brands by spend ──
-  const costC = freshCanvas('kpi-chart-ordercost', 140, 70);
-  if(costC){
-    const brands = window._orderTopBrands || [];
-    const top4 = brands.slice(0,4);
-    if(top4.length){
-      _kpiCharts['ordercost'] = new Chart(costC, {
-        type:'bar',
-        data:{ labels: top4.map((_,i)=>''),
-          datasets:[{ data: top4.map(b=>Math.round(b.cost)),
-            backgroundColor: top4.map((_,i)=>`rgba(240,168,117,${1-i*0.18})`),
-            borderRadius:2, borderSkipped:false }] },
-        options:{ ...baseOpts,
-          indexAxis: 'y',
-          scales:{ x:{display:false}, y:{display:false} }
+    }
+    const total = out+low+ok;
+    if(total>0){
+      _kpiCharts['urgent'] = new Chart(urgentC, {
+        type:'doughnut',
+        data:{
+          labels: ['🔴 หมดแล้ว', '🟡 ใกล้หมด', '🟢 พอขาย'],
+          datasets:[{
+            data:[out,low,ok],
+            backgroundColor:[C_RED, C_ORANGE, C_GREEN],
+            borderWidth:2, borderColor:'#fff', borderRadius:3
+          }]
+        },
+        options:{ ...baseOpts, cutout:'62%',
+          plugins: { ...baseOpts.plugins,
+            tooltip: { ...baseOpts.plugins.tooltip,
+              callbacks:{ label: (ctx)=>`${ctx.label}: ${ctx.parsed} SKUs (${Math.round(ctx.parsed/total*100)}%)` }
+            }
+          }
         }
       });
+      setLegend('kpi-chart-urgent',
+        `<span style="color:${C_RED};font-weight:700">🔴 หมด ${out}</span>
+         <span style="color:${C_ORANGE};font-weight:700">🟡 น้อย ${low}</span>
+         <span style="color:${C_GREEN};font-weight:700">🟢 พอ ${ok}</span>`
+      );
     } else {
-      // empty state
-      _kpiCharts['ordercost'] = new Chart(costC, {
+      _kpiCharts['urgent'] = new Chart(urgentC, {
         type:'doughnut',
-        data:{ datasets:[{ data:[1], backgroundColor:['rgba(240,168,117,.15)'], borderWidth:0 }] },
-        options:{ ...baseOpts, cutout:'70%' }
+        data:{ datasets:[{ data:[1], backgroundColor:['rgba(212,197,200,.3)'], borderWidth:0 }] },
+        options:{ ...baseOpts, cutout:'62%' }
       });
+      setLegend('kpi-chart-urgent', `<span style="color:var(--muted)">อัพโหลดไฟล์สต๊อกเพื่อดู</span>`);
     }
   }
 
-  // ── Card 3: Line — trend distribution ──
-  const trendRight = document.getElementById('kpi-chart-trend')?.closest('.kpi-right');
-  const trendW = trendRight ? Math.floor(trendRight.getBoundingClientRect().width - 16) : 160;
-  const trendC = freshCanvas('kpi-chart-trend', trendW, 50);
-  if(trendC){
-    const buckets=[-100,-30,-10,10,30,100];
-    const counts=new Array(buckets.length-1).fill(0);
-    sorted.forEach(d=>{ for(let i=0;i<buckets.length-1;i++){ if(d.trendPct>=buckets[i]&&d.trendPct<buckets[i+1]){ counts[i]++; break; } } });
-    _kpiCharts['trend'] = new Chart(trendC, {
-      type:'line',
-      data:{ labels:['','','','',''],
-        datasets:[{ data:counts, fill:true,
-          borderColor:GREEN, backgroundColor:'rgba(22,163,74,.15)',
-          borderWidth:1.5, tension:0.4, pointRadius:2, pointBackgroundColor:GREEN }] },
-      options:{ ...baseOpts, scales:{ x:{display:false}, y:{display:false,min:0} } }
-    });
+  // ── Card 2: Horizontal bar — Top brands by spend ──
+  const costC = freshCanvas('kpi-chart-ordercost', 160, 100);
+  if(costC){
+    const brands = window._orderTopBrands || [];
+    const top5 = brands.slice(0,5);
+    if(top5.length){
+      // ชื่อย่อสำหรับแกน y
+      const shortName = n => (n||'').length > 18 ? n.slice(0,16)+'…' : (n||'');
+      _kpiCharts['ordercost'] = new Chart(costC, {
+        type:'bar',
+        data:{
+          labels: top5.map(b=>shortName(b.name)),
+          datasets:[{
+            label: 'ต้นทุนสั่งซื้อ',
+            data: top5.map(b=>Math.round(b.cost)),
+            backgroundColor: top5.map((_,i)=>{
+              const op = 1 - i*0.15;
+              return `rgba(217,154,90,${op})`;
+            }),
+            borderRadius:4, borderSkipped:false,
+            barPercentage: 0.85
+          }]
+        },
+        options:{ ...baseOpts,
+          indexAxis: 'y',
+          scales:{
+            x:{ display:false, beginAtZero:true },
+            y:{
+              display:true,
+              grid:{ display:false },
+              ticks:{
+                font:{ family:'Anuphan', size:10, weight:'600' },
+                color:'#8b7378'
+              },
+              border:{ display:false }
+            }
+          },
+          plugins: { ...baseOpts.plugins,
+            tooltip: { ...baseOpts.plugins.tooltip,
+              callbacks:{
+                title: (ctx)=>top5[ctx[0].dataIndex].name,
+                label: (ctx)=>`${ctx.parsed.x.toLocaleString('th-TH')} ฿`
+              }
+            }
+          }
+        }
+      });
+      const totalCost = top5.reduce((s,b)=>s+b.cost,0);
+      setLegend('kpi-chart-ordercost',
+        `<span style="color:${C_ORANGE};font-weight:700">🏷️ Top 5 แบรนด์ที่กินต้นทุนสูงสุด · รวม ${Math.round(totalCost).toLocaleString('th-TH')} ฿</span>`
+      );
+    } else {
+      _kpiCharts['ordercost'] = new Chart(costC, {
+        type:'doughnut',
+        data:{ datasets:[{ data:[1], backgroundColor:['rgba(217,154,90,.15)'], borderWidth:0 }] },
+        options:{ ...baseOpts, cutout:'70%' }
+      });
+      setLegend('kpi-chart-ordercost', `<span style="color:var(--muted)">ตั้งต้นทุนในแท็บแบบสั่งสินค้าก่อน</span>`);
+    }
   }
 
-  // ── Card 4: Gauge — True Star ──
-  const starC = freshCanvas('kpi-chart-star', 140, 80);
-  const topScore = sorted[0]?.starScore||0;
+  // ── Card 3: Bar chart — แจกแจง Trend (ลด ↔ ทรง ↔ เพิ่ม) ──
+  const trendRight = document.getElementById('kpi-chart-trend')?.closest('.kpi-right');
+  const trendW = trendRight ? Math.floor(trendRight.getBoundingClientRect().width - 16) : 200;
+  const trendC = freshCanvas('kpi-chart-trend', trendW, 70);
+  if(trendC){
+    // 5 buckets: ลดมาก / ลดน้อย / ทรง / เพิ่มน้อย / เพิ่มมาก
+    const buckets = [
+      { lbl:'ลดมาก',  min:-Infinity, max:-30, color:C_RED,    bg:C_RED_BG },
+      { lbl:'ลดน้อย', min:-30,       max:-10, color:'#dba8a3', bg:'rgba(219,168,163,.2)' },
+      { lbl:'ทรง',    min:-10,       max: 10, color:'#a89599', bg:'rgba(168,149,153,.2)' },
+      { lbl:'เพิ่มน้อย',min:10,        max: 30, color:'#a8c9a3', bg:'rgba(168,201,163,.2)' },
+      { lbl:'เพิ่มมาก',min:30,         max:Infinity, color:C_GREEN, bg:C_GREEN_BG },
+    ];
+    const counts = buckets.map(b => sorted.filter(d=>d.trendPct>=b.min && d.trendPct<b.max).length);
+    _kpiCharts['trend'] = new Chart(trendC, {
+      type:'bar',
+      data:{
+        labels: buckets.map(b=>b.lbl),
+        datasets:[{
+          label: 'จำนวน SKU',
+          data: counts,
+          backgroundColor: buckets.map(b=>b.color),
+          borderRadius: 4, borderSkipped: false, barPercentage: 0.7
+        }]
+      },
+      options:{ ...baseOpts,
+        scales:{
+          x:{ display:true, grid:{ display:false },
+              ticks:{ font:{ family:'Anuphan', size:10, weight:'600' }, color:'#8b7378' },
+              border:{ display:false } },
+          y:{ display:false, beginAtZero:true }
+        },
+        plugins: { ...baseOpts.plugins,
+          tooltip: { ...baseOpts.plugins.tooltip,
+            callbacks:{
+              title: (ctx)=>buckets[ctx[0].dataIndex].lbl,
+              label: (ctx)=>`${ctx.parsed.y} SKUs (${Math.round(ctx.parsed.y/sorted.length*100)}%)`
+            }
+          }
+        }
+      }
+    });
+    const rising = counts[3]+counts[4];
+    const falling = counts[0]+counts[1];
+    setLegend('kpi-chart-trend',
+      `<span style="color:${C_GREEN};font-weight:700">📈 เพิ่ม ${rising}</span>
+       <span style="color:#a89599;font-weight:700">➖ ทรง ${counts[2]}</span>
+       <span style="color:${C_RED};font-weight:700">📉 ลด ${falling}</span>`
+    );
+  }
+
+  // ── Card 4: Half-gauge — True Star score distribution ──
+  const starC = freshCanvas('kpi-chart-star', 160, 90);
   if(starC){
+    // นับว่ามี SKU จำนวนเท่าไหร่ในแต่ละ tier
+    const tierStar  = sorted.filter(d=>d.starScore>=70).length;  // 🌟 ดาวแท้
+    const tierFire  = sorted.filter(d=>d.starScore>=50&&d.starScore<70).length;  // ⚡ มาแรง
+    const tierOk    = sorted.filter(d=>d.starScore>=30&&d.starScore<50).length;  // ⚪ พอใช้
+    const tierLow   = sorted.filter(d=>d.starScore<30).length;  // 🟤 ตามดู
     _kpiCharts['star'] = new Chart(starC, {
       type:'doughnut',
-      data:{ datasets:[{ data:[topScore, 100-topScore],
-        backgroundColor:[topScore>=70?GREEN:topScore>=50?AMBER:RED,'rgba(217,154,90,.1)'],
-        borderWidth:0, circumference:180, rotation:270 }] },
-      options:{ ...baseOpts, cutout:'60%' }
+      data:{
+        labels:['🌟 ดาวแท้ (≥70)', '⚡ มาแรง (50-69)', '⚪ พอใช้ (30-49)', '🟤 ตามดู (<30)'],
+        datasets:[{
+          data:[tierStar, tierFire, tierOk, tierLow],
+          backgroundColor:[C_GOLD, C_ORANGE, '#d4c5c8', '#b89a9d'],
+          borderWidth:2, borderColor:'#fff', borderRadius:3
+        }]
+      },
+      options:{ ...baseOpts, cutout:'58%',
+        plugins: { ...baseOpts.plugins,
+          tooltip: { ...baseOpts.plugins.tooltip,
+            callbacks:{ label: (ctx)=>`${ctx.label}: ${ctx.parsed} SKUs (${Math.round(ctx.parsed/sorted.length*100)}%)` }
+          }
+        }
+      }
     });
+    setLegend('kpi-chart-star',
+      `<span style="color:${C_GOLD};font-weight:700">🌟 ${tierStar}</span>
+       <span style="color:${C_ORANGE};font-weight:700">⚡ ${tierFire}</span>
+       <span style="color:#a89599;font-weight:700">⚪ ${tierOk}</span>
+       <span style="color:#8b7378;font-weight:700">🟤 ${tierLow}</span>`
+    );
   }
 }
 
