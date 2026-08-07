@@ -511,6 +511,26 @@ th.sortable.desc .sort-ico{opacity:1;color:var(--blue-d)}
 .modal-close:hover{box-shadow:var(--so);color:var(--text)}
 .modal-close:active{box-shadow:var(--sp)}
 .modal-body{padding:22px 28px 28px}
+/* ── Page365 match modal ── */
+.p365-cfg{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.p365-cfg label{flex:1 1 260px;font-size:12px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;gap:5px}
+.p365-cfg code{font-size:11px;color:var(--blue-d)}
+.p365-cfg input,.p365-tools input[type=text]{font-family:Anuphan,sans-serif;font-size:14px;font-weight:600;color:var(--text);background:var(--bg);border:none;border-radius:12px;box-shadow:var(--sp);padding:9px 13px;outline:none}
+.p365-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.p365-tools input[type=text]{flex:1 1 200px}
+.p365-chk{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap}
+.p365-list{max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.p365-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-radius:14px;background:var(--bg);box-shadow:var(--sx)}
+.p365-row.miss{box-shadow:var(--sx),inset 3px 0 0 var(--red)}
+.p365-row-l{flex:1 1 240px;min-width:0}
+.p365-row-nm{font-size:14px;font-weight:800;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p365-row-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.p365-row select{flex:1 1 260px;max-width:100%;font-family:Anuphan,sans-serif;font-size:13px;font-weight:700;color:var(--text);background:var(--bg);border:none;border-radius:12px;box-shadow:var(--sp);padding:8px 11px;outline:none;cursor:pointer}
+.p365-via{font-size:10px;font-weight:800;letter-spacing:.4px;padding:2px 7px;border-radius:8px;white-space:nowrap}
+.p365-via.manual{background:rgba(96,165,250,.18);color:var(--blue-d)}
+.p365-via.auto{background:rgba(46,204,138,.16);color:var(--green-d)}
+.p365-via.none{background:rgba(255,85,114,.16);color:var(--red-d)}
+.p365-empty{padding:26px;text-align:center;font-size:14px;color:var(--muted)}
 .chart-stats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
 .cstat{background:var(--bg);box-shadow:var(--sm);border-radius:14px;padding:12px 18px;min-width:116px}
 .cstat-lbl{font-size:13px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
@@ -2349,6 +2369,9 @@ tbody td { border-bottom: 1px solid rgba(217,154,90,.08) !important; }
       <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       <span id="mob-stock-dot" style="display:none;position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--green);border-radius:50%;border:1.5px solid var(--bg)"></span>
     </button>
+    <button class="icon-btn" onclick="syncStockFromPage365()" title="ดึงสต๊อกจาก Page 365">
+      <svg viewBox="0 0 24 24"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><circle cx="12" cy="12" r="2.5"/></svg>
+    </button>
     <button class="icon-btn" id="mob-cart-btn" onclick="toggleCartModal()" style="position:relative;display:none">
       <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
       <span id="mob-cart-badge" style="display:none;position:absolute;top:4px;right:4px;width:16px;height:16px;background:#ef4444;border-radius:50%;font-size:9px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--bg)">0</span>
@@ -2374,6 +2397,38 @@ tbody td { border-bottom: 1px solid rgba(217,154,90,.08) !important; }
     </button>
   </div>
 </nav>
+
+<!-- PAGE365 MATCH MODAL -->
+<div class="modal-overlay" id="p365Modal" onclick="if(event.target===this)this.classList.remove('on')">
+  <div class="modal-box" style="max-width:1000px">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title">🔗 จับคู่สินค้ากับ Page 365</div>
+        <div class="modal-sub" id="p365-modal-sub">—</div>
+      </div>
+      <button class="modal-close" onclick="$('p365Modal').classList.remove('on')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="p365-cfg">
+        <label>ชื่อร้าน (subdomain)
+          <input id="p365-shop-input" type="text" placeholder="lamsangstores" oninput="p365Shop=this.value.trim()">
+        </label>
+        <label>CORS proxy ของตัวเอง (ไม่บังคับ — ใส่แล้วเร็วขึ้นมาก)
+          <input id="p365-proxy-input" type="text" placeholder="https://xxx.workers.dev/?url={url}" oninput="p365Proxy=this.value.trim()">
+        </label>
+      </div>
+      <div class="p365-tools">
+        <input id="p365-search" type="text" placeholder="ค้นหาชื่อสินค้า…" oninput="renderP365Match()">
+        <label class="p365-chk"><input type="checkbox" id="p365-only-unmatched" onchange="renderP365Match()"> เฉพาะที่ยังไม่จับคู่</label>
+        <span style="margin-left:auto;display:flex;gap:8px">
+          <button class="btn" onclick="p365ReloadList()" style="color:var(--blue-d)">↻ โหลดรายการร้าน</button>
+          <button class="btn" onclick="saveP365Map(true)" style="color:var(--green-d)">💾 บันทึก + ดึงสต๊อก</button>
+        </span>
+      </div>
+      <div id="p365-match-list" class="p365-list"></div>
+    </div>
+  </div>
+</div>
 
 <div class="page">
 
@@ -2414,6 +2469,15 @@ tbody td { border-bottom: 1px solid rgba(217,154,90,.08) !important; }
         <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
       </svg>
       <span id="stock-btn-label">อัพโหลดไฟล์สต๊อก</span>
+    </button>
+    <!-- Page365 live stock -->
+    <button class="btn" onclick="syncStockFromPage365()" id="p365-hdr-btn"
+      title="ดึงสต๊อกสดจาก Page 365 (ไม่ต้องอัพไฟล์)" style="color:var(--green-d)">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2">
+        <path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+        <path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+      </svg>
+      <span id="p365-btn-label">ดึงสต๊อก Page365</span>
     </button>
   </div>
 </div>
@@ -2575,6 +2639,15 @@ tbody td { border-bottom: 1px solid rgba(217,154,90,.08) !important; }
           <span id="stock-upload-lbl">อัพโหลดสต๊อก</span>
           <input type="file" id="stock-file-input" accept=".xlsx,.csv" style="display:none" onchange="loadStockFile(this)">
         </label>
+        <!-- Page365 live stock -->
+        <button class="btn" onclick="syncStockFromPage365()" style="gap:6px;color:var(--green-d)" title="ดึงสต๊อกสดจาก Page 365">
+          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+          ดึงสต๊อก Page365
+        </button>
+        <button class="btn" onclick="openP365Modal()" style="gap:6px;color:var(--muted)" title="จับคู่สินค้ากับ Page 365 เอง">
+          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+          จับคู่สินค้า
+        </button>
         <!-- Filter popup trigger -->
         <div style="position:relative">
           <button class="btn" id="filterBtn" onclick="toggleFilterPopup()" style="gap:6px;position:relative">
@@ -6925,6 +6998,11 @@ async function loadAllConfigs(){
     if(data.orderConfig && typeof data.orderConfig==='object'){
       Object.assign(orderConfig, data.orderConfig);
     }
+    // Page365: ชื่อร้าน / proxy / การจับคู่ที่ผู้ใช้ตั้งเอง
+    if(typeof data.p365Shop === 'string' && data.p365Shop) p365Shop = data.p365Shop;
+    if(typeof data.p365Proxy === 'string') p365Proxy = data.p365Proxy;
+    if(data.p365Map && typeof data.p365Map === 'object') p365Map = data.p365Map;
+    _p365.cfgLoaded = true;
     console.log('[Firebase] configs loaded:', Object.keys(data));
   } catch(e){ console.warn('[Firebase loadAllConfigs]', e.message); }
 }
@@ -7046,23 +7124,35 @@ function loadStockFile(input){
   } catch(err){ alert('เปิดไฟล์ไม่สำเร็จ: '+err.message); }
 }
 
-function parseStockCSV(text){
-  const lines = (text||'').split(/\r?\n/).filter(l=>l.trim());
-  if(!lines.length){ alert('ไฟล์ว่างเปล่า'); return; }
-  const sep = lines[0].includes('\t') ? '\t' : ',';
-  const headers = lines[0].split(sep).map(h=>h.replace(/^"|"$/g,'').trim().toLowerCase());
-  const skuIdx   = headers.indexOf('sku');
-  const stockIdx = headers.indexOf('stock_amount');
-  if(skuIdx<0||stockIdx<0){ alert('ไม่พบคอลัมน์ sku หรือ stock_amount\nพบหัวตาราง: '+headers.join(', ')); return; }
-  const map = {};
-  for(let i=1;i<lines.length;i++){
-    const cols = lines[i].split(sep).map(c=>c.replace(/^"|"$/g,'').trim());
-    const sku = cols[skuIdx]; if(!sku) continue;
-    const v = parseFloat(cols[stockIdx]);
-    map[sku] = isNaN(v) ? null : v;
-    if(sku !== sku.toLowerCase()) map[sku.toLowerCase()] = isNaN(v) ? null : v;
+// แปลง CSV/TSV เป็น rows (array of array) — รองรับ field ที่ครอบ "..." และมี
+// separator อยู่ข้างใน เช่น variant_name = "ชมพู, 2XL" ซึ่งจะพังถ้า split ตรงๆ
+function parseDelimited(text, sep){
+  const rows=[]; let row=[], field='', inQ=false;
+  const s = String(text||'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  for(let i=0;i<s.length;i++){
+    const ch=s[i];
+    if(inQ){
+      if(ch==='"'){
+        if(s[i+1]==='"'){ field+='"'; i++; }   // escaped quote ""
+        else inQ=false;
+      } else field+=ch;
+    } else if(ch==='"'){ inQ=true; }
+    else if(ch===sep){ row.push(field); field=''; }
+    else if(ch==='\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+    else field+=ch;
   }
-  applyStockMap(map);
+  if(field!=='' || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r=>r.some(c=>String(c).trim()!==''));
+}
+
+function parseStockCSV(text){
+  const firstLine = String(text||'').split(/\r?\n/)[0] || '';
+  if(!firstLine.trim()){ alert('ไฟล์ว่างเปล่า'); return; }
+  const sep = firstLine.includes('\t') ? '\t' : ',';
+  const rows = parseDelimited(text, sep);
+  if(!rows.length){ alert('ไฟล์ว่างเปล่า'); return; }
+  // ใช้ path เดียวกับ XLSX เพื่อให้ได้ทั้งสต๊อก + แก้ข้อมูลสินค้า (parent_sku ฯลฯ)
+  extractStockFromRows(rows);
 }
 
 function parseStockXLSX(buf){
@@ -7136,37 +7226,105 @@ function extractStockFromRows(rows){
     if(sku !== sku.toLowerCase()) map[sku.toLowerCase()] = isNaN(v) ? null : v;
 
     // product info — parse variant "สี, ไซส์" same as Google Sheets logic
-    const parentSku  = cv('parent_sku') || sku;
+    // parentRaw = ค่าดิบ (ว่างได้) ใช้ตัดสินใจว่าจะทับข้อมูลเดิมไหม
+    // parentSku = ค่าที่ใช้จริง fallback เป็น sku ตัวเอง
+    const parentRaw  = cv('parent_sku');
+    const parentSku  = parentRaw || sku;
     const category   = cv('product_category').trim().replace(/\s+/g,' ');
     const name       = cv('product_name');
     const variant    = cv('variant_name');
     let color='', size='';
     if(variant){
-      const sep = variant.includes(',') ? ',' : variant.includes('/') ? '/' : null;
+      const sep = variant.includes(',') ? ',' : variant.includes('/') ? '/' : variant.includes(' - ') ? ' - ' : null;
       if(sep){
         const parts = variant.split(sep).map(s=>s.trim());
         color = parts[0]||'';
         size  = parts.slice(1).join('').trim().toUpperCase();
       } else { color=variant; }
     }
-    uploadDict[sku] = { sku, parentSku, name, category, variant, color, size, _noSales:true };
+    uploadDict[sku] = { sku, parentSku, parentRaw, name, category, variant, color, size, _noSales:true };
   }
 
   if(!Object.keys(map).length){ alert('ไม่พบข้อมูลสต๊อกในไฟล์ (0 rows)'); return; }
 
-  // Merge uploadDict into _productDict — เพิ่มเฉพาะ SKU ที่ยังไม่มีใน Google Sheets
+  mergeUploadDict(uploadDict);
+  applyStockMap(map);
+}
+
+// ── Merge ข้อมูลสินค้าจากไฟล์ export (Page 365) เข้า _productDict + appData ──
+// ไฟล์ export เป็นข้อมูลสดจาก Page 365 → ถือเป็น "ตัวจริง" เรื่องการจัดกลุ่ม
+// ทับ parent_sku ที่มาจาก Google Sheets ได้ เพราะชีตอาจค้างข้อมูลเก่าไว้
+// (parent_sku ผิดกลุ่ม → สีของรุ่นหนึ่งไปโผล่ในการ์ดอีกรุ่น)
+//
+// ทับแค่ parentSku เท่านั้น — ไม่ทับ name/category/variant เพราะชื่อในชีตเป็น
+// ชื่อย่อที่ตั้งไว้ใช้งานเอง (เช่นชีต "T21" / ไฟล์ "T21 - เสื้อยืด ลายดอกกุหลาบ...")
+// ทับแล้วชื่อการ์ดจะยาวรกทั้งแอป
+function mergeUploadDict(uploadDict){
   const pd = window._productDict||{};
   let added = 0;
+  const moved = [];   // {sku, label, from, to}
+
+  // parentSku → ชื่อที่ใช้อยู่ในชีต (เก็บก่อน merge)
+  // SKU ใหม่จากไฟล์จะยืมชื่อนี้ไปใช้ ไม่งั้นชื่อการ์ดจะสลับไปเป็นชื่อยาวจาก
+  // Page 365 เพราะ groupByParent เอาชื่อจากสมาชิกตัวแรกของกลุ่ม
+  const sheetName = {};
+  Object.values(pd).forEach(info=>{
+    const p = info.parentSku||info.sku;
+    if(p && info.name && !sheetName[p]) sheetName[p] = info.name;
+  });
+
   Object.values(uploadDict).forEach(info=>{
-    if(!pd[info.sku]){
-      pd[info.sku] = info;
+    const cur = pd[info.sku];
+    if(!cur){
+      // ไฟล์สต๊อกล้วน (มีแค่ sku + stock_amount) ไม่มีข้อมูลสินค้าให้ใช้
+      // → เอาไปใช้เป็นสต๊อกเท่านั้น ไม่สร้างการ์ดเปล่าไม่มีชื่อ/ไม่มีหมวด
+      if(!info.parentRaw && !info.name && !info.category) return;
+      const inherited = sheetName[info.parentSku];
+      pd[info.sku] = {...info, name: inherited || info.name};
       added++;
+      return;
     }
+    // ทับได้เฉพาะเมื่อไฟล์ระบุ parent_sku มาจริง — กัน fallback (parentSku =
+    // sku ตัวเอง) ไปลบ parent ที่ถูกต้องในชีตทิ้ง
+    if(!info.parentRaw) return;
+    const from = cur.parentSku||'';
+    if(from === info.parentSku) return;
+    cur.parentSku = info.parentSku;
+    moved.push({
+      sku: info.sku,
+      label: [cur.name||info.name, cur.variant||info.variant].filter(Boolean).join(' / ') || info.sku,
+      from, to: info.parentSku
+    });
   });
   window._productDict = pd;
-  console.log('[Upload] Added', added, 'new SKUs to productDict from xlsx');
 
-  applyStockMap(map);
+  // ── ซิงก์ parentSku ที่แก้แล้วกลับเข้า appData ──
+  // appData ก็อป parentSku มาจาก dict ตอน syncData ถ้าไม่แก้ตรงนี้ด้วย
+  // การ์ดใน Order tab จะยังจัดกลุ่มด้วยค่าเก่า (groupByParent อ่าน item.parentSku)
+  let patched = 0;
+  if(Array.isArray(appData) && appData.length){
+    const movedBySku = {};
+    moved.forEach(m=>{ movedBySku[m.sku] = m.to; });
+    appData.forEach(item=>{
+      const to = movedBySku[item.sku];
+      if(to && (item.parentSku||'') !== to){ item.parentSku = to; patched++; }
+    });
+  }
+
+  console.log('[Upload] productDict: +'+added+' SKU ใหม่, ย้ายกลุ่ม '+moved.length+' SKU · appData: แก้ '+patched+' แถว');
+
+  if(moved.length){
+    console.table(moved.map(m=>({sku:m.sku, สินค้า:m.label, parentจากชีต:m.from||'(ว่าง)', parentจากไฟล์:m.to})));
+    const lines = moved.slice(0,10).map(m=>`• ${m.label}\n   ${m.from||'(ว่าง)'} → ${m.to}`).join('\n');
+    const more = moved.length>10 ? `\n…และอีก ${moved.length-10} รายการ` : '';
+    setTimeout(()=>{
+      alert(`🔧 แก้กลุ่มสินค้าจากไฟล์ ${moved.length} รายการ\n\n`
+        + `Google Sheets มี parent_sku เก่า/ผิด — ใช้ค่าจากไฟล์ export แทนแล้ว\n\n`
+        + lines + more
+        + `\n\n⚠️ แก้ในชีต "สินค้าจาก Page 365" ด้วย ไม่งั้นซิงก์ครั้งหน้าจะเพี้ยนอีก`);
+    }, 300);
+  }
+  return {added, moved:moved.length, movedList:moved};
 }
 
 function applyStockMap(map){
@@ -7215,6 +7373,9 @@ function applyStockMap(map){
 
   // Re-render
   renderAll(getFilteredData());
+  // Order tab อ่าน stockMap + parentSku โดยตรง — ต้อง render ใหม่ด้วย
+  // ไม่งั้นถ้าผู้ใช้อยู่บนแท็บ "สั่งของ" ตอนอัพโหลด จะยังเห็นการจัดกลุ่ม/สต๊อกเก่า
+  if(typeof renderOrderTab==='function') try{ renderOrderTab(); }catch(e){ console.warn('renderOrderTab:', e); }
   if(typeof renderRiskTab==='function'&&window._lastSorted) try{renderRiskTab(window._lastSorted,window._lastMonths);}catch(e){}
 }
 
@@ -7253,6 +7414,441 @@ function getStockAmount(sku){
   if(!Object.keys(stockMap).length) return null;
   const v = stockMap[sku] !== undefined ? stockMap[sku] : stockMap[(sku||'').toLowerCase()];
   return (v===undefined||v===null) ? null : v;
+}
+
+// ════════════════════════════════════════════════
+// PAGE 365 — ดึงสต๊อกสดจาก storefront (ไม่ต้องอัพไฟล์เอง)
+//
+//   รายการสินค้า : https://<shop>.page365.net/products.json?page=N → {items,count}
+//   รายละเอียด   : https://<shop>.page365.net/products/<id>.json   → {variants:[…]}
+//
+// ⚠️ storefront ไม่ส่ง SKU มาด้วย — มีแค่ id (ตัวเลข) + ชื่อ ซึ่งคนละชุดกับ
+//    SKU ที่แอปใช้ (B17328…) → ต้องจับคู่ด้วย "ชื่อ" 2 ชั้น:
+//      กลุ่มสินค้าในแอป (parentSku) ↔ product ของ Page365
+//      variant_name ของเรา          ↔ variant.name ของ Page365 (ตรงเป๊ะ)
+//    ตัวไหนจับคู่อัตโนมัติไม่ได้ ผู้ใช้กดจับคู่เองได้ที่ openP365Modal()
+// ════════════════════════════════════════════════
+const P365_SHOP_DEFAULT = 'lamsangstores';
+let p365Shop  = P365_SHOP_DEFAULT;
+let p365Proxy = '';   // proxy ของผู้ใช้เอง (ใส่ {url} เป็นตัวแทน URL เต็ม) — ลองก่อนตัว default
+let p365Map   = {};   // groupKey → productId ที่ผู้ใช้เลือกเอง (0 = สั่งข้าม ไม่ต้องดึง)
+const _p365   = { list:null, detail:{}, match:null, proxyIdx:-1, cfgLoaded:false };
+
+// Page365 ไม่ส่ง CORS header → browser ยิงตรงไม่ได้ ต้องผ่าน proxy
+// เรียงจากตัวที่เสถียรสุดก่อน · ตัวไหนล้มก็ไล่ตัวถัดไปเอง
+const P365_PROXIES = [
+  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+  u => 'https://proxy.cors.sh/' + u,
+  u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
+  u => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
+  u => 'https://r.jina.ai/' + u,
+];
+
+function p365ProxyList(){
+  const list = P365_PROXIES.slice();
+  const tpl = (p365Proxy||'').trim();
+  if(tpl) list.unshift(u => tpl.includes('{url}') ? tpl.replace('{url}', encodeURIComponent(u)) : tpl + u);
+  return list;
+}
+
+// proxy หลายตัวคืนหน้า HTML error มาแทน JSON เวลาโดน rate limit
+// r.jina.ai ห่อด้วย markdown → ตัดหัวท้ายทิ้งแล้วค่อย parse
+function p365ParseJson(txt){
+  const s = String(txt||'').trim();
+  try { return JSON.parse(s); } catch(e){}
+  const i = s.indexOf('{'), j = s.lastIndexOf('}');
+  if(i >= 0 && j > i){ try { return JSON.parse(s.slice(i, j+1)); } catch(e){} }
+  throw new Error('ไม่ใช่ JSON (proxy คืนหน้า error)');
+}
+
+async function p365Fetch(url){
+  // cache-buster: Page365/CDN แคชค่าสต๊อกเก่าไว้ ต้องบังคับให้สด
+  const full = url + (url.includes('?') ? '&' : '?') + '_cb=' + Date.now();
+  const proxies = p365ProxyList();
+  // proxy ตัวที่เพิ่งใช้ได้ ลองก่อนเสมอ ไม่งั้น 50+ request จะไปรอ timeout ตัวเสียซ้ำๆ
+  const order = _p365.proxyIdx >= 0
+    ? [_p365.proxyIdx].concat(proxies.map((_,i)=>i).filter(i=>i!==_p365.proxyIdx))
+    : proxies.map((_,i)=>i);
+  let lastErr;
+  for(const i of order){
+    if(!proxies[i]) continue;
+    const ctrl = new AbortController();
+    const to = setTimeout(()=>ctrl.abort(), 20000);
+    try {
+      const res = await fetch(proxies[i](full), { signal:ctrl.signal, cache:'no-store' });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data = p365ParseJson(await res.text());
+      _p365.proxyIdx = i;
+      return data;
+    } catch(e){ lastErr = e; }
+    finally { clearTimeout(to); }
+  }
+  throw new Error('ดึงข้อมูลไม่สำเร็จ — proxy ล้มทุกตัว ('+(lastErr?lastErr.message:'')+')');
+}
+
+/** รายการสินค้าทั้งร้าน — dedupe + หยุดเองเมื่อครบ (Page365 วนส่งหน้าเดิมเมื่อเกิน) */
+async function p365ListProducts(force){
+  if(!force && _p365.list) return _p365.list;
+  const seen = new Set(), list = [];
+  for(let page=1; page<=20; page++){
+    const d = await p365Fetch('https://'+p365Shop+'.page365.net/products.json?page='+page);
+    const items = d && d.items;
+    if(!items || !items.length) break;
+    let added = 0;
+    items.forEach(it=>{ if(it && it.id!=null && !seen.has(it.id)){ seen.add(it.id); list.push(it); added++; } });
+    if(!added) break;
+    if(d.count && list.length >= d.count) break;
+  }
+  _p365.list = list;
+  return list;
+}
+
+async function p365Detail(id, force){
+  if(!force && _p365.detail[id]) return _p365.detail[id];
+  const d = await p365Fetch('https://'+p365Shop+'.page365.net/products/'+id+'.json');
+  _p365.detail[id] = d;
+  return d;
+}
+
+// ── normalize สำหรับจับคู่ ──
+// ชื่อสินค้า: เหลือแค่ตัวอักษร/ตัวเลข → "B01 - Anchor Belt" == "B01 Anchor Belt"
+function p365NormName(s){ return String(s||'').toLowerCase().replace(/[^0-9a-zก-๙]+/g,''); }
+// รหัสนำหน้าชื่อ (B01 / P99 / BG14) — fallback ตอนชื่อเต็มเขียนไม่เหมือนกัน
+function p365Code(s){
+  const m = String(s||'').trim().match(/^([A-Za-z]{1,3})\s*(\d{1,3})(?![0-9])/);
+  return m ? (m[1]+m[2]).toUpperCase() : '';
+}
+// ชื่อรุ่น: ตัดแค่ช่องว่าง — ถ้าตัดสัญลักษณ์หมด "ขาว, S" กับ "ขาวS" จะชนกันเอง
+function p365NormVar(s){ return String(s||'').toLowerCase().replace(/\s+/g,''); }
+
+/** กลุ่มสินค้าในแอป (จัดตาม parentSku เหมือน Order tab) */
+function p365AppGroups(){
+  const pd = window._productDict || {};
+  const groups = {};
+  Object.keys(pd).forEach(sku=>{
+    const info = pd[sku]; if(!info || !info.sku) return;
+    const key = info.parentSku || info.sku;
+    if(!groups[key]) groups[key] = { key, name:'', items:[] };
+    const g = groups[key];
+    if(!g.name || g.name==='ไม่มีชื่อสินค้า') g.name = info.name || g.name;
+    g.items.push({ sku: info.sku, variant: info.variant || '' });
+  });
+  return Object.keys(groups).map(k=>{ const g=groups[k]; if(!g.name) g.name=k; return g; });
+}
+
+/**
+ * จับคู่ product ของ Page365 → กลุ่มสินค้าในแอป
+ * ลำดับ: manual → ชื่อตรงเป๊ะ → รหัสนำหน้า → ชื่อรุ่นทับกันมากสุด
+ * ห้ามสลับลำดับ ไม่งั้นสต๊อกเข้าผิดตัว (เข็มขัดใช้ชื่อสีซ้ำกันแทบทุกรุ่น
+ * ถ้าเอา variant มานำจะจับ "B10 Noble Belt" ไปชนกลุ่มอื่นทันที)
+ * @returns {Object} groupKey → {product, via}
+ */
+function p365AutoMatch(groups, products, details){
+  const byName = {}, byCode = {}, gByKey = {};
+  groups.forEach(g=>{
+    gByKey[g.key] = g;
+    const n = p365NormName(g.name); if(n) (byName[n] = byName[n]||[]).push(g);
+    const c = p365Code(g.name);     if(c) (byCode[c] = byCode[c]||[]).push(g);
+  });
+
+  const out = {};                       // groupKey → {product, via}
+  const takenPid = new Set();
+  const manualByPid = {};
+  Object.keys(p365Map||{}).forEach(k=>{
+    const pid = p365Map[k];
+    if(pid) manualByPid[pid] = k;
+    else if(gByKey[k]) out[k] = { product:null, via:'skip' };   // ผู้ใช้สั่งข้าม — กัน auto มาจับให้
+  });
+
+  // 1) manual ก่อน แล้วล็อกไว้ ไม่ให้ auto แย่ง
+  products.forEach(p=>{
+    const k = manualByPid[p.id];
+    if(k && gByKey[k]){ out[k] = { product:p, via:'manual' }; takenPid.add(p.id); }
+  });
+
+  // 2) auto — ต้องทำ "ทีละชั้น ให้ครบทุกตัว" ห้ามไล่แบบ cascade ทีละสินค้า
+  //    ไม่งั้นสินค้าตัวแรกที่จับด้วยวิธีหลวม (variant) จะแย่งกลุ่มไปก่อน
+  //    แล้วตัวที่ชื่อตรงเป๊ะจริงๆ จะไม่เหลือกลุ่มให้จับ → สต๊อกเข้าผิดตัวทั้งแถว
+  const take = (p, g, via) => { out[g.key] = { product:p, via }; takenPid.add(p.id); };
+  const free = arr => (arr||[]).filter(g => !out[g.key]);
+  const rest = () => products.filter(p => !takenPid.has(p.id));
+
+  // ชั้น 1: ชื่อตรงเป๊ะ (หลังตัดสัญลักษณ์)
+  rest().forEach(p=>{
+    const cand = free(byName[p365NormName(p.name)]);
+    if(cand.length === 1) take(p, cand[0], 'name');
+  });
+
+  // ชั้น 2: รหัสนำหน้าชื่อ (B01 / P99 / BG14)
+  rest().forEach(p=>{
+    const c = p365Code(p.name);
+    const cand = c ? free(byCode[c]) : [];
+    if(cand.length === 1) take(p, cand[0], 'code');
+  });
+
+  // ชั้น 3: ชื่อรุ่นทับกันมากสุด — วิธีนี้หลวมที่สุด ใช้เป็นทางสุดท้าย
+  // สินค้ากลุ่มเดียวกัน (กางเกง/เข็มขัด) ใช้ชื่อสี+ไซซ์ชุดเดียวกันหมด
+  // เลยต้องบังคับทั้ง "ทับกันเกิน 60% ของทั้งสองฝั่ง" และ "ทิ้งห่างอันดับสอง"
+  rest().forEach(p=>{
+    const d = details[p.id];
+    const pv = new Set(((d && d.variants) || []).map(v=>p365NormVar(v.name)).filter(Boolean));
+    if(!pv.size) return;
+    let best = null, bs = 0, second = 0;
+    groups.forEach(gg=>{
+      if(out[gg.key]) return;
+      let inter = 0;
+      gg.items.forEach(it=>{ if(pv.has(p365NormVar(it.variant))) inter++; });
+      if(inter > bs){ second = bs; bs = inter; best = gg; }
+      else if(inter > second) second = inter;
+    });
+    if(!best) return;
+    const bigEnough = bs >= Math.max(3, Math.ceil(pv.size*0.6)) && bs >= Math.ceil(best.items.length*0.6);
+    const clearWin  = bs >= Math.max(second*1.5, second+2);
+    if(bigEnough && clearWin) take(p, best, 'variant');
+  });
+
+  return out;
+}
+
+async function p365LoadCfg(){
+  if(_p365.cfgLoaded) return;
+  _p365.cfgLoaded = true;
+  try {
+    p365Shop  = (await fbLoad('p365Shop',  P365_SHOP_DEFAULT)) || P365_SHOP_DEFAULT;
+    p365Proxy = (await fbLoad('p365Proxy', '')) || '';
+    const m   = await fbLoad('p365Map', {});
+    if(m && typeof m === 'object') p365Map = m;
+  } catch(e){ console.warn('[P365] load config:', e.message); }
+}
+
+/**
+ * ดึงรายละเอียด (= สต๊อกรายรุ่น) ของทุกสินค้าแบบขนาน พร้อมโชว์ความคืบหน้า
+ * Page365 ไม่มี endpoint รวม — ต้องยิงทีละสินค้า และต้องผ่าน CORS proxy ฟรี
+ * ซึ่งบางช่วงหน่วงมาก (ทั้งร้าน ~55 ตัว อาจใช้ 30 วิ – 3 นาที)
+ * ถ้าอยากให้เร็วและนิ่ง ตั้ง proxy ของตัวเองได้ในหน้า "จับคู่สินค้า"
+ */
+const P365_CONCURRENCY = 6;
+async function p365FetchAllDetails(products){
+  const details = {};
+  const queue = products.slice();
+  let done = 0;
+  const worker = async () => {
+    while(queue.length){
+      const p = queue.shift();
+      try { details[p.id] = await p365Detail(p.id, true); }
+      catch(e){ console.warn('[P365] detail '+p.id+':', e.message); }
+      done++;
+      showL('กำลังดึงสต๊อกจาก Page 365… '+done+'/'+products.length);
+    }
+  };
+  const crew = [];
+  for(let i=0; i<P365_CONCURRENCY; i++) crew.push(worker());
+  await Promise.all(crew);
+  return details;
+}
+
+/**
+ * ปุ่มหลัก: ดึงสต๊อกสดจาก Page 365 → เขียนลง stockMap → เซฟ Firebase
+ * @param {{silent?:boolean}} [opts] silent = ไม่เด้ง alert สรุป (ใช้ตอนเรียกซ้ำจาก modal)
+ */
+async function syncStockFromPage365(opts){
+  const silent = !!(opts && opts.silent);
+  await p365LoadCfg();
+
+  const groups = p365AppGroups();
+  if(!groups.length){
+    alert('ยังไม่มีรายชื่อสินค้าในแอป\n\nกด "ซิงก์ข้อมูล" ให้โหลดจาก Google Sheets ก่อน แล้วค่อยดึงสต๊อก');
+    return;
+  }
+
+  try {
+    showL('กำลังอ่านรายการสินค้าจาก Page 365…');
+    const products = await p365ListProducts(true);
+    if(!products.length) throw new Error('ไม่พบสินค้าในร้าน "'+p365Shop+'" — เช็คชื่อร้าน (subdomain) อีกที');
+
+    // ต้องมี variants ครบก่อน ทั้งเอาไปทำสต๊อกและใช้ช่วยจับคู่ตอนชื่อไม่ตรง
+    const details = await p365FetchAllDetails(products);
+    if(!Object.keys(details).length) throw new Error('ดึงรายละเอียดสินค้าไม่ได้เลย');
+
+    const match = p365AutoMatch(groups, products, details);
+    _p365.match = match;
+    // จำผลจับคู่รอบล่าสุดไว้ ให้หน้า "จับคู่สินค้า" เปิดมาเห็นของจริงเลย
+    // (ชั้น variant ต้องใช้ข้อมูลรุ่นครบทั้งร้าน ซึ่งจะมีก็ต่อเมื่อดึงสต๊อกไปแล้ว)
+    try {
+      const cache = {};
+      Object.keys(match).forEach(k=>{ if(match[k].product) cache[k] = match[k].product.id; });
+      localStorage.setItem('p365_lastmatch', JSON.stringify(cache));
+    } catch(e){}
+
+    // ── สร้าง stockMap: sku ของเรา → จำนวนคงเหลือ ──
+    // กติกา: in_stock=false ให้เป็น 0 ทันที ไม่ต้องดู available
+    // (Page365 ส่ง available = -1 มาเวลาขายเกิน — ถ้าเชื่อตรงๆ จะได้ค่าติดลบ)
+    const map = {};
+    let hitSku = 0, missSku = 0;
+    groups.forEach(g=>{
+      const m = match[g.key];
+      const d = m && m.product ? details[m.product.id] : null;
+      if(!d) return;
+      const vars = d.variants || [];
+      const byVar = {};
+      vars.forEach(v=>{ byVar[p365NormVar(v.name)] = v; });
+      const only = vars.length === 1 ? vars[0] : null;
+      g.items.forEach(it=>{
+        const pv = byVar[p365NormVar(it.variant)] || (it.variant ? null : only);
+        if(!pv){ missSku++; return; }
+        const n = pv.in_stock ? Math.max(0, Number(pv.available)||0) : 0;
+        map[it.sku] = n;
+        if(it.sku !== it.sku.toLowerCase()) map[it.sku.toLowerCase()] = n;
+        hitSku++;
+      });
+    });
+
+    if(!hitSku) throw new Error('จับคู่สินค้าไม่ได้เลยสักตัว — ลองกด "จับคู่สินค้า" แล้วเลือกเอง');
+
+    const now = new Date();
+    stockFileName = 'Page365 · ' + now.toLocaleString('th-TH',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    applyStockMap(map);
+    hideL();
+
+    const matchedKeys = groups.filter(g=>match[g.key] && match[g.key].product);
+    const skipped     = groups.filter(g=>match[g.key] && match[g.key].via==='skip').length;
+    const noGroup     = products.filter(p=>!matchedKeys.some(g=>match[g.key].product.id===p.id));
+
+    if(!silent){
+      let msg = '✅ ดึงสต๊อกจาก Page 365 แล้ว\n\n'
+        + '• สินค้าในร้าน '+products.length+' รายการ · จับคู่ได้ '+matchedKeys.length+' กลุ่ม\n'
+        + '• อัปเดตสต๊อก '+hitSku+' SKU';
+      if(missSku)  msg += '\n• ไม่พบรุ่นที่ตรงกัน '+missSku+' SKU (ปล่อยเป็น "ไม่ทราบ")';
+      if(skipped)  msg += '\n• ข้ามตามที่ตั้งไว้ '+skipped+' กลุ่ม';
+      if(noGroup.length){
+        msg += '\n\n⚠️ สินค้าใน Page 365 ที่ยังไม่รู้ว่าเป็นตัวไหนในแอป '+noGroup.length+' รายการ:\n'
+          + noGroup.slice(0,8).map(p=>'   • '+p.name).join('\n')
+          + (noGroup.length>8 ? '\n   …และอีก '+(noGroup.length-8) : '')
+          + '\n\nเปิดหน้าจับคู่สินค้าเลยไหม?';
+        if(confirm(msg)){ openP365Modal(); return; }
+      } else {
+        alert(msg);
+      }
+    }
+  } catch(e){
+    hideL();
+    console.error('[P365] sync failed:', e);
+    alert('ดึงสต๊อกจาก Page 365 ไม่สำเร็จ\n\n'+e.message
+      + '\n\nถ้าเจอบ่อย ให้ใส่ CORS proxy ของตัวเองในหน้า "จับคู่สินค้า"');
+  }
+}
+
+// ── หน้าจับคู่เอง ─────────────────────────────────────────
+async function openP365Modal(){
+  await p365LoadCfg();
+  const shopEl = $('p365-shop-input');  if(shopEl)  shopEl.value  = p365Shop;
+  const proxEl = $('p365-proxy-input'); if(proxEl)  proxEl.value  = p365Proxy;
+  $('p365Modal').classList.add('on');
+  renderP365Match();
+  if(!_p365.list){
+    $('p365-match-list').innerHTML = '<div class="p365-empty">กำลังโหลดรายการสินค้าจาก Page 365…</div>';
+    try { await p365ListProducts(false); }
+    catch(e){
+      $('p365-match-list').innerHTML = '<div class="p365-empty">โหลดรายการไม่สำเร็จ: '+e.message+'</div>';
+      return;
+    }
+    renderP365Match();
+  }
+}
+
+async function p365ReloadList(){
+  $('p365-match-list').innerHTML = '<div class="p365-empty">กำลังโหลดรายการสินค้า…</div>';
+  _p365.detail = {};
+  try { await p365ListProducts(true); renderP365Match(); }
+  catch(e){ $('p365-match-list').innerHTML = '<div class="p365-empty">โหลดไม่สำเร็จ: '+e.message+'</div>'; }
+}
+
+function renderP365Match(){
+  const box = $('p365-match-list'); if(!box) return;
+  const groups  = p365AppGroups().sort((a,b)=>b.items.length-a.items.length);
+  const products = _p365.list || [];
+  const match   = _p365.match || (products.length ? p365AutoMatch(groups, products, _p365.detail) : {});
+  // เติมผลจับคู่จากรอบก่อนให้กลุ่มที่ตอนนี้ยังว่าง — ตอนเปิดหน้านี้สดๆ ยังไม่มี
+  // ข้อมูลรุ่นในแคช การจับคู่ชั้น variant เลยยังทำไม่ได้ ถ้าไม่เติมจะขึ้น
+  // "ยังไม่จับคู่" ทั้งที่ตอนกดดึงสต๊อกจริงมันจับได้
+  if(!_p365.match && products.length){
+    try {
+      const cache = JSON.parse(localStorage.getItem('p365_lastmatch')||'{}');
+      const usedPid = new Set(Object.keys(match).map(k=>match[k].product&&match[k].product.id).filter(Boolean));
+      Object.keys(cache).forEach(k=>{
+        if(match[k] || usedPid.has(cache[k])) return;
+        const p = products.find(x=>x.id===cache[k]);
+        if(p){ match[k] = {product:p, via:'last'}; usedPid.add(p.id); }
+      });
+    } catch(e){}
+  }
+  const srch    = ($('p365-search')?.value||'').toLowerCase().trim();
+  const onlyMiss= !!$('p365-only-unmatched')?.checked;
+
+  const sub = $('p365-modal-sub');
+  if(sub){
+    const ok = groups.filter(g=>match[g.key] && match[g.key].product).length;
+    sub.textContent = products.length
+      ? 'สินค้าในร้าน '+products.length+' รายการ · กลุ่มในแอป '+groups.length+' กลุ่ม · จับคู่แล้ว '+ok
+      : 'ยังไม่ได้โหลดรายการสินค้าจาก Page 365';
+  }
+
+  const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+  const opts = products.map(p=>{
+    const n = _p365.detail[p.id] ? ((_p365.detail[p.id].variants||[]).length+' รุ่น') : '';
+    return { id:p.id, label: p.name + (n ? ' ('+n+')' : '') };
+  });
+
+  const rows = groups.filter(g=>{
+    const m = match[g.key];
+    if(onlyMiss && m && m.product) return false;
+    if(srch && g.name.toLowerCase().indexOf(srch) < 0) return false;
+    return true;
+  });
+
+  if(!rows.length){ box.innerHTML = '<div class="p365-empty">ไม่มีรายการตรงกับที่กรองไว้</div>'; return; }
+
+  box.innerHTML = rows.map(g=>{
+    const m   = match[g.key] || {};
+    const pid = m.product ? m.product.id : (p365Map[g.key] === 0 ? 0 : '');
+    const via = m.via==='manual' ? '<span class="p365-via manual">เลือกเอง</span>'
+              : m.via==='skip'   ? '<span class="p365-via none">ข้าม</span>'
+              : m.via==='last'   ? '<span class="p365-via auto">อัตโนมัติ (รอบก่อน)</span>'
+              : m.product        ? '<span class="p365-via auto">อัตโนมัติ</span>'
+              :                    '<span class="p365-via none">ยังไม่จับคู่</span>';
+    const sel = ['<option value="">— ยังไม่จับคู่ —</option>', '<option value="0"'+(pid===0?' selected':'')+'>ข้าม (ไม่ดึงสต๊อก)</option>']
+      .concat(opts.map(o=>'<option value="'+o.id+'"'+(o.id===pid?' selected':'')+'>'+esc(o.label)+'</option>')).join('');
+    return '<div class="p365-row'+(m.product?'':' miss')+'">'
+      + '<div class="p365-row-l"><div class="p365-row-nm" title="'+esc(g.name)+'">'+esc(g.name)+'</div>'
+      + '<div class="p365-row-sub">'+g.items.length+' SKU · '+esc(g.key)+'</div></div>'
+      + via
+      + '<select data-key="'+esc(g.key)+'" onchange="setP365Match(this.dataset.key, this.value)">'+sel+'</select>'
+      + '</div>';
+  }).join('');
+}
+
+function setP365Match(key, val){
+  if(val === '') delete p365Map[key];
+  else p365Map[key] = Number(val);
+  _p365.match = null;   // ให้คำนวณคู่ใหม่ตอน render รอบหน้า
+  renderP365Match();
+}
+
+/** เซฟการจับคู่ + ชื่อร้าน + proxy ลง Firebase แล้วดึงสต๊อกใหม่ */
+async function saveP365Map(thenSync){
+  p365Shop  = ($('p365-shop-input')?.value  || P365_SHOP_DEFAULT).trim() || P365_SHOP_DEFAULT;
+  p365Proxy = ($('p365-proxy-input')?.value || '').trim();
+  try {
+    await Promise.all([
+      fbSave('p365Map',   p365Map),
+      fbSave('p365Shop',  p365Shop),
+      fbSave('p365Proxy', p365Proxy),
+    ]);
+  } catch(e){ console.warn('[P365] save map:', e.message); }
+  $('p365Modal').classList.remove('on');
+  if(thenSync) await syncStockFromPage365();
 }
 
 // ── Filter state ──
