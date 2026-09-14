@@ -2919,7 +2919,7 @@ tbody td { border-bottom: 1px solid rgba(217,154,90,.08) !important; }
     <div class="panel-hdr">
       <div>
         <div class="panel-ttl">🛒 แบบฟอร์มสั่งสินค้า</div>
-        <div class="panel-sub">วิเคราะห์จากค่าเฉลี่ย (สต๊อกแนะนำ + MaxVel7×30) ÷ 2</div>
+        <div class="panel-sub" id="order-panel-sub">ยอดสั่ง = ยอดขายเฉลี่ย × (รอของ + ช่วงวางแผน) × เผื่อ − สต๊อกที่มี − ของค้างส่ง</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn" onclick="toggleCartModal()" style="color:var(--green-d);gap:6px">
@@ -2972,6 +2972,15 @@ tbody td { border-bottom: 1px solid rgba(217,154,90,.08) !important; }
         <span id="orderSafetyVal" style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:800;color:var(--orange-d);min-width:34px">×1.5</span>
         <span id="orderSafetyLbl" style="font-size:12px;color:var(--mid);font-weight:600;white-space:nowrap">⚖️ เผื่อปกติ</span>
       </div>
+      <!-- Lead time (รอของ) -->
+      <div style="display:flex;align-items:center;gap:6px;background:var(--bg);box-shadow:var(--si);border-radius:10px;padding:5px 12px"
+        title="สั่งวันนี้ ของถึงร้านในกี่วัน — ยอดสั่งจะคำนวณให้พอขายทั้งช่วงรอของ + ช่วงที่วางแผน">
+        <span style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;white-space:nowrap">🚚 รอของ:</span>
+        <input type="number" id="order-lead-days" min="0" max="90" step="1" value="15"
+          onchange="setOrderLeadDays(this.value)"
+          style="width:46px;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:800;color:var(--purple-d);background:none;border:none;outline:none;text-align:center">
+        <span style="font-size:12px;color:var(--mid);font-weight:600;white-space:nowrap">วัน</span>
+      </div>
       <div style="flex:1"></div>
       <!-- Lot config popup trigger — only show when pants category selected -->
       <button class="btn" onclick="toggleLotConfigPopup()" id="lot-cfg-btn" style="color:var(--muted);gap:5px;display:none" title="ตั้งค่าล็อคกางเกง">
@@ -2994,6 +3003,9 @@ tbody td { border-bottom: 1px solid rgba(217,154,90,.08) !important; }
         <div class="empty" style="padding:20px">กำลังโหลดข้อมูลสินค้า…</div>
       </div>
     </div>
+
+    <!-- แจ้งเตือน: สต๊อกเก่า / ดึง Page365 ไม่สำเร็จ / ออเดอร์ค้างเกินกำหนด -->
+    <div id="order-alerts" style="display:none;flex-direction:column;gap:6px;padding:10px 24px 0"></div>
 
     <!-- Cost summary banner -->
     <div id="order-cost-banner" style="display:none;padding:10px 24px;background:linear-gradient(135deg,rgba(240,168,117,.08),rgba(217,154,90,.05));border-bottom:1px solid rgba(240,168,117,.15)">
@@ -3407,7 +3419,8 @@ window.onload = () => {
             try{ renderAll(getFilteredData()); }catch(e){}
             try{ renderOrderTab(); }catch(e){}
           }).catch(()=>{});
-          if(!isStockLoaded()) loadStockFromFirebase().catch(()=>{});
+          if(!isStockLoaded()) loadStockFromFirebase().catch(()=>{}).finally(()=>setTimeout(p365MaybeAutoSync, 1500));
+          else setTimeout(p365MaybeAutoSync, 1500);
         }
       } else {
         clearTimeout(fallback);
@@ -3465,6 +3478,33 @@ function formatSafetyLabel(v){
   if(v < 1.6) return '⚖️ เผื่อปกติ';
   if(v < 1.9) return '🛡️ เผื่อเยอะ';
   return '🔥 Peak season';
+}
+// ── ระยะรอของ (lead time): สั่งวันนี้ ของถึงร้านในกี่วัน ──
+// ยอดสั่งต้องพอขาย "ระหว่างรอของ + ช่วงที่วางแผน" ไม่ใช่แค่ช่วงที่วางแผน
+// (เดิมคิดแค่ช่วงวางแผน 30 วัน ทั้งที่ของใช้เวลามา ~15 วัน → ขาดช่วงก่อนของถึงเสมอ)
+window.orderLeadDays = (()=>{
+  try { const v = parseInt(localStorage.getItem('orderLeadDays')); return (v>=0 && v<=90) ? v : 15; }
+  catch(e){ return 15; }
+})();
+function getLeadDays(){ const v = Number(window.orderLeadDays); return (v>=0 && v<=90) ? v : 15; }
+function getOrderCoverDays(){ return getOrderDays() + getLeadDays(); }
+function setOrderLeadDays(v){
+  v = parseInt(v);
+  if(!(v>=0 && v<=90)) v = 15;
+  window.orderLeadDays = v;
+  try { localStorage.setItem('orderLeadDays', String(v)); }catch(e){}
+  try { if(typeof fbSave==='function') fbSave('orderLeadDays', v); }catch(e){}
+  const el = $('order-lead-days'); if(el && +el.value !== v) el.value = v;
+  renderOrderTab();
+}
+// ออเดอร์ที่ค้างรับนานเกิน lead time + ช่วงผ่อนผัน → ไม่นับเป็นของค้างส่งอีก
+// (ไม่งั้นออเดอร์ที่ลืมกด "รับแล้ว" จะหักยอดสั่งใหม่ไปตลอด → สั่งไม่ทันขายเรื้อรัง)
+const PENDING_GRACE_DAYS = 30;
+function pendingStaleAfterDays(order){ return (Number(order&&order.leadDays)||getLeadDays()||15) + PENDING_GRACE_DAYS; }
+function isPendingOrderStale(order, now){
+  now = now || Date.now();
+  const age = (now - (Number(order.createdAt)||now)) / 864e5;
+  return age > pendingStaleAfterDays(order);
 }
 let orderCatType   = 'all'; // 'all' | 'pants' | 'belt' | 'other' | specific category string
 const ORDER_STORE_KEY = 'orderConfig';
@@ -3664,22 +3704,34 @@ function groupByParent(items){
 
   return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'th'));
 }
+// ── อัตราขาย/วัน ที่ใช้เป็นฐานคำนวณสั่งของ (ใช้ร่วมกันทั้ง getAvg และ calcStock) ──
+//   weighted = 0.5×recent30 + 0.5×early60 · base = max(recent, weighted, rawVel×0.7, smartRate30)
+//   + แก้กรณี "ของหมดอยู่ตอนนี้": วันท้ายๆ ที่ขายได้ 0 เพราะไม่มีของขาย ไม่ใช่เพราะไม่มีคนซื้อ
+//     ถ้าเอามาหารด้วย ยอดเฉลี่ยจะดิ่ง → สั่งน้อยลงเรื่อยๆ ทั้งที่ของขาด (วงจรสั่งไม่ทัน)
+function calcBaseRate(item){
+  const recent30  = Number(item.recent30)||0;
+  const rawVel    = Number(item.rawVel)||0;
+  const e60       = item.early60 || {total:0, days:1};
+  const earlyRate = (Number(e60.total)||0) / Math.max(1, Number(e60.days)||1);
+  const smartRate30 = Number(item.smartRate30)||0;
+  let recentRate = recent30 / 30;
+  const tail = Number(item.zeroTail)||0;
+  let outNow = false;
+  if(tail >= 3){
+    const st = (typeof getStockAmount==='function') ? getStockAmount(item.sku) : null;
+    outNow = st !== null && st <= 0;     // รู้แน่ว่าสต๊อก 0 เท่านั้น (ไม่รู้สต๊อก = ไม่เดา)
+  }
+  if(outNow && recent30 > 0) recentRate = recent30 / Math.max(7, 30 - tail);
+  const weighted = 0.5 * recentRate + 0.5 * earlyRate;
+  let base = Math.max(recentRate, weighted, rawVel * 0.7, smartRate30);
+  // หมดมานานจนช่วง 30 วันแทบไม่มียอด → ใช้อัตราช่วงก่อนหน้าเต็มๆ แทนที่จะลดครึ่ง
+  if(outNow && tail >= 21) base = Math.max(base, earlyRate);
+  return base;
+}
 function getAvg(item,days=15,safety){
   if(!item) return 0;
   if(item._noSales) return 1; // ไม่มีข้อมูลยอดขาย — demand = 1 เพื่อให้คำนวณล็อคได้
-  // ใช้สูตร weighted (ตรงกับ calcStock v3) เพื่อความสม่ำเสมอ
-  const recent30 = Number(item.recent30)||0;
-  const rawVel   = Number(item.rawVel)||0;
-  const e60      = item.early60 || {total:0, days:1};
-  const earlyTot = Number(e60.total)||0;
-  const earlyDays= Math.max(1, Number(e60.days)||1);
-  // smart rate: ตัด stockout zeros (ของหมดทำให้ยอด=0)
-  const smartRate30 = Number(item.smartRate30)||0;
-
-  const recentRate = recent30 / 30;
-  const earlyRate  = earlyTot / earlyDays;
-  const weighted   = 0.5 * recentRate + 0.5 * earlyRate;
-  const baseRate = Math.max(recentRate, weighted, rawVel * 0.7, smartRate30);
+  const baseRate = calcBaseRate(item);
   // Safety multiplier — ดึงจาก global orderSafety (ตั้งโดย slider ที่ Order tab)
   // หรือใช้ค่าที่ส่งเข้ามาเฉพาะการ์ด/บางจุด
   const safetyMult = safety!==undefined ? safety : (window.orderSafety || 1.0);
@@ -3710,6 +3762,7 @@ function getNextRestockInfo(sku){
     if(order.cancelled === true) return;
     if(order.received === true) return;
     if(isOrderFullyReceived(order)) return;
+    if(isPendingOrderStale(order, today)) return; // ค้างนานเกินไป — ไม่ถือว่ากำลังจะมา
     const rcv = order.receivedItems||{};
     const items = order.items||[];
     if(!items.length) return;
@@ -3728,7 +3781,7 @@ function getNextRestockInfo(sku){
     if(!hasItem) return;
 
     // Compute expected delivery — extend 7d if overdue
-    let deliveryTs = order.createdAt + 15*24*60*60*1000;
+    let deliveryTs = order.createdAt + (Number(order.leadDays)||getLeadDays()||15)*24*60*60*1000;
     while(deliveryTs <= today){
       deliveryTs += 7*24*60*60*1000;
     }
@@ -3754,10 +3807,15 @@ let _cachedPendingMap = null;
 function getPendingQtyMap(){
   if(_cachedPendingMap) return _cachedPendingMap;
   const map = {};
+  const stale = [];
+  window._stalePendingOrders = stale;
   if(!orderHistory||!orderHistory.length){ _cachedPendingMap=map; return map; }
+  const nowTs = Date.now();
   orderHistory.forEach(order=>{
     if(order.cancelled===true) return;
     if(isOrderFullyReceived(order)) return;
+    // ค้างรับนานเกิน lead time + ผ่อนผัน → ไม่หักออกจากยอดสั่งใหม่ (แต่เตือนให้ไปเคลียร์)
+    if(isPendingOrderStale(order, nowTs)){ stale.push(order); return; }
     const rcv = order.receivedItems||{};
     (order.items||[]).forEach(item=>{
       // ตรวจว่า item นี้ยัง pending (ยังไม่ได้รับ)
@@ -4276,8 +4334,13 @@ function renderOrderTab(){
     const lblEl = $('orderSafetyLbl');
     if(lblEl) lblEl.textContent = formatSafetyLabel(window.orderSafety);
   }
+  const ld = $('order-lead-days');
+  if(ld && +ld.value !== getLeadDays()) ld.value = getLeadDays();
+  const psub = $('order-panel-sub');
+  if(psub) psub.textContent = `ยอดสั่ง = ยอดขายเฉลี่ย × (รอของ ${getLeadDays()} วัน + วางแผน ${getOrderDays()} วัน = ${getOrderCoverDays()} วัน) × เผื่อ ×${Number(window.orderSafety||1.5).toFixed(1)} − สต๊อกที่มี − ของค้างส่ง`;
   if(!appData || !appData.length){
     const oc=$('order-content'); if(oc) oc.innerHTML='<div class="empty" style="padding:60px">กรุณาซิงก์ข้อมูลก่อน</div>';
+    try { renderOrderAlerts(); } catch(e){}
     return;
   }
   buildOrderCatButtons();
@@ -4303,7 +4366,8 @@ function renderOrderTab(){
   const beltGroups =groups.filter(g=>classifyCat(g.category||'')==='belt');
   const otherGroups=groups.filter(g=>classifyCat(g.category||'')==='other');
   let html='';
-  const days=getOrderDays();
+  // ครอบคลุม "รอของ + ช่วงวางแผน" — ของที่สั่งวันนี้ต้องพอขายจนกว่าออเดอร์ถัดไปจะมาถึง
+  const days=getOrderCoverDays();
 
   // helper: should show this group?
   const showGroup = (ct, catName) => {
@@ -4505,6 +4569,7 @@ function renderOrderTab(){
       }
     }catch(e){}
   })();
+  try { renderOrderAlerts(); } catch(e){ console.warn('renderOrderAlerts:', e); }
 
   } catch(ex){ console.error('renderOrderTab error:',ex); const oc=$('order-content'); if(oc) oc.innerHTML='<div class="empty" style="padding:60px;color:var(--red-d)">เกิดข้อผิดพลาด: '+ex.message+'</div>'; }
 }
@@ -4863,15 +4928,16 @@ function renderBeltCard(g, days){
     const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:autoOrder;
     const colLabel=[item.color,item.size].filter(Boolean).join(' / ')||item.sku;
     const isOOS=onHand!==null&&onHand<=0;
-    // เหลือน้อย = stock < demand 15 วัน (lead time เข็มขัด ~15 วัน)
-    const demand15d=Math.ceil(getAvg(item,15));
+    // เหลือน้อย = stock < ยอดขายช่วงรอของ (ของใหม่ยังมาไม่ถึง)
+    const leadD=getLeadDays()||15;
+    const demand15d=Math.ceil(getAvg(item,leadD));
     const isLow=onHand!==null&&onHand>0&&onHand<demand15d;
     const isOk =onHand!==null&&rawAvg>0&&onHand>=rawAvg;
     const cardBg=isOOS?'rgba(255,85,114,.07)':isLow?'rgba(255,170,68,.06)':isOk?'rgba(46,204,138,.06)':`var(--bg-dark)`;
     const cardBdr=isOOS?'1px solid rgba(255,85,114,.3)':isLow?'1px solid rgba(255,170,68,.3)':isOk?'1px solid rgba(46,204,138,.25)':`1px solid transparent`;
     const inputColor=isOOS?'var(--red)':isLow?'var(--orange)':isOk?'var(--green)':`var(--blue)`;
     const stockBadge=isOOS?`<span style="font-size:11px;color:var(--red-d);font-weight:800">🔴 หมด</span>`:
-                     isLow?`<span style="font-size:11px;color:var(--orange-d);font-weight:800">🟡 เหลือ ${onHand} (ต้องการ ${demand15d}/15วัน)</span>`:
+                     isLow?`<span style="font-size:11px;color:var(--orange-d);font-weight:800">🟡 เหลือ ${onHand} (ต้องการ ${demand15d}/${leadD}วัน)</span>`:
                      isOk ?`<span style="font-size:11px;color:var(--green-d)">✓ พอ (${onHand})</span>`:
                      onHand!==null?`<span style="font-size:11px;color:var(--muted)">มี ${onHand}</span>`:``;
     const pendingBadge=pending>0
@@ -5395,6 +5461,7 @@ async function submitCartOrder(){
   const order = {
     createdAt: Date.now(),
     days,
+    leadDays: getLeadDays(),
     items,
     customName: null,
     autoName,
@@ -5682,7 +5749,7 @@ function renderHistDetail(order){
   const nSz=usedSizes.length;
   const colSpanAll=3+nSz+2;
 
-  const deliveryDate=new Date(order.createdAt+(order.days||15)*24*60*60*1000);
+  const deliveryDate=new Date(order.createdAt+(Number(order.leadDays)||getLeadDays()||15)*24*60*60*1000);
   const deliveryStr=`${deliveryDate.getDate()}/${deliveryDate.getMonth()+1}/${deliveryDate.getFullYear()}`;
   const d=new Date(order.createdAt);
   const dateStr=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
@@ -6130,7 +6197,7 @@ function reloadCartFromHistory(key){
 
 function generateOrder(){
   if(!appData.length) return;
-  const days=getOrderDays();
+  const days=getOrderCoverDays();
   let html='';
   const pantsGroups=groupByParent(appData.filter(d=>classifyCat(d.category)==='pants'));
   if(pantsGroups.length){
@@ -6182,7 +6249,7 @@ function generateOrder(){
 
 // ── EXPORT CSV ──
 function exportOrderCSV(){
-  const days=getOrderDays();
+  const days=getOrderCoverDays();
   const rows=[['ประเภท','รุ่น','สี','ไซส์','SKU','ล็อคต้องการ','ล็อคจริง(+เกิน)','ตัว/ล็อค','รวมตัว','ไม้','เฉลี่ย/'+days+'วัน']];
   const pantsGroups=groupByParent(appData.filter(d=>classifyCat(d.category)==='pants'));
   pantsGroups.forEach(g=>{
@@ -6430,6 +6497,22 @@ async function syncData(){
         }
       });
       const vals=Object.values(dailySales);
+      // ── ยอดขายรายวัน 30 วันล่าสุด (index 0 = เก่าสุด, 29 = วันล่าสุดของข้อมูล) ──
+      // key ของ dailySales เป็นข้อความวันที่ตามชีต (เช่น 1/3/2026) → ต้องแปลงเป็น
+      // timestamp ก่อนค่อยไล่ทีละวัน (เดิมไล่ด้วย key แบบ ISO เลยหาไม่เจอ ได้ 0 ตลอด)
+      const arr30 = (()=>{
+        if(!sortedAllDates.length) return [];
+        const lastT = parseDate(sortedAllDates[sortedAllDates.length-1]);
+        if(isNaN(lastT)) return [];
+        const byTs = {};
+        Object.entries(dailySales).forEach(([k,q])=>{ const t=parseDate(k); if(!isNaN(t)) byTs[t]=(byTs[t]||0)+q; });
+        const out = [];
+        for(let i=29; i>=0; i--){ const dt=new Date(lastT); dt.setDate(dt.getDate()-i); out.push(Number(byTs[dt.getTime()]||0)); }
+        return out;
+      })();
+      // จำนวนวันท้ายสุดที่ขายได้ 0 ติดต่อกัน — ใช้จับ "ของหมดอยู่ตอนนี้" ตอนคำนวณสั่งของ
+      let zeroTail30 = 0;
+      for(let zi=arr30.length-1; zi>=0 && arr30[zi]===0; zi--) zeroTail30++;
       const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
       const variance=vals.reduce((s,v)=>s+(v-mean)**2,0)/vals.length;
       const sd=Math.sqrt(variance);
@@ -6556,19 +6639,9 @@ async function syncData(){
           // Logic: ถ้ามี 0 ติดกัน > 3 วัน และยอดขายเฉลี่ย 3 วันหลัง > 3 วันก่อน
           //         → ตัด zeros ออก (เป็น stockout จริง)
           // ถ้าไม่เข้าเงื่อนไข → นับ 0 ตามปกติ
-          if(!sortedAllDates.length) return 0;
-          const lastDateStr = sortedAllDates[sortedAllDates.length-1];
-          const lastT = parseDate(lastDateStr);
-          if(isNaN(lastT)) return 0;
-          // สร้าง array 30 วันล่าสุด (ทุกวัน รวมวันที่ขาย=0)
-          const arr = [];
-          for(let i=29; i>=0; i--){
-            const t = lastT - i*24*60*60*1000;
-            const dt = new Date(t);
-            const dStr = dt.toISOString().slice(0,10); // YYYY-MM-DD
-            arr.push(Number(dailySales[dStr]||0));
-          }
+          const arr = arr30;
           const n = arr.length;
+          if(!n) return 0;
           // หา streaks ของ zeros และ skip ตามเงื่อนไข
           const skip = new Array(n).fill(false);
           let i = 0;
@@ -6605,6 +6678,7 @@ async function syncData(){
           }
           return validDays>0 ? +(total/validDays).toFixed(3) : 0;
         })(),
+        zeroTail: zeroTail30,
         early60: (()=>{
           // ยอดขายช่วง 31-90 วันก่อน (60 วัน — ก่อน recent30)
           // ใช้สำหรับ trend-aware weighted formula
@@ -6689,8 +6763,8 @@ async function syncData(){
     try { renderAll(getFilteredData()); } catch(e){}
     try { renderOrderTab(); } catch(e){}
     if(!isStockLoaded()){
-      loadStockFromFirebase().catch(e=>console.warn('Firebase stock auto-load:', e));
-    }
+      loadStockFromFirebase().catch(e=>console.warn('Firebase stock auto-load:', e)).finally(()=>setTimeout(p365MaybeAutoSync, 1500));
+    } else setTimeout(p365MaybeAutoSync, 1500);
     // Save appData cache to Firebase (background)
     if(appData.length) saveAppDataCache(appData).catch(e=>console.warn('Cache save:', e));
   })();
@@ -6748,23 +6822,8 @@ function daysBetween(a,b){
 //   - safety ×1.5       : รองรับ lead time + demand spike
 function calcStock(item, days, mult){
   if(!item || typeof item !== 'object') return 0;
-  const recent30  = Number(item.recent30) || 0;
-  const rawVel    = Number(item.rawVel)   || 0;
-  const e60       = item.early60 || {total:0, days:1};
-  const earlyTot  = Number(e60.total) || 0;
-  const earlyDays = Math.max(1, Number(e60.days) || 1);
-  // Smart rate: ตัด stockout zeros ออก ถ้ายอดเด้งกลับสูงกว่าก่อน 0
-  const smartRate30 = Number(item.smartRate30) || 0;
-
-  const recentRate = recent30 / 30;                   // ชิ้น/วัน (30 วันล่าสุด - รวม 0)
-  const earlyRate  = earlyTot / earlyDays;            // ชิ้น/วัน (ช่วง 31-90 วันก่อน)
-  const weighted   = 0.5 * recentRate + 0.5 * earlyRate;
-
-  // ขาขึ้น: recentRate > weighted → ใช้ recent เต็ม
-  // ขาลง:  recentRate < weighted → ใช้ weighted (ลดลงครึ่งทาง)
-  // กัน underestimate ด้วย rawVel × 0.7 (สำหรับสินค้าขายเป็นช่วงๆ)
-  // ถ้า smartRate30 สูงกว่า → มี stockout จริง, ใช้ smart rate (ของหมดทำให้ยอดถูกตัด)
-  const baseRate = Math.max(recentRate, weighted, rawVel * 0.7, smartRate30);
+  // สูตรเดียวกับแท็บสั่งของ (calcBaseRate) — รวมการแก้กรณีของหมดอยู่ตอนนี้
+  const baseRate = calcBaseRate(item);
 
   const safety = mult || item.safetyMult || 1.5;
   const finalSafety = Math.max(safety, 1.5);
@@ -6805,6 +6864,7 @@ function kpiSort(key, dir, label){
 // ════════════════════════════════════════════════
 let stockMap = {};  // sku → stock_amount (number)
 let stockFileName = '';
+window.stockUpdatedAt = 0;   // เวลาที่สต๊อกชุดนี้ถูกดึง/อัพโหลดจริง (ไม่ใช่เวลาโหลดจาก Firebase)
 
 // ── FIREBASE CONFIG (Realtime Database) ──────────────────
 const FIREBASE_CONFIG = {
@@ -6875,6 +6935,7 @@ function serializeAppData(data){
     peakSold:item.peakSold, vel7:item.vel7,
     activeVelAvg:item.activeVelAvg, maxVel7:item.maxVel7, recent30:item.recent30||0,
     smartRate30: item.smartRate30||0,
+    zeroTail: item.zeroTail||0,
     early60: item.early60 || {total:0,days:1},
     _noSales:item._noSales||false
     // dailySales omitted — too large; chart will fetch on demand if needed
@@ -6998,6 +7059,10 @@ async function loadAllConfigs(){
     if(data.orderConfig && typeof data.orderConfig==='object'){
       Object.assign(orderConfig, data.orderConfig);
     }
+    if(typeof data.orderLeadDays==='number' && data.orderLeadDays>=0 && data.orderLeadDays<=90){
+      window.orderLeadDays = data.orderLeadDays;
+      try { localStorage.setItem('orderLeadDays', String(data.orderLeadDays)); }catch(e){}
+    }
     // Page365: ชื่อร้าน / proxy / การจับคู่ที่ผู้ใช้ตั้งเอง
     if(typeof data.p365Shop === 'string' && data.p365Shop) p365Shop = data.p365Shop;
     if(typeof data.p365Proxy === 'string') p365Proxy = data.p365Proxy;
@@ -7054,7 +7119,7 @@ async function loadStockFromFirebase(){
     const skus = data.skus || {};
     if(!Object.keys(skus).length){ updateFbStatus('empty'); return false; }
     stockFileName = meta.fileName || 'Firebase';
-    applyStockMap(skus);
+    applyStockMap(skus, { fromFirebase:true, updatedAt: meta.updatedAt || 0 });
     const ts = meta.updatedAt ? new Date(meta.updatedAt) : new Date();
     updateFbStatus('loaded', meta.fileName||'Firebase', Object.keys(skus).length, ts);
     return true;
@@ -7327,8 +7392,11 @@ function mergeUploadDict(uploadDict){
   return {added, moved:moved.length, movedList:moved};
 }
 
-function applyStockMap(map){
+function applyStockMap(map, opts){
+  opts = opts || {};
   stockMap = map;
+  // โหลดจาก Firebase แล้วไม่มีเวลา → ถือว่า "ไม่ทราบ" (0) ไม่ใช่ "เมื่อกี้"
+  window.stockUpdatedAt = opts.fromFirebase ? (Number(opts.updatedAt)||0) : (Number(opts.updatedAt)||Date.now());
   console.log('[Stock] Loaded', Object.keys(map).length, 'SKUs. Sample key:', Object.keys(map)[0]);
   const vals  = map ? Object.values(map).filter(v=>v!==null) : [];
   const total = Object.keys(map).length;
@@ -7356,7 +7424,8 @@ function applyStockMap(map){
   setCol('stock-hdr-btn',   'var(--green)');
 
   // Save to Firebase (async, don't block UI)
-  if(stockFileName && stockFileName !== 'Firebase'){
+  // ห้ามเซฟซ้ำตอนที่เพิ่งโหลดมาจาก Firebase เอง — ไม่งั้น updatedAt จะถูกทับเป็น "เมื่อกี้" ทุกครั้งที่เปิดแอป
+  if(!opts.fromFirebase && stockFileName && stockFileName !== 'Firebase'){
     saveStockToFirebase(map, stockFileName).then(ok=>{
       if(ok){
         const ts = new Date();
@@ -7432,7 +7501,83 @@ const P365_SHOP_DEFAULT = 'lamsangstores';
 let p365Shop  = P365_SHOP_DEFAULT;
 let p365Proxy = '';   // proxy ของผู้ใช้เอง (ใส่ {url} เป็นตัวแทน URL เต็ม) — ลองก่อนตัว default
 let p365Map   = {};   // groupKey → productId ที่ผู้ใช้เลือกเอง (0 = สั่งข้าม ไม่ต้องดึง)
-const _p365   = { list:null, detail:{}, match:null, proxyIdx:-1, cfgLoaded:false };
+const _p365   = { list:null, detail:{}, match:null, proxyIdx:-1, cfgLoaded:false,
+  // สถานะการดึงรอบล่าสุด — ใช้แสดงแจ้งเตือนในแท็บสั่งของ (เดิมล้มเงียบๆ ใน console)
+  status:{ running:false, progress:'', lastAt:0, lastOkAt:0, lastError:'', failedNames:[] } };
+const P365_AUTO_SYNC_HOURS = 6;   // เปิดแอปแล้วสต๊อกเก่ากว่านี้ → ดึงใหม่เองเบื้องหลัง
+
+function p365SetHdr(txt, color){
+  const el = $('p365-btn-label'); if(el) el.textContent = txt;
+  const btn = $('p365-hdr-btn');  if(btn && color) btn.style.color = color;
+}
+function p365Esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtAge(ms){
+  const m = Math.max(0, Math.round(ms/60000));
+  if(m < 60) return m+' นาที';
+  const h = Math.round(m/60);
+  if(h < 48) return h+' ชม.';
+  return Math.round(h/24)+' วัน';
+}
+
+// ══ แจ้งเตือนในแท็บสั่งของ: สต๊อกเก่า / ดึง Page365 ไม่สำเร็จ / ออเดอร์ค้างเกินกำหนด ══
+function renderOrderAlerts(){
+  const box = $('order-alerts'); if(!box) return;
+  const alerts = [];
+  const mk = (lvl, icon, txt, btns) => alerts.push({lvl, icon, txt, btns: btns||''});
+  const st = _p365.status || {};
+  const syncBtn = `<button class="btn" onclick="syncStockFromPage365()" style="font-size:11px;padding:3px 9px;color:var(--green-d)">↻ ดึงสต๊อก Page365</button>`;
+  const cfgBtn  = `<button class="btn" onclick="openP365Modal()" style="font-size:11px;padding:3px 9px;color:var(--muted)">⚙ จับคู่ / proxy</button>`;
+
+  // 1) สถานะสต๊อกที่ใช้คำนวณ
+  if(st.running){
+    mk('info', '⏳', 'กำลังดึงสต๊อกสดจาก Page 365… ' + p365Esc(st.progress||''));
+  } else if(!isStockLoaded()){
+    mk('red', '🚨', 'ยังไม่มีข้อมูลสต๊อก — ระบบคิดว่าทุกตัวเหลือ 0 ยอดสั่งจะสูงเกินจริง', syncBtn);
+  } else {
+    const age = Date.now() - (window.stockUpdatedAt||0);
+    if(!window.stockUpdatedAt || age > 72*3600e3){
+      mk('red', '🕒', `สต๊อกที่ใช้คำนวณเก่ามาก (อัปเดต ${window.stockUpdatedAt ? fmtAge(age)+' ที่แล้ว' : 'ไม่ทราบเมื่อไหร่'}) — ของที่ขายไปแล้วยังถูกนับว่ามีอยู่ ทำให้สั่งน้อยเกินไป`, syncBtn);
+    } else if(age > 12*3600e3){
+      mk('orange', '🕒', `สต๊อกอัปเดตล่าสุด ${fmtAge(age)} ที่แล้ว — ควรดึงใหม่ก่อนกดสั่ง`, syncBtn);
+    }
+  }
+  // 2) ผลการดึง Page365 รอบล่าสุด
+  if(!st.running && st.lastError){
+    mk('red', '❌', `ดึงสต๊อก Page 365 ไม่สำเร็จ${st.lastAt ? ' ('+fmtAge(Date.now()-st.lastAt)+' ที่แล้ว)' : ''}: ${p365Esc(st.lastError)}`, syncBtn + ' ' + cfgBtn);
+  } else if(!st.running && st.failedNames && st.failedNames.length){
+    const n = st.failedNames.length;
+    mk('orange', '⚠️', `ดึงสต๊อกได้ไม่ครบ — ${n} รุ่นดึงไม่สำเร็จ ใช้ค่าเก่าไปก่อน: ${p365Esc(st.failedNames.slice(0,6).join(', '))}${n>6 ? ' …' : ''}`, syncBtn);
+  }
+  // 3) ออเดอร์ค้างรับเกินกำหนด (ไม่ถูกหักจากยอดสั่งแล้ว)
+  const stale = window._stalePendingOrders || [];
+  if(stale.length){
+    const names = stale.slice(0,4).map(o=>o.customName||o.autoName||'').filter(Boolean).join(' · ');
+    mk('orange', '📦', `${stale.length} ออเดอร์สั่งไปเกิน ${getLeadDays()+PENDING_GRACE_DAYS} วันแล้วยังไม่กด "รับแล้ว" (${p365Esc(names)}) — ระบบเลิกนับเป็นของค้างส่ง ถ้าของถึงแล้วไปกดรับ ถ้าโรงงานยังไม่ส่งให้แก้วันที่สั่ง`,
+      `<button class="btn" onclick="switchTabByName('history')" style="font-size:11px;padding:3px 9px;color:var(--blue-d)">ไปหน้าประวัติ</button>`);
+  }
+
+  if(!alerts.length){ box.style.display='none'; box.innerHTML=''; return; }
+  const col = { red:'var(--red-d)', orange:'var(--orange-d)', info:'var(--blue-d)' };
+  const bg  = { red:'rgba(255,85,114,.09)', orange:'rgba(255,170,68,.09)', info:'rgba(77,143,255,.09)' };
+  box.style.display = 'flex';
+  box.innerHTML = alerts.map(a=>`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;border-radius:12px;background:${bg[a.lvl]};border-left:3px solid ${col[a.lvl]}">
+      <span style="font-size:15px">${a.icon}</span>
+      <span style="flex:1 1 260px;font-size:12.5px;font-weight:700;color:${col[a.lvl]};line-height:1.45">${a.txt}</span>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${a.btns}</div>
+    </div>`).join('');
+}
+
+// เปิดแอปมาแล้วสต๊อกเก่ากว่า P365_AUTO_SYNC_HOURS → ดึงใหม่เองเบื้องหลัง (ไม่บังหน้าจอ ไม่เด้ง alert)
+function p365MaybeAutoSync(){
+  try {
+    if(_p365.status.running) return;
+    const pd = window._productDict || {};
+    if(!Object.keys(pd).length) return;
+    const age = Date.now() - (window.stockUpdatedAt||0);
+    if(isStockLoaded() && window.stockUpdatedAt && age < P365_AUTO_SYNC_HOURS*3600e3) return;
+    syncStockFromPage365({ background:true });
+  } catch(e){ console.warn('[P365] auto sync:', e.message); }
+}
 
 // Page365 ไม่ส่ง CORS header → browser ยิงตรงไม่ได้ ต้องผ่าน proxy
 // เรียงจากตัวที่เสถียรสุดก่อน · ตัวไหนล้มก็ไล่ตัวถัดไปเอง
@@ -7628,23 +7773,35 @@ async function p365LoadCfg(){
  * ถ้าอยากให้เร็วและนิ่ง ตั้ง proxy ของตัวเองได้ในหน้า "จับคู่สินค้า"
  */
 const P365_CONCURRENCY = 6;
-async function p365FetchAllDetails(products){
+/** @returns {{details:Object, failed:Array}} failed = สินค้าที่ดึงไม่ได้แม้ลองซ้ำแล้ว */
+async function p365FetchAllDetails(products, onProgress){
   const details = {};
-  const queue = products.slice();
-  let done = 0;
-  const worker = async () => {
-    while(queue.length){
-      const p = queue.shift();
-      try { details[p.id] = await p365Detail(p.id, true); }
-      catch(e){ console.warn('[P365] detail '+p.id+':', e.message); }
-      done++;
-      showL('กำลังดึงสต๊อกจาก Page 365… '+done+'/'+products.length);
-    }
+  let failed = [];
+  const run = async (list, conc, label) => {
+    const queue = list.slice();
+    let done = 0;
+    const worker = async () => {
+      while(queue.length){
+        const p = queue.shift();
+        try { details[p.id] = await p365Detail(p.id, true); }
+        catch(e){ failed.push(p); console.warn('[P365] detail '+p.id+' ('+(p.name||'')+'):', e.message); }
+        done++;
+        if(onProgress) onProgress(label + done + '/' + list.length);
+      }
+    };
+    const crew = [];
+    for(let i=0; i<conc; i++) crew.push(worker());
+    await Promise.all(crew);
   };
-  const crew = [];
-  for(let i=0; i<P365_CONCURRENCY; i++) crew.push(worker());
-  await Promise.all(crew);
-  return details;
+  await run(products, P365_CONCURRENCY, '');
+  // ตัวที่ล้ม ลองซ้ำอีกรอบแบบช้าลง — proxy ฟรีมักล้มเป็นช่วงสั้นๆ / โดน rate limit ตอนยิงพร้อมกันเยอะ
+  // (ถ้าล้มเกินครึ่ง = proxy ล่มทั้งกระดาน ไม่ต้องลองซ้ำให้เสียเวลาอีกหลายนาที)
+  if(failed.length && failed.length <= Math.ceil(products.length/2)){
+    const retry = failed; failed = [];
+    _p365.proxyIdx = -1;   // เริ่มไล่ proxy ใหม่ตั้งแต่ตัวแรก
+    await run(retry, 2, 'ลองซ้ำ ');
+  }
+  return { details, failed };
 }
 
 /**
@@ -7652,23 +7809,35 @@ async function p365FetchAllDetails(products){
  * @param {{silent?:boolean}} [opts] silent = ไม่เด้ง alert สรุป (ใช้ตอนเรียกซ้ำจาก modal)
  */
 async function syncStockFromPage365(opts){
-  const silent = !!(opts && opts.silent);
+  const silent     = !!(opts && opts.silent);
+  const background = !!(opts && opts.background);   // ดึงเบื้องหลัง: ไม่บังหน้าจอ ไม่เด้ง alert — แจ้งผลผ่านแถบเตือนแทน
+  const st = _p365.status;
+  if(st.running){ if(!background && !silent) alert('กำลังดึงสต๊อกอยู่ รอสักครู่…'); return; }
   await p365LoadCfg();
 
   const groups = p365AppGroups();
   if(!groups.length){
-    alert('ยังไม่มีรายชื่อสินค้าในแอป\n\nกด "ซิงก์ข้อมูล" ให้โหลดจาก Google Sheets ก่อน แล้วค่อยดึงสต๊อก');
+    if(!background) alert('ยังไม่มีรายชื่อสินค้าในแอป\n\nกด "ซิงก์ข้อมูล" ให้โหลดจาก Google Sheets ก่อน แล้วค่อยดึงสต๊อก');
     return;
   }
 
+  const prog = (t) => {
+    st.progress = t;
+    if(background){ p365SetHdr('⏳ '+t, 'var(--orange-d)'); }
+    else showL('กำลังดึงสต๊อกจาก Page 365… '+t);
+    try { renderOrderAlerts(); } catch(e){}
+  };
+  st.running = true; st.progress = ''; st.lastAt = Date.now();
+  prog('อ่านรายการสินค้า…');
+
   try {
-    showL('กำลังอ่านรายการสินค้าจาก Page 365…');
     const products = await p365ListProducts(true);
     if(!products.length) throw new Error('ไม่พบสินค้าในร้าน "'+p365Shop+'" — เช็คชื่อร้าน (subdomain) อีกที');
 
     // ต้องมี variants ครบก่อน ทั้งเอาไปทำสต๊อกและใช้ช่วยจับคู่ตอนชื่อไม่ตรง
-    const details = await p365FetchAllDetails(products);
-    if(!Object.keys(details).length) throw new Error('ดึงรายละเอียดสินค้าไม่ได้เลย');
+    const { details, failed } = await p365FetchAllDetails(products, prog);
+    if(!Object.keys(details).length) throw new Error('ดึงรายละเอียดสินค้าไม่ได้เลย ('+failed.length+' รายการ) — proxy น่าจะล่มทั้งหมด');
+    const failedIds = new Set(failed.map(p=>p.id));
 
     const match = p365AutoMatch(groups, products, details);
     _p365.match = match;
@@ -7684,9 +7853,22 @@ async function syncStockFromPage365(opts){
     // กติกา: in_stock=false ให้เป็น 0 ทันที ไม่ต้องดู available
     // (Page365 ส่ง available = -1 มาเวลาขายเกิน — ถ้าเชื่อตรงๆ จะได้ค่าติดลบ)
     const map = {};
-    let hitSku = 0, missSku = 0;
+    let hitSku = 0, missSku = 0, keptOld = 0;
+    const failedNames = [];
     groups.forEach(g=>{
       const m = match[g.key];
+      if(m && m.product && failedIds.has(m.product.id)){
+        // ดึงรุ่นนี้ไม่สำเร็จ → คงค่าสต๊อกเดิมไว้ ดีกว่าปล่อยให้กลายเป็น "ไม่ทราบ" (= สต๊อก 0 ในแท็บสั่งของ)
+        failedNames.push(m.product.name || g.name || g.key);
+        g.items.forEach(it=>{
+          const old = getStockAmount(it.sku);
+          if(old === null) return;
+          map[it.sku] = old;
+          if(it.sku !== it.sku.toLowerCase()) map[it.sku.toLowerCase()] = old;
+          keptOld++;
+        });
+        return;
+      }
       const d = m && m.product ? details[m.product.id] : null;
       if(!d) return;
       const vars = d.variants || [];
@@ -7706,18 +7888,28 @@ async function syncStockFromPage365(opts){
     if(!hitSku) throw new Error('จับคู่สินค้าไม่ได้เลยสักตัว — ลองกด "จับคู่สินค้า" แล้วเลือกเอง');
 
     const now = new Date();
-    stockFileName = 'Page365 · ' + now.toLocaleString('th-TH',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-    applyStockMap(map);
-    hideL();
+    stockFileName = 'Page365 · ' + now.toLocaleString('th-TH',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
+      + (failedNames.length ? ' (ไม่ครบ '+failedNames.length+' รุ่น)' : '');
+    applyStockMap(map, { updatedAt: now.getTime() });
+    if(!background) hideL();
+
+    st.running = false; st.lastError = ''; st.lastOkAt = now.getTime(); st.failedNames = failedNames; st.progress = '';
+    const hm = now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    p365SetHdr(failedNames.length ? '⚠️ Page365 '+hm+' (ไม่ครบ '+failedNames.length+')' : '✓ Page365 '+hm,
+               failedNames.length ? 'var(--orange-d)' : 'var(--green-d)');
+    try { renderOrderAlerts(); } catch(e){}
 
     const matchedKeys = groups.filter(g=>match[g.key] && match[g.key].product);
     const skipped     = groups.filter(g=>match[g.key] && match[g.key].via==='skip').length;
     const noGroup     = products.filter(p=>!matchedKeys.some(g=>match[g.key].product.id===p.id));
 
-    if(!silent){
+    if(!silent && !background){
       let msg = '✅ ดึงสต๊อกจาก Page 365 แล้ว\n\n'
         + '• สินค้าในร้าน '+products.length+' รายการ · จับคู่ได้ '+matchedKeys.length+' กลุ่ม\n'
         + '• อัปเดตสต๊อก '+hitSku+' SKU';
+      if(failedNames.length) msg += '\n\n⚠️ ดึงไม่สำเร็จ '+failedNames.length+' รุ่น (ใช้ค่าเก่า '+keptOld+' SKU):\n'
+        + failedNames.slice(0,8).map(n=>'   • '+n).join('\n') + (failedNames.length>8 ? '\n   …และอีก '+(failedNames.length-8) : '')
+        + '\nลองกดดึงอีกครั้ง หรือตั้ง proxy ของตัวเองในหน้า "จับคู่สินค้า"';
       if(missSku)  msg += '\n• ไม่พบรุ่นที่ตรงกัน '+missSku+' SKU (ปล่อยเป็น "ไม่ทราบ")';
       if(skipped)  msg += '\n• ข้ามตามที่ตั้งไว้ '+skipped+' กลุ่ม';
       if(noGroup.length){
@@ -7731,10 +7923,15 @@ async function syncStockFromPage365(opts){
       }
     }
   } catch(e){
-    hideL();
+    if(!background) hideL();
     console.error('[P365] sync failed:', e);
-    alert('ดึงสต๊อกจาก Page 365 ไม่สำเร็จ\n\n'+e.message
-      + '\n\nถ้าเจอบ่อย ให้ใส่ CORS proxy ของตัวเองในหน้า "จับคู่สินค้า"');
+    st.running = false; st.lastError = e.message || String(e); st.progress = '';
+    p365SetHdr('⚠️ Page365 ล้มเหลว', 'var(--red-d)');
+    try { renderOrderAlerts(); } catch(x){}
+    if(!background){
+      alert('ดึงสต๊อกจาก Page 365 ไม่สำเร็จ\n\n'+e.message
+        + '\n\nถ้าเจอบ่อย ให้ใส่ CORS proxy ของตัวเองในหน้า "จับคู่สินค้า"');
+    }
   }
 }
 
