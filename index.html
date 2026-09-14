@@ -363,6 +363,34 @@ td .stock-pill.instock{background:rgba(46,204,138,.13);color:var(--green-d)}
 .disc-btn.active:hover{background:rgba(255,85,114,.15);color:var(--red-d)}
 .disc-btn.inactive{background:rgba(255,85,114,.0);color:var(--faint);border:1px solid rgba(255,255,255,.08)}
 .disc-btn.inactive:hover{background:rgba(255,85,114,.1);color:var(--red-d);border-color:rgba(255,85,114,.2)}
+/* Restock planner: tier / boost controls on cards */
+.tier-sel{font-family:'Anuphan',sans-serif;font-size:12px;font-weight:800;border-radius:8px;padding:3px 8px;cursor:pointer;outline:none;border:1px solid rgba(255,255,255,.08);background:var(--bg);color:var(--muted)}
+.tier-sel.tier-1{color:var(--green-d);border-color:rgba(46,204,138,.35);background:rgba(46,204,138,.08)}
+.tier-sel.tier-2{color:var(--blue-d);border-color:rgba(77,143,255,.3);background:rgba(77,143,255,.07)}
+.tier-sel.tier-3{color:var(--muted);border-color:rgba(100,116,139,.3)}
+.boost-in{width:40px;height:22px;font-size:12px;font-weight:700;text-align:center;border:1px solid rgba(240,168,117,.35);border-radius:5px;background:var(--bg);color:var(--orange-d);outline:none;font-family:inherit}
+.rp-param{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
+.rp-param input{width:42px;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:800;color:var(--purple-d);background:none;border:none;outline:none;text-align:center;border-bottom:1px dashed rgba(155,149,201,.5)}
+.order-kpi{display:flex;gap:8px;flex-wrap:wrap;padding:10px 24px 0}
+.order-kpi-card{flex:1 1 150px;background:var(--bg);box-shadow:var(--sx);border-radius:12px;padding:8px 12px;cursor:default}
+.order-kpi-lbl{font-size:11px;font-weight:800;letter-spacing:.4px;color:var(--muted)}
+.order-kpi-val{font-size:20px;font-weight:800;font-family:'IBM Plex Mono',monospace;line-height:1.2}
+.order-kpi-sub{font-size:11px;color:var(--faint)}
+/* Cash module */
+.cash-panel{margin:10px 24px 0;background:var(--bg);box-shadow:var(--sx);border-radius:14px;padding:12px 16px}
+.cash-hdr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.cash-ttl{font-size:14px;font-weight:800;color:var(--text)}
+.cash-stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.cash-stat{flex:1 1 130px;background:var(--bg-dark);border-radius:10px;padding:7px 10px}
+.cash-stat-l{font-size:10.5px;font-weight:800;color:var(--muted);letter-spacing:.3px}
+.cash-stat-v{font-size:16px;font-weight:800;font-family:'IBM Plex Mono',monospace;line-height:1.25}
+.cash-stat-s{font-size:10.5px;color:var(--faint)}
+.cash-chart-wrap{position:relative;height:210px;width:100%}
+.cash-note{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
+.cash-row{display:grid;grid-template-columns:1.2fr .7fr .8fr .8fr .8fr;gap:8px;align-items:center;padding:8px 12px;border-radius:12px;background:var(--bg);box-shadow:var(--sx);font-size:12px}
+.cash-row input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--text);background:var(--bg-dark);border:none;border-radius:8px;padding:5px 8px;outline:none;text-align:center}
+.cash-row .k{font-weight:800;color:var(--text);text-transform:capitalize}
+@media(max-width:600px){.cash-row{grid-template-columns:1fr 1fr 1fr;font-size:11px}.cash-chart-wrap{height:180px}}
 .disc-collapsed{opacity:.45;pointer-events:none}
 /* ─── DROPDOWN ─── */
 .dd-item{padding:8px 12px;border-radius:8px;font-size:16px;font-weight:600;color:var(--muted);cursor:pointer;transition:background .1s}
@@ -2398,6 +2426,56 @@ tbody td { border-bottom: 1px solid rgba(217,154,90,.08) !important; }
   </div>
 </nav>
 
+<!-- CASH SETTINGS MODAL -->
+<div class="modal-overlay" id="cashModal" onclick="if(event.target===this)this.classList.remove('on')">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-ttl">💵 ตั้งค่าเงินเข้า–เงินออก</div>
+        <div class="modal-sub">สัดส่วนช่องทางมาจากชีต Orders 30 วันล่าสุด (คอลัมน์ Marketplace) · fee / วันเคลียร์ / COD ปรับตามจริงจาก PEAK</div>
+      </div>
+      <button class="modal-close" onclick="$('cashModal').classList.remove('on')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="p365-cfg">
+        <label>จ่ายเงินซัพพลายเออร์หลังสั่งกี่วัน <code>0 = จ่ายตอนสั่ง · ใส่ 20 ถ้าจ่ายตอนของถึง</code>
+          <input type="number" id="cash-payterm" min="0" max="90" step="1"></label>
+        <label>COD บวกวันรอเงินเพิ่ม (รอบขนส่งเก็บเงิน) <code>วัน — คูณกับสัดส่วน COD ของแต่ละช่องทาง</code>
+          <input type="number" id="cash-codlag" min="0" max="30" step="1"></label>
+      </div>
+      <div class="cash-row" style="background:none;box-shadow:none;color:var(--muted);font-weight:800;padding-bottom:2px">
+        <span>ช่องทาง</span><span>สัดส่วน</span><span>fee %</span><span>เคลียร์ (วัน)</span><span>COD %</span>
+      </div>
+      <div id="cash-ch-list" class="p365-list" style="max-height:40vh"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <div style="flex:1"></div>
+        <button class="btn" onclick="saveCashCfg()" style="color:var(--green-d)">💾 บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROMO CALENDAR MODAL -->
+<div class="modal-overlay" id="promoModal" onclick="if(event.target===this)this.classList.remove('on')">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-ttl">📅 ปฏิทินวันโปร / Payday</div>
+        <div class="modal-sub" id="promo-modal-sub">ถ้าช่วงเป้าครอบคลุมข้างหน้าคร่อมวันโปร ยอดสั่งรุ่น Tier 1–2 จะถูกคูณด้วยตัวคูณนั้นอัตโนมัติ</div>
+      </div>
+      <button class="modal-close" onclick="$('promoModal').classList.remove('on')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="promo-list" class="p365-list" style="max-height:48vh"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn" onclick="addPromoRow()" style="color:var(--blue-d)">＋ เพิ่มวันโปร</button>
+        <div style="flex:1"></div>
+        <button class="btn" onclick="savePromoCalendar()" style="color:var(--green-d)">💾 บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- PAGE365 MATCH MODAL -->
 <div class="modal-overlay" id="p365Modal" onclick="if(event.target===this)this.classList.remove('on')">
   <div class="modal-box" style="max-width:1000px">
@@ -2919,7 +2997,7 @@ tbody td { border-bottom: 1px solid rgba(217,154,90,.08) !important; }
     <div class="panel-hdr">
       <div>
         <div class="panel-ttl">🛒 แบบฟอร์มสั่งสินค้า</div>
-        <div class="panel-sub">วิเคราะห์จากค่าเฉลี่ย (สต๊อกแนะนำ + MaxVel7×30) ÷ 2</div>
+        <div class="panel-sub" id="order-panel-sub">ยอดสั่ง = ยอดขายเฉลี่ย × (รอของ + ช่วงวางแผน) × เผื่อ − สต๊อกที่มี − ของค้างส่ง</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn" onclick="toggleCartModal()" style="color:var(--green-d);gap:6px">
@@ -2956,22 +3034,35 @@ tbody td { border-bottom: 1px solid rgba(217,154,90,.08) !important; }
       <div style="display:flex;align-items:center;gap:6px;background:var(--bg);box-shadow:var(--si);border-radius:10px;padding:5px 12px">
         <select id="order-sort" onchange="setOrderSort(this.value)"
           style="background:none;border:none;outline:none;font-family:'Anuphan',sans-serif;font-size:14px;font-weight:700;color:var(--text);cursor:pointer">
+          <option value="cov_asc">⏳ ใกล้หมดก่อน (coverage น้อย → มาก)</option>
           <option value="qty_desc" selected>📦 รวมสั่ง: มาก → น้อย</option>
           <option value="qty_asc">📦 รวมสั่ง: น้อย → มาก</option>
           <option value="name_asc">🔤 ชื่อ: ก → ฮ</option>
           <option value="name_desc">🔤 ชื่อ: ฮ → ก</option>
         </select>
       </div>
-      <!-- Safety buffer slider -->
+      <!-- Manual multiplier (โปร/เร่ง) — ปฏิทินวันโปรจะคูณให้เองถ้าสูงกว่า -->
       <div style="display:flex;align-items:center;gap:8px;background:var(--bg);box-shadow:var(--si);border-radius:10px;padding:5px 12px;margin-left:8px"
-        title="ปรับระดับการเผื่อสต๊อก: 1.0=ไม่เผื่อ, 1.5=เผื่อปกติ, 2.0=เผื่อเยอะ">
-        <span style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;white-space:nowrap">เผื่อ:</span>
+        title="ตัวคูณเพิ่มเอง: 1.0 = ตามสูตร (กันชนอยู่ในเป้าวันแล้ว), 1.5–2.0 = ช่วงโปร/ยิงแอดหนัก · ถ้าปฏิทินวันโปรให้ตัวคูณสูงกว่า ระบบใช้ค่านั้นแทน">
+        <span style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;white-space:nowrap">×โปร:</span>
         <input type="range" id="order-safety" min="1.0" max="2.0" step="0.1" value="1.5"
           oninput="setOrderSafety(this.value)"
           style="width:90px;cursor:pointer;accent-color:var(--orange-d)">
         <span id="orderSafetyVal" style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:800;color:var(--orange-d);min-width:34px">×1.5</span>
         <span id="orderSafetyLbl" style="font-size:12px;color:var(--mid);font-weight:600;white-space:nowrap">⚖️ เผื่อปกติ</span>
       </div>
+      <!-- Restock planner params: lead / review cycle / safety days → target coverage -->
+      <div style="display:flex;align-items:center;gap:10px;background:var(--bg);box-shadow:var(--si);border-radius:10px;padding:5px 12px;flex-wrap:wrap"
+        title="เป้าครอบคลุม = รอของ + รอบสั่ง + กันชน · จุดสั่ง = รอของ + 10 วัน · วิกฤต = ต่ำกว่ารอของ (ของรอบใหม่มาไม่ทันแน่)">
+        <label class="rp-param">🚚 รอของ <input type="number" id="order-lead-days" min="0" max="90" step="1" value="20" onchange="setOrderLeadDays(this.value)"> วัน</label>
+        <label class="rp-param">🔁 รอบสั่ง <input type="number" id="order-review-days" min="1" max="60" step="1" value="7" onchange="setOrderParam('review',this.value)"> วัน</label>
+        <label class="rp-param">🛡️ กันชน <input type="number" id="order-safety-days" min="0" max="60" step="1" value="7" onchange="setOrderParam('safetyDays',this.value)"> วัน</label>
+        <span id="order-target-lbl" style="font-size:12px;font-weight:800;color:var(--green-d);white-space:nowrap">= เป้า 34 วัน</span>
+      </div>
+      <button class="btn" onclick="openPromoModal()" id="promo-btn" style="font-size:12px;padding:5px 10px;color:var(--orange-d);gap:5px" title="ปฏิทินวันโปร/Payday — ถ้าช่วงเป้าครอบคลุมคร่อมวันโปร ระบบคูณยอดสั่ง Tier 1–2 ให้เอง">📅 วันโปร</button>
+      <label class="rp-param" style="background:var(--bg);box-shadow:var(--si);border-radius:10px;padding:5px 12px" title="งบที่จ่ายได้รอบนี้ — ถ้าไม่พอ ระบบจะเสนอรายการที่ควรเลื่อน (Tier 3 ก่อน แล้ว Tier 2 ที่ยังพอขายได้นานสุด)">
+        💰 งบรอบนี้ <input type="number" id="order-budget" min="0" step="1000" placeholder="ไม่จำกัด" style="width:88px;color:var(--orange-d)" onchange="setOrderBudget(this.value)"> ฿
+      </label>
       <div style="flex:1"></div>
       <!-- Lot config popup trigger — only show when pants category selected -->
       <button class="btn" onclick="toggleLotConfigPopup()" id="lot-cfg-btn" style="color:var(--muted);gap:5px;display:none" title="ตั้งค่าล็อคกางเกง">
@@ -2994,6 +3085,13 @@ tbody td { border-bottom: 1px solid rgba(217,154,90,.08) !important; }
         <div class="empty" style="padding:20px">กำลังโหลดข้อมูลสินค้า…</div>
       </div>
     </div>
+
+    <!-- สรุปสถานะ coverage รายสี/ไซซ์ + เงินที่ต้องใช้ -->
+    <div id="order-kpi" class="order-kpi" style="display:none"></div>
+    <!-- โมดูลเงิน: เงินเข้าคาดการณ์สะสม vs เงินต้องจ่ายสะสม 30 วันข้างหน้า -->
+    <div id="order-cash" class="cash-panel" style="display:none"></div>
+    <!-- แจ้งเตือน: สต๊อกเก่า / ดึง Page365 ไม่สำเร็จ / ออเดอร์ค้างเกินกำหนด / งบไม่พอ -->
+    <div id="order-alerts" style="display:none;flex-direction:column;gap:6px;padding:10px 24px 0"></div>
 
     <!-- Cost summary banner -->
     <div id="order-cost-banner" style="display:none;padding:10px 24px;background:linear-gradient(135deg,rgba(240,168,117,.08),rgba(217,154,90,.05));border-bottom:1px solid rgba(240,168,117,.15)">
@@ -3407,7 +3505,8 @@ window.onload = () => {
             try{ renderAll(getFilteredData()); }catch(e){}
             try{ renderOrderTab(); }catch(e){}
           }).catch(()=>{});
-          if(!isStockLoaded()) loadStockFromFirebase().catch(()=>{});
+          if(!isStockLoaded()) loadStockFromFirebase().catch(()=>{}).finally(()=>setTimeout(p365MaybeAutoSync, 1500));
+          else setTimeout(p365MaybeAutoSync, 1500);
         }
       } else {
         clearTimeout(fallback);
@@ -3443,8 +3542,11 @@ let orderSort = 'qty_desc'; // 'qty_desc' | 'qty_asc' | 'name_asc' | 'name_desc'
 // Safety buffer สำหรับการคำนวณ "ขาด" ใน Order tab
 // 1.0 = ขายแบบเป๊ะ ไม่เผื่อ, 1.2 = เผื่อนิด, 1.5 = เผื่อปกติ, 2.0 = เผื่อเยอะ
 window.orderSafety = (()=>{
-  try { const v = parseFloat(localStorage.getItem('orderSafety')); return (v>=1.0 && v<=3.0) ? v : 1.5; }
-  catch(e){ return 1.5; }
+  try {
+    // v2 (Restock Planner): กันชนย้ายไปเป็น "วัน" ในเป้าครอบคลุมแล้ว → ตัวคูณเริ่มที่ 1.0 (ใช้เฉพาะช่วงโปร/เร่ง)
+    if(!localStorage.getItem('orderSafety_v2')){ localStorage.setItem('orderSafety','1.0'); localStorage.setItem('orderSafety_v2','1'); }
+    const v = parseFloat(localStorage.getItem('orderSafety')); return (v>=1.0 && v<=3.0) ? v : 1.0;
+  } catch(e){ return 1.0; }
 })();
 function setOrderSafety(v){
   v = parseFloat(v);
@@ -3460,11 +3562,235 @@ function setOrderSafety(v){
   renderOrderTab();
 }
 function formatSafetyLabel(v){
-  if(v < 1.1) return '🪶 เป๊ะ ไม่เผื่อ';
+  if(v < 1.1) return '📐 ตามสูตร';
   if(v < 1.3) return '🌿 เผื่อนิด';
-  if(v < 1.6) return '⚖️ เผื่อปกติ';
-  if(v < 1.9) return '🛡️ เผื่อเยอะ';
-  return '🔥 Peak season';
+  if(v < 1.6) return '🎯 โปร/ยิงแอด';
+  if(v < 1.9) return '🔥 ดับเบิ้ลเดย์';
+  return '🚀 Peak';
+}
+// ── ระยะรอของ (lead time): สั่งวันนี้ ของถึงร้านในกี่วัน ──
+// ยอดสั่งต้องพอขาย "ระหว่างรอของ + ช่วงที่วางแผน" ไม่ใช่แค่ช่วงที่วางแผน
+// (เดิมคิดแค่ช่วงวางแผน 30 วัน ทั้งที่ของใช้เวลามา ~15 วัน → ขาดช่วงก่อนของถึงเสมอ)
+// ══ Restock Planner (สเปค 14 ก.ย. 2026) ══════════════════════════════════
+//   LEAD_TIME 20 (ช่วงจริง 15–20 ใช้ค่าแย่สุด) · REVIEW_CYCLE 7 (สั่งทุกจันทร์) · SAFETY 7 วัน
+//   TARGET_COVERAGE = lead + review + safety = 34 วัน · REORDER_POINT = lead + 10 · วิกฤต = ≤ lead
+//   qty = run_rate(7 วัน) × target × promo_mult − on_hand − in_transit   (คิดราย variant สี/ไซซ์)
+const RP_DEFAULT = { lead:20, review:7, safetyDays:7 };
+function _rpLoad(key, def, max){ try { const v=parseInt(localStorage.getItem(key)); return (v>=0 && v<=max) ? v : def; } catch(e){ return def; } }
+window.orderLeadDays   = _rpLoad('orderLeadDays',   RP_DEFAULT.lead, 90);
+window.orderReviewDays = _rpLoad('orderReviewDays', RP_DEFAULT.review, 60);
+window.orderSafetyDays = _rpLoad('orderSafetyDays', RP_DEFAULT.safetyDays, 60);
+function getLeadDays(){ const v = Number(window.orderLeadDays); return (v>=0 && v<=90) ? v : RP_DEFAULT.lead; }
+function getReviewDays(){ const v = Number(window.orderReviewDays); return (v>=1 && v<=60) ? v : RP_DEFAULT.review; }
+function getSafetyDays(){ const v = Number(window.orderSafetyDays); return (v>=0 && v<=60) ? v : RP_DEFAULT.safetyDays; }
+function getOrderCoverDays(){ return getLeadDays() + getReviewDays() + getSafetyDays(); }   // TARGET_COVERAGE (Tier 1)
+function getReorderPointDays(){ return getLeadDays() + 10; }
+function setOrderParam(key, v){
+  v = parseInt(v);
+  const map = { lead:['orderLeadDays','order-lead-days',0,90], review:['orderReviewDays','order-review-days',1,60], safetyDays:['orderSafetyDays','order-safety-days',0,60] };
+  const m = map[key]; if(!m) return;
+  if(!(v>=m[2] && v<=m[3])) v = RP_DEFAULT[key];
+  window[m[0]] = v;
+  try { localStorage.setItem(m[0], String(v)); }catch(e){}
+  try { if(typeof fbSave==='function') fbSave(m[0], v); }catch(e){}
+  const el = $(m[1]); if(el && +el.value !== v) el.value = v;
+  renderOrderTab();
+}
+function setOrderLeadDays(v){ setOrderParam('lead', v); }
+function syncOrderParamInputs(){
+  [['order-lead-days',getLeadDays()],['order-review-days',getReviewDays()],['order-safety-days',getSafetyDays()]].forEach(([id,v])=>{
+    const el=$(id); if(el && +el.value!==v) el.value=v;
+  });
+  const t=$('order-target-lbl'); if(t) t.textContent = `= เป้า ${getOrderCoverDays()} วัน · จุดสั่ง ≤${getReorderPointDays()} · วิกฤต ≤${getLeadDays()}`;
+  const b=$('order-budget'); if(b){ const v=getOrderBudget(); if(v>0 && +b.value!==v) b.value=v; else if(!v && b.value!=='') b.value=''; }
+}
+
+// ── งบสั่งของรอบนี้ (ใช้เสนอรายการที่ควรเลื่อนถ้าเงินไม่พอ) ──
+function getOrderBudget(){ try { const v=parseFloat(localStorage.getItem('orderBudget')); return v>0 ? v : 0; } catch(e){ return 0; } }
+function setOrderBudget(v){
+  v = parseFloat(v); if(!(v>0)) v = 0;
+  try { localStorage.setItem('orderBudget', String(v)); }catch(e){}
+  renderOrderTab();
+}
+
+// ── Tier (จัดสรรเมื่อเงินไม่พอ) · clearance · in_ads · boost ──
+//   T1 เครื่องยนต์ = เป้าเต็ม · T2 ตัวรอง = lead+5 (25 วัน) · T3 Lab = lead (20 วัน ยอมเสี่ยง)
+//   ค่าตั้งต้นตามสเปค (จับจากรหัสนำหน้าชื่อรุ่น) — ผู้ใช้เปลี่ยนเองได้ทุกรุ่น
+const TIER_DEFAULT_CODES = {
+  1: ['B21','B20','B09','P07'],
+  2: ['B04','B02','B17','B08','B18','B06','P12','P06','P04','P01','B12'],
+  3: ['B11','B03','B07','B13','B10','BG14']
+};
+const CLEARANCE_DEFAULT_CODES = ['B09'];   // สินค้าระบายสต๊อก — เตือนได้ แต่ไม่คำนวณสั่งอัตโนมัติ
+function _modelCode(name){ return (typeof p365Code==='function') ? p365Code(name||'') : ''; }
+function getTier(parentSku, name){
+  const cfg = orderConfig[parentSku]||{};
+  if(cfg.tier===1||cfg.tier===2||cfg.tier===3) return cfg.tier;
+  const c = _modelCode(name || (window._productDict||{})[parentSku]?.name || '');
+  for(const t of [1,2,3]) if(c && TIER_DEFAULT_CODES[t].includes(c)) return t;
+  return 2;
+}
+function setTier(parentSku, t){ t=+t; if(!orderConfig[parentSku]) orderConfig[parentSku]={}; orderConfig[parentSku].tier = (t===1||t===2||t===3)?t:2; saveOrderConfig(); renderOrderTab(); }
+function isClearance(parentSku, name){
+  const cfg = orderConfig[parentSku]||{};
+  if(typeof cfg.clearance==='boolean') return cfg.clearance;
+  const c = _modelCode(name || (window._productDict||{})[parentSku]?.name || '');
+  return !!c && CLEARANCE_DEFAULT_CODES.includes(c);
+}
+function toggleClearance(parentSku){ if(!orderConfig[parentSku]) orderConfig[parentSku]={}; orderConfig[parentSku].clearance = !isClearance(parentSku); saveOrderConfig(); renderOrderTab(); }
+function getInAds(parentSku){ return !!(orderConfig[parentSku]||{}).inAds; }
+function toggleInAds(parentSku){ if(!orderConfig[parentSku]) orderConfig[parentSku]={}; orderConfig[parentSku].inAds = !orderConfig[parentSku].inAds; if(!orderConfig[parentSku].inAds) delete orderConfig[parentSku].inAds; saveOrderConfig(); renderOrderTab(); }
+// ×เร่ง: รุ่นที่กำลังเลื่อนชั้น Lab → Winners ให้ใช้เรตคาดการณ์ระดับใหม่ (×3–5) ไม่ใช่เรตตอนอยู่ Lab
+function getBoost(parentSku){ const v=Number((orderConfig[parentSku]||{}).boost); return (v>=1 && v<=10) ? v : 1; }
+function setBoost(parentSku, v){ v=Number(v); if(!orderConfig[parentSku]) orderConfig[parentSku]={}; if(v>1 && v<=10) orderConfig[parentSku].boost=v; else delete orderConfig[parentSku].boost; saveOrderConfig(); renderOrderTab(); }
+function tierCoverDays(t){
+  const full = getOrderCoverDays(), L = getLeadDays();
+  if(t===1) return full;
+  if(t===3) return Math.min(full, L);
+  return Math.min(full, L + 5);
+}
+function getGroupCoverDays(g){ return tierCoverDays(getTier(g.parentSku, g.name)); }
+
+// ── ปฏิทินวันโปร: [{name,start:'YYYY-MM-DD',end,mult}] ──
+let promoCalendar = [];
+function promoMultFor(parentSku, name){
+  if(getTier(parentSku, name) === 3) return 1;               // คูณเฉพาะ Tier 1–2
+  const today = new Date(); today.setHours(0,0,0,0);
+  const horizon = new Date(today); horizon.setDate(horizon.getDate() + getOrderCoverDays());
+  let mult = 1, hit = null;
+  (promoCalendar||[]).forEach(p=>{
+    const s = new Date(p.start), e = new Date(p.end||p.start);
+    if(isNaN(s)||isNaN(e)) return;
+    if(s <= horizon && e >= today && Number(p.mult) > mult){ mult = Number(p.mult); hit = p; }
+  });
+  return mult;
+}
+function activePromos(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const horizon = new Date(today); horizon.setDate(horizon.getDate() + getOrderCoverDays());
+  return (promoCalendar||[]).filter(p=>{ const s=new Date(p.start), e=new Date(p.end||p.start); return !isNaN(s)&&!isNaN(e)&&s<=horizon&&e>=today; });
+}
+// ตัวคูณรวมของรุ่น = max(สไลเดอร์, ปฏิทินโปร) × เร่ง
+function getGroupMult(parentSku, name){
+  return Math.max(Number(window.orderSafety)||1, promoMultFor(parentSku, name)) * getBoost(parentSku);
+}
+function openPromoModal(){ renderPromoList(); $('promoModal').classList.add('on'); }
+function renderPromoList(){
+  const box = $('promo-list'); if(!box) return;
+  const rows = (promoCalendar||[]).map((p,i)=>`<div class="p365-row" data-i="${i}">
+    <input type="text" placeholder="ชื่อ เช่น 10.10" value="${p365Esc(p.name||'')}" data-k="name" style="flex:1 1 120px">
+    <input type="date" value="${p365Esc(p.start||'')}" data-k="start" style="flex:0 0 140px">
+    <span style="color:var(--muted)">→</span>
+    <input type="date" value="${p365Esc(p.end||'')}" data-k="end" style="flex:0 0 140px">
+    <label class="p365-chk">×<input type="number" step="0.1" min="1" max="5" value="${Number(p.mult)||1.5}" data-k="mult" style="width:60px"></label>
+    <button class="btn" onclick="delPromoRow(${i})" style="font-size:11px;padding:3px 8px;color:var(--red-d)">ลบ</button>
+  </div>`).join('');
+  box.innerHTML = rows || '<div class="p365-empty">ยังไม่มีวันโปร — กด "เพิ่มวันโปร" (เช่น 10.10 ×1.8, Payday ×1.5)</div>';
+  box.querySelectorAll('.p365-row input').forEach(inp=>{ inp.style.cssText += ';font-family:Anuphan,sans-serif;font-size:13px;font-weight:600;color:var(--text);background:var(--bg);border:none;border-radius:10px;box-shadow:var(--sp);padding:6px 10px;outline:none'; });
+}
+function _readPromoRows(){
+  const out = [];
+  document.querySelectorAll('#promo-list .p365-row').forEach(row=>{
+    const g = k => row.querySelector(`[data-k="${k}"]`)?.value || '';
+    out.push({ name:g('name').trim(), start:g('start'), end:g('end')||g('start'), mult: Math.max(1, Number(g('mult'))||1) });
+  });
+  return out;
+}
+function addPromoRow(){ promoCalendar = _readPromoRows(); promoCalendar.push({name:'', start:'', end:'', mult:1.5}); renderPromoList(); }
+function delPromoRow(i){ promoCalendar = _readPromoRows(); promoCalendar.splice(i,1); renderPromoList(); }
+async function savePromoCalendar(){
+  promoCalendar = _readPromoRows().filter(p=>p.start);
+  try { await fbSave('promoCalendar', promoCalendar); } catch(e){}
+  $('promoModal').classList.remove('on');
+  renderOrderTab();
+}
+
+// ── run-rate สำหรับสั่งของ: 7 วันล่าสุด (กฎข้อ 1) ──
+//   ของหมดอยู่ตอนนี้ → ใช้สัปดาห์เต็มล่าสุดที่ยังมีของขาย ไม่ใช่ช่วงหลับ (กฎข้อ 4)
+//   กันตัวที่ 7 วันเป็น 0 บังเอิญ (variant ขายช้า): ไม่ต่ำกว่าครึ่งของอัตราผสม 30/90 วัน
+function orderRate(item){
+  if(!item) return 0;
+  const base = calcBaseRate(item);
+  const arr = Array.isArray(item.last30) ? item.last30 : null;
+  if(!arr || arr.length < 7) return base;                    // cache เก่ายังไม่มี last30 → ใช้สูตรผสม
+  const tail = Number(item.zeroTail)||0;
+  const st = getStockAmount(item.sku);
+  const outNow = st !== null && st <= 0 && tail >= 3;
+  const end = outNow ? Math.max(7, arr.length - tail) : arr.length;
+  const win = arr.slice(Math.max(0, end - 7), end);
+  const rate7 = win.length ? win.reduce((a,b)=>a+b,0) / win.length : 0;
+  return Math.max(rate7, base * 0.5);
+}
+
+// ── coverage ราย variant: (สต๊อก + กำลังมา) ÷ run_rate ──
+const COV_META = {
+  crit:    { icon:'🔴', label:'สั่งด่วน',   color:'var(--red-d)',    bg:'rgba(239,68,68,.15)' },
+  reorder: { icon:'🟠', label:'ถึงจุดสั่ง', color:'var(--orange-d)', bg:'rgba(240,168,117,.18)' },
+  watch:   { icon:'🟡', label:'จับตา',     color:'var(--gold)',     bg:'rgba(255,204,0,.15)' },
+  ok:      { icon:'🟢', label:'ปกติ',      color:'var(--green-d)',  bg:'rgba(22,163,74,.12)' }
+};
+function covStatus(days){
+  const L = getLeadDays();
+  if(days <= L) return 'crit';
+  if(days <= L + 10) return 'reorder';
+  if(days <= L + 20) return 'watch';
+  return 'ok';
+}
+function skuCoverage(item){
+  const sk = (item.sku||'').toLowerCase();
+  const onHand = isStockLoaded() && (sk in stockMap) ? Math.max(0, Number(stockMap[sk])||0) : null;
+  const pending = getPendingQtyMap()[sk]||0;
+  const rate = item._noSales ? 0 : orderRate(item);
+  if(onHand === null || rate <= 0) return { days:null, onHand, pending, rate, status:'na' };
+  const days = (onHand + pending) / rate;
+  return { days, onHand, pending, rate, status: covStatus(days) };
+}
+function covDaysLabel(d){ return d===null ? '—' : d===Infinity ? '∞' : String(Math.round(d)); }
+function covPill(cov, small){
+  if(!cov || cov.status==='na') return '';
+  const m = COV_META[cov.status];
+  return `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:${m.bg};color:${m.color};border-radius:8px;font-size:${small?10:11}px;font-weight:800;white-space:nowrap"
+    title="สต๊อก ${cov.onHand}${cov.pending?' + กำลังมา '+cov.pending:''} ÷ ขาย ${cov.rate.toFixed(2)} ชิ้น/วัน = พอ ≈${covDaysLabel(cov.days)} วัน · จุดสั่ง ≤${getReorderPointDays()} · วิกฤต ≤${getLeadDays()}">${m.icon} ${m.label} · ≈${covDaysLabel(cov.days)} วัน</span>`;
+}
+// coverage ต่ำสุดในรุ่น (ข้ามสีที่ไม่เติมแล้ว) — ใช้เรียง/ตัดงบ/badge หัวการ์ด
+function groupMinCoverage(g){
+  let best = null;
+  (g.skus||[]).forEach(item=>{
+    if(isDiscontinued(g.parentSku, item.color||'')) return;
+    const c = skuCoverage(item);
+    if(c.status==='na') return;
+    if(!best || c.days < best.days) best = { ...c, item };
+  });
+  return best;
+}
+function tierControlsHtml(g, esc){
+  const t = getTier(g.parentSku, g.name), cl = isClearance(g.parentSku, g.name), ads = getInAds(g.parentSku), boost = getBoost(g.parentSku);
+  const opt = (v,l) => `<option value="${v}" ${t===v?'selected':''}>${l} · ${tierCoverDays(v)} วัน</option>`;
+  return `<select class="tier-sel tier-${t}" onchange="setTier('${esc}',+this.value)" onclick="event.stopPropagation()"
+      title="Tier จัดสรรเมื่อเงินไม่พอ: T1 เป้าเต็ม · T2 ${tierCoverDays(2)} วัน · T3 ${tierCoverDays(3)} วัน (ตัดงบจาก T3 ก่อน)">
+      ${opt(1,'T1 เครื่องยนต์')}${opt(2,'T2 ตัวรอง')}${opt(3,'T3 Lab')}
+    </select>
+    <button class="disc-btn ${cl?'active':'inactive'}" style="font-size:11px" onclick="event.stopPropagation();toggleClearance('${esc}')"
+      title="${cl?'สินค้าระบายสต๊อก: เตือนได้ แต่ไม่คำนวณสั่งอัตโนมัติ — คลิกถ้าจะให้เป็นตัวถาวร':'ตั้งเป็นสินค้าระบายสต๊อก (ไม่สั่งเพิ่มอัตโนมัติ)'}">🏷️ ${cl?'ระบายสต๊อก':''}</button>
+    <button class="disc-btn ${ads?'active':'inactive'}" style="font-size:11px;${ads?'color:var(--blue-d)':''}" onclick="event.stopPropagation();toggleInAds('${esc}')"
+      title="รุ่นนี้อยู่ในแคมเปญแอด — ของหมด = แอดรีเซ็ต learning">📣 ${ads?'ในแอด':''}</button>
+    <span class="rp-param" title="เร่งเรตคาดการณ์ (รุ่นกำลังเลื่อนชั้น Lab → Winners ใช้ ×3–5)">×<input class="boost-in" type="number" step="0.5" min="1" max="10" value="${boost}" onchange="setBoost('${esc}',this.value)" onclick="event.stopPropagation()"> เร่ง</span>`;
+}
+function groupCovBadge(g){
+  const c = groupMinCoverage(g); if(!c) return '';
+  const m = COV_META[c.status];
+  const v = [c.item.color, c.item.size].filter(Boolean).join('/') || c.item.sku;
+  return `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px;background:${m.bg};color:${m.color};border-radius:8px;font-size:12px;font-weight:800;white-space:nowrap"
+    title="variant ที่ใกล้หมดสุดในรุ่น: ${p365Esc(v)} สต๊อก ${c.onHand}${c.pending?' + กำลังมา '+c.pending:''} ÷ ${c.rate.toFixed(2)}/วัน">${m.icon} ${m.label} · ${p365Esc(v)} พอ ≈${covDaysLabel(c.days)} วัน</span>`;
+}
+// ออเดอร์ที่ค้างรับนานเกิน lead time + ช่วงผ่อนผัน → ไม่นับเป็นของค้างส่งอีก
+// (ไม่งั้นออเดอร์ที่ลืมกด "รับแล้ว" จะหักยอดสั่งใหม่ไปตลอด → สั่งไม่ทันขายเรื้อรัง)
+const PENDING_GRACE_DAYS = 30;
+function pendingStaleAfterDays(order){ return (Number(order&&order.leadDays)||getLeadDays()||15) + PENDING_GRACE_DAYS; }
+function isPendingOrderStale(order, now){
+  now = now || Date.now();
+  const age = (now - (Number(order.createdAt)||now)) / 864e5;
+  return age > pendingStaleAfterDays(order);
 }
 let orderCatType   = 'all'; // 'all' | 'pants' | 'belt' | 'other' | specific category string
 const ORDER_STORE_KEY = 'orderConfig';
@@ -3664,25 +3990,37 @@ function groupByParent(items){
 
   return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'th'));
 }
+// ── อัตราขาย/วัน ที่ใช้เป็นฐานคำนวณสั่งของ (ใช้ร่วมกันทั้ง getAvg และ calcStock) ──
+//   weighted = 0.5×recent30 + 0.5×early60 · base = max(recent, weighted, rawVel×0.7, smartRate30)
+//   + แก้กรณี "ของหมดอยู่ตอนนี้": วันท้ายๆ ที่ขายได้ 0 เพราะไม่มีของขาย ไม่ใช่เพราะไม่มีคนซื้อ
+//     ถ้าเอามาหารด้วย ยอดเฉลี่ยจะดิ่ง → สั่งน้อยลงเรื่อยๆ ทั้งที่ของขาด (วงจรสั่งไม่ทัน)
+function calcBaseRate(item){
+  const recent30  = Number(item.recent30)||0;
+  const rawVel    = Number(item.rawVel)||0;
+  const e60       = item.early60 || {total:0, days:1};
+  const earlyRate = (Number(e60.total)||0) / Math.max(1, Number(e60.days)||1);
+  const smartRate30 = Number(item.smartRate30)||0;
+  let recentRate = recent30 / 30;
+  const tail = Number(item.zeroTail)||0;
+  let outNow = false;
+  if(tail >= 3){
+    const st = (typeof getStockAmount==='function') ? getStockAmount(item.sku) : null;
+    outNow = st !== null && st <= 0;     // รู้แน่ว่าสต๊อก 0 เท่านั้น (ไม่รู้สต๊อก = ไม่เดา)
+  }
+  if(outNow && recent30 > 0) recentRate = recent30 / Math.max(7, 30 - tail);
+  const weighted = 0.5 * recentRate + 0.5 * earlyRate;
+  let base = Math.max(recentRate, weighted, rawVel * 0.7, smartRate30);
+  // หมดมานานจนช่วง 30 วันแทบไม่มียอด → ใช้อัตราช่วงก่อนหน้าเต็มๆ แทนที่จะลดครึ่ง
+  if(outNow && tail >= 21) base = Math.max(base, earlyRate);
+  return base;
+}
 function getAvg(item,days=15,safety){
   if(!item) return 0;
   if(item._noSales) return 1; // ไม่มีข้อมูลยอดขาย — demand = 1 เพื่อให้คำนวณล็อคได้
-  // ใช้สูตร weighted (ตรงกับ calcStock v3) เพื่อความสม่ำเสมอ
-  const recent30 = Number(item.recent30)||0;
-  const rawVel   = Number(item.rawVel)||0;
-  const e60      = item.early60 || {total:0, days:1};
-  const earlyTot = Number(e60.total)||0;
-  const earlyDays= Math.max(1, Number(e60.days)||1);
-  // smart rate: ตัด stockout zeros (ของหมดทำให้ยอด=0)
-  const smartRate30 = Number(item.smartRate30)||0;
-
-  const recentRate = recent30 / 30;
-  const earlyRate  = earlyTot / earlyDays;
-  const weighted   = 0.5 * recentRate + 0.5 * earlyRate;
-  const baseRate = Math.max(recentRate, weighted, rawVel * 0.7, smartRate30);
-  // Safety multiplier — ดึงจาก global orderSafety (ตั้งโดย slider ที่ Order tab)
-  // หรือใช้ค่าที่ส่งเข้ามาเฉพาะการ์ด/บางจุด
-  const safetyMult = safety!==undefined ? safety : (window.orderSafety || 1.0);
+  // run-rate 7 วันล่าสุด (Restock Planner) — ดูรายละเอียดที่ orderRate()
+  const baseRate = orderRate(item);
+  // ตัวคูณ: ส่งมาเอง > ไม่งั้นใช้ของรุ่น = max(สไลเดอร์, ปฏิทินโปร Tier 1–2) × เร่ง
+  const safetyMult = safety!==undefined ? safety : getGroupMult(item.parentSku||'', item.name);
 
   if(baseRate > 0) return Math.max(1, Math.ceil(baseRate * days * safetyMult));
   // Fallback (cache เก่ามากที่ไม่มีทั้ง rawVel/recent30) — ใช้ activeVelAvg
@@ -3710,6 +4048,7 @@ function getNextRestockInfo(sku){
     if(order.cancelled === true) return;
     if(order.received === true) return;
     if(isOrderFullyReceived(order)) return;
+    if(isPendingOrderStale(order, today)) return; // ค้างนานเกินไป — ไม่ถือว่ากำลังจะมา
     const rcv = order.receivedItems||{};
     const items = order.items||[];
     if(!items.length) return;
@@ -3728,7 +4067,7 @@ function getNextRestockInfo(sku){
     if(!hasItem) return;
 
     // Compute expected delivery — extend 7d if overdue
-    let deliveryTs = order.createdAt + 15*24*60*60*1000;
+    let deliveryTs = order.createdAt + (Number(order.leadDays)||getLeadDays()||15)*24*60*60*1000;
     while(deliveryTs <= today){
       deliveryTs += 7*24*60*60*1000;
     }
@@ -3754,10 +4093,15 @@ let _cachedPendingMap = null;
 function getPendingQtyMap(){
   if(_cachedPendingMap) return _cachedPendingMap;
   const map = {};
+  const stale = [];
+  window._stalePendingOrders = stale;
   if(!orderHistory||!orderHistory.length){ _cachedPendingMap=map; return map; }
+  const nowTs = Date.now();
   orderHistory.forEach(order=>{
     if(order.cancelled===true) return;
     if(isOrderFullyReceived(order)) return;
+    // ค้างรับนานเกิน lead time + ผ่อนผัน → ไม่หักออกจากยอดสั่งใหม่ (แต่เตือนให้ไปเคลียร์)
+    if(isPendingOrderStale(order, nowTs)){ stale.push(order); return; }
     const rcv = order.receivedItems||{};
     (order.items||[]).forEach(item=>{
       // ตรวจว่า item นี้ยัง pending (ยังไม่ได้รับ)
@@ -4040,6 +4384,7 @@ function calcColorOrder(parentSku, skus, days){
   const cfg=getPantsCfg(parentSku);
   const overrides=(cfg.lotsOverride||{});
   const pendingMap=getPendingQtyMap();
+  const clear=isClearance(parentSku);   // ระบายสต๊อก: โชว์ demand ได้ แต่ไม่สั่งอัตโนมัติ
   allSizes.forEach(sz=>{
     const item=skuBySz[sz];
     const d=item?getAvg(item,days):0;
@@ -4052,7 +4397,7 @@ function calcColorOrder(parentSku, skus, days){
     const pending=skuKey?(pendingMap[skuKey]||0):0;
     pendingOnOrder[sz]=pending;
     // net demand = demand - stock on hand - pending orders
-    const net=Math.max(0,d-rawStock-pending);
+    const net=clear?0:Math.max(0,d-rawStock-pending);
     netDemand[sz]=net;
     const ov=item&&overrides[item.sku]!==undefined?overrides[item.sku]:null;
     if(ov!==null){
@@ -4214,6 +4559,7 @@ function getGroupTotalOrder(g, days){
   if(isDiscontinued(g.parentSku)) return 0; // ทั้ง parent ไม่เติมแล้ว
   const ct = classifyCat(g.category||'');
   const pm = getPendingQtyMap();
+  const gClear = isClearance(g.parentSku, g.name);
   let total = 0;
   if(ct === 'pants'){
     // Pants: ใช้ lots × piecesPerLot
@@ -4225,7 +4571,7 @@ function getGroupTotalOrder(g, days){
       const onH = isStockLoaded()&&sk in stockMap?Math.max(0,Number(stockMap[sk])||0):0;
       const pend = pm[sk]||0;
       const demand = getAvg(item, days);
-      const net = Math.max(0, demand - onH - pend);
+      const net = gClear ? 0 : Math.max(0, demand - onH - pend);
       const ov = (cfg.lotsOverride||{})[item.sku];
       const lots = ov!==undefined ? ov : (net>0 ? Math.ceil(net/ppl) : 0);
       total += lots * ppl;
@@ -4240,7 +4586,7 @@ function getGroupTotalOrder(g, days){
       const pend = pm[sk]||0;
       const saved = (cfg.qtys||{})[item.sku] !== undefined
         ? (cfg.qtys||{})[item.sku]
-        : Math.ceil(Math.max(0, getAvg(item, days) - onH - pend) / 10) * 10;
+        : (gClear ? 0 : Math.ceil(Math.max(0, getAvg(item, days) - onH - pend) / 10) * 10);
       total += saved;
     });
   }
@@ -4249,8 +4595,10 @@ function getGroupTotalOrder(g, days){
 
 // เรียง group list ตาม orderSort
 function sortOrderGroups(gList, days){
-  const items = gList.map(g => ({ g, qty: getGroupTotalOrder(g, days), name: g.name||g.parentSku||'' }));
+  const items = gList.map(g => ({ g, qty: getGroupTotalOrder(g, getGroupCoverDays(g)), name: g.name||g.parentSku||'',
+    cov: (()=>{ const c=groupMinCoverage(g); return c ? c.days : Infinity; })() }));
   switch(orderSort){
+    case 'cov_asc':  items.sort((a,b)=> a.cov - b.cov || b.qty - a.qty || a.name.localeCompare(b.name,'th')); break;
     case 'qty_desc': items.sort((a,b)=> b.qty - a.qty || a.name.localeCompare(b.name,'th')); break;
     case 'qty_asc':  items.sort((a,b)=> a.qty - b.qty || a.name.localeCompare(b.name,'th')); break;
     case 'name_asc': items.sort((a,b)=> a.name.localeCompare(b.name,'th')); break;
@@ -4276,8 +4624,16 @@ function renderOrderTab(){
     const lblEl = $('orderSafetyLbl');
     if(lblEl) lblEl.textContent = formatSafetyLabel(window.orderSafety);
   }
+  syncOrderParamInputs();
+  const psub = $('order-panel-sub');
+  if(psub){
+    const ap = activePromos();
+    psub.textContent = `ยอดสั่ง = อัตราขาย 7 วันล่าสุด × เป้า ${getOrderCoverDays()} วัน (รอของ ${getLeadDays()} + รอบสั่ง ${getReviewDays()} + กันชน ${getSafetyDays()}) × ตัวคูณ − สต๊อก − ของกำลังมา · T2 ${tierCoverDays(2)} วัน · T3 ${tierCoverDays(3)} วัน`
+      + (ap.length ? ` · 🎉 คร่อมวันโปร: ${ap.map(p=>`${p.name||p.start} ×${p.mult}`).join(', ')}` : '');
+  }
   if(!appData || !appData.length){
     const oc=$('order-content'); if(oc) oc.innerHTML='<div class="empty" style="padding:60px">กรุณาซิงก์ข้อมูลก่อน</div>';
+    try { renderOrderAlerts(); } catch(e){}
     return;
   }
   buildOrderCatButtons();
@@ -4303,7 +4659,8 @@ function renderOrderTab(){
   const beltGroups =groups.filter(g=>classifyCat(g.category||'')==='belt');
   const otherGroups=groups.filter(g=>classifyCat(g.category||'')==='other');
   let html='';
-  const days=getOrderDays();
+  // เป้าครอบคลุม (Tier 1) — รายรุ่นใช้ getGroupCoverDays(g) ซึ่งลดตาม Tier
+  const days=getOrderCoverDays();
 
   // helper: should show this group?
   const showGroup = (ct, catName) => {
@@ -4328,7 +4685,7 @@ function renderOrderTab(){
         <span class="order-group-ttl">${catName} — 1 ไม้/สี · ทุกไม้ครบ N ล็อค</span>
         <span class="order-group-badge">${sortedList.length} รุ่น</span>
       </div>`;
-    sortedList.forEach(g=>{ html+=renderPantsCard(g,days); });
+    sortedList.forEach(g=>{ html+=renderPantsCard(g,getGroupCoverDays(g)); });
     html+='</div>';
   });
 
@@ -4348,7 +4705,7 @@ function renderOrderTab(){
         <span class="order-group-ttl">${catName} — สั่งรุ่นเดียว หลายสีพร้อมกัน</span>
         <span class="order-group-badge">${sortedList.length} รุ่น</span>
       </div>`;
-    sortedList.forEach(g=>{ html+=renderBeltCard(g,days); });
+    sortedList.forEach(g=>{ html+=renderBeltCard(g,getGroupCoverDays(g)); });
     html+='</div>';
   });
 
@@ -4368,7 +4725,7 @@ function renderOrderTab(){
         <span class="order-group-ttl">${catName}</span>
         <span class="order-group-badge">${sortedList.length} รุ่น</span>
       </div>`;
-    sortedList.forEach(g=>{ html+=renderBeltCard(g,days); });
+    sortedList.forEach(g=>{ html+=renderBeltCard(g,getGroupCoverDays(g)); });
     html+='</div>';
   });
 
@@ -4378,9 +4735,14 @@ function renderOrderTab(){
   // ── คำนวณต้นทุนรวม (ตามฟิลเตอร์ประเภท) ──
   (()=>{
     let grandTotal=0;
+    let grandTotalAll=0;   // ไม่สนฟิลเตอร์ — ใช้ในโมดูลเงิน (ต้องจ่ายรอบนี้ทั้งหมด)
+    let cycleCost=0;       // ต้นทุนเติมของต่อรอบสั่งแบบคงที่ = Σ อัตราขาย × รอบสั่ง × ต้นทุน/ชิ้น
     const brandCosts = {}; // parentSku → { name, cost }
-    function addBrandCost(parentSku, name, amount){
-      if(!brandCosts[parentSku]) brandCosts[parentSku] = { parentSku, name, cost: 0 };
+    function addBrandCost(parentSku, name, amount, g){
+      if(!brandCosts[parentSku]){
+        const mc = g ? groupMinCoverage(g) : null;
+        brandCosts[parentSku] = { parentSku, name, cost: 0, tier: getTier(parentSku, name), minCov: mc ? mc.days : null, minCovLabel: mc ? ([mc.item.color, mc.item.size].filter(Boolean).join('/')||'') : '' };
+      }
       brandCosts[parentSku].cost += amount;
     }
     // helper: ตรงกับฟิลเตอร์ประเภทปัจจุบันไหม
@@ -4405,26 +4767,30 @@ function renderOrderTab(){
       const cxxl=getCostXXL(g.parentSku)||cp;
       const ppl=getPiecesPerLot(g.parentSku);
       const pm=getPendingQtyMap();
+      const gDays=getGroupCoverDays(g);
+      const gClear=isClearance(g.parentSku, g.name);
       let pantsBrand=0;
       g.skus.forEach(item=>{
-        if(!matchesFilter(item)) return;
         // ข้าม SKU สีที่ "ไม่เติมแล้ว"
         if(isDiscontinued(g.parentSku, item.color||'')) return;
         const sk=(item.sku||'').toLowerCase();
         const isXXL=(item.size||'').trim().toUpperCase()==='XXL';
         const onH=isStockLoaded()&&sk in stockMap?Math.max(0,Number(stockMap[sk])||0):0;
         const pend=pm[sk]||0;
-        const demand=getAvg(item,days);
-        const net=Math.max(0,demand-onH-pend);
+        const demand=getAvg(item,gDays);
+        const net=gClear?0:Math.max(0,demand-onH-pend);
         const cfg2=getPantsCfg(g.parentSku);
         const ov=(cfg2.lotsOverride||{})[item.sku];
         const lots=ov!==undefined?ov:(net>0?Math.ceil(net/ppl):0);
         const pieces=lots*ppl;
         const c=(isXXL?cxxl:cp)*pieces;
+        grandTotalAll+=c;
+        if(!gClear && !item._noSales) cycleCost+=orderRate(item)*getReviewDays()*(isXXL?cxxl:cp);
+        if(!matchesFilter(item)) return;
         grandTotal+=c;
         pantsBrand+=c;
       });
-      if(pantsBrand>0) addBrandCost(g.parentSku, g.name||g.parentSku, pantsBrand);
+      if(pantsBrand>0) addBrandCost(g.parentSku, g.name||g.parentSku, pantsBrand, g);
     });
     // Belt + Other
     const beltAll=appData.filter(d=>{ const ct=classifyCat(d.category||''); return ct==='belt'||ct==='other'; });
@@ -4436,9 +4802,10 @@ function renderOrderTab(){
       const costs=cfg2.costs||{};
       if(!Object.keys(costs).length) return;
       const pm=getPendingQtyMap();
+      const gDays=getGroupCoverDays(g);
+      const gClear=isClearance(g.parentSku, g.name);
       let beltBrand=0;
       g.skus.forEach(item=>{
-        if(!matchesFilter(item)) return;
         // ข้าม SKU สีที่ "ไม่เติมแล้ว"
         if(isDiscontinued(g.parentSku, item.color||'')) return;
         const c=Number(costs[item.sku])||0;
@@ -4446,13 +4813,19 @@ function renderOrderTab(){
         const sk=(item.sku||'').toLowerCase();
         const onH=isStockLoaded()&&sk in stockMap?Math.max(0,Number(stockMap[sk])||0):0;
         const pend=pm[sk]||0;
-        const qty=(cfg2.qtys||{})[item.sku]!==undefined?(cfg2.qtys||{})[item.sku]:Math.ceil(Math.max(0,getAvg(item,days)-onH-pend)/10)*10;
+        const qty=(cfg2.qtys||{})[item.sku]!==undefined?(cfg2.qtys||{})[item.sku]:(gClear?0:Math.ceil(Math.max(0,getAvg(item,gDays)-onH-pend)/10)*10);
         const sub=c*qty;
+        grandTotalAll+=sub;
+        if(!gClear && !item._noSales) cycleCost+=orderRate(item)*getReviewDays()*c;
+        if(!matchesFilter(item)) return;
         grandTotal+=sub;
         beltBrand+=sub;
       });
-      if(beltBrand>0) addBrandCost(g.parentSku, g.name||g.parentSku, beltBrand);
+      if(beltBrand>0) addBrandCost(g.parentSku, g.name||g.parentSku, beltBrand, g);
     });
+    window._orderBrandCosts = brandCosts;   // ใช้เสนอรายการที่ควรเลื่อนเมื่องบไม่พอ
+    window._orderGrandTotalAll = grandTotalAll;
+    window._orderCycleCost = cycleCost;
     // Top brands by cost (for KPI card) — ตามฟิลเตอร์
     window._orderTopBrands = Object.values(brandCosts)
       .sort((a,b)=>b.cost-a.cost)
@@ -4505,6 +4878,9 @@ function renderOrderTab(){
       }
     }catch(e){}
   })();
+  try { renderOrderKpi(); } catch(e){ console.warn('renderOrderKpi:', e); }
+  try { renderOrderCash(); } catch(e){ console.warn('renderOrderCash:', e); }
+  try { renderOrderAlerts(); } catch(e){ console.warn('renderOrderAlerts:', e); }
 
   } catch(ex){ console.error('renderOrderTab error:',ex); const oc=$('order-content'); if(oc) oc.innerHTML='<div class="empty" style="padding:60px;color:var(--red-d)">เกิดข้อผิดพลาด: '+ex.message+'</div>'; }
 }
@@ -4648,10 +5024,13 @@ function renderPantsCard(g, days){
         ? `<span class="lsc-stock-txt" style="color:var(--purple-d);font-weight:800">🚚 สั่งซื้อแล้ว ${pending} ตัว</span>`
         : '';
       const recLine = monthlyAvg ? `<span class="lsc-rec">แนะนำ ${monthlyAvg} ตัว/เดือน</span>` : '';
+      const covLine = item ? (()=>{ const c=skuCoverage(item); if(c.status==='na') return ''; const m=COV_META[c.status];
+        return `<span class="lsc-stock-txt" style="color:${m.color};font-weight:800" title="(สต๊อก ${c.onHand}${c.pending?' + กำลังมา '+c.pending:''}) ÷ ${c.rate.toFixed(2)} ชิ้น/วัน">${m.icon} พอ ≈${covDaysLabel(c.days)} วัน · ${m.label}</span>`; })() : '';
       return`<div class="lot-size-cell ${cellCls}">
         <div class="lsc-left">
           ${demLine}
           ${stockLine}
+          ${covLine}
           ${pendingLine}
           ${recLine}
         </div>
@@ -4776,6 +5155,8 @@ function renderPantsCard(g, days){
           title="${isDiscontinued(g.parentSku)?'คลิกเพื่อเปิดเติมสต๊อกอีกครั้ง':'คลิกถ้าไม่เติมสต๊อกรุ่นนี้แล้ว'}">
           ${isDiscontinued(g.parentSku)?'🚫 ไม่เติมแล้ว':'ยังเติมอยู่'}
         </button>
+        ${groupCovBadge(g)}
+        ${tierControlsHtml(g, esc)}
         <button class="btn" style="font-size:12px;padding:3px 9px;color:var(--muted);gap:4px"
           data-psku="${g.parentSku}" data-pname="${g.name.replace(/"/g,'&quot;')}"
           onclick="event.stopPropagation();promptFactoryName(this.getAttribute('data-psku'),this.getAttribute('data-pname'))"
@@ -4859,21 +5240,19 @@ function renderBeltCard(g, days){
     const pendingMap=getPendingQtyMap();
     const pending=pendingMap[skuKey]||0;
     const net=onHand!==null?Math.max(0,rawAvg-onHand-pending):Math.max(0,rawAvg-pending);
-    const autoOrder=Math.ceil(net/10)*10;  // round up to nearest 10
+    const gClear=isClearance(g.parentSku, g.name);
+    const autoOrder=gClear?0:Math.ceil(net/10)*10;  // round up to nearest 10 (ระบายสต๊อก = ไม่สั่งอัตโนมัติ)
     const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:autoOrder;
     const colLabel=[item.color,item.size].filter(Boolean).join(' / ')||item.sku;
+    // สถานะตาม coverage (สต๊อก + กำลังมา) ÷ อัตราขาย 7 วัน — เทียบกับ lead time
+    const cov=skuCoverage(item);
     const isOOS=onHand!==null&&onHand<=0;
-    // เหลือน้อย = stock < demand 15 วัน (lead time เข็มขัด ~15 วัน)
-    const demand15d=Math.ceil(getAvg(item,15));
-    const isLow=onHand!==null&&onHand>0&&onHand<demand15d;
-    const isOk =onHand!==null&&rawAvg>0&&onHand>=rawAvg;
-    const cardBg=isOOS?'rgba(255,85,114,.07)':isLow?'rgba(255,170,68,.06)':isOk?'rgba(46,204,138,.06)':`var(--bg-dark)`;
-    const cardBdr=isOOS?'1px solid rgba(255,85,114,.3)':isLow?'1px solid rgba(255,170,68,.3)':isOk?'1px solid rgba(46,204,138,.25)':`1px solid transparent`;
-    const inputColor=isOOS?'var(--red)':isLow?'var(--orange)':isOk?'var(--green)':`var(--blue)`;
-    const stockBadge=isOOS?`<span style="font-size:11px;color:var(--red-d);font-weight:800">🔴 หมด</span>`:
-                     isLow?`<span style="font-size:11px;color:var(--orange-d);font-weight:800">🟡 เหลือ ${onHand} (ต้องการ ${demand15d}/15วัน)</span>`:
-                     isOk ?`<span style="font-size:11px;color:var(--green-d)">✓ พอ (${onHand})</span>`:
-                     onHand!==null?`<span style="font-size:11px;color:var(--muted)">มี ${onHand}</span>`:``;
+    const isLow=cov.status==='crit'||cov.status==='reorder';
+    const isWatch=cov.status==='watch';
+    const isOk =cov.status==='ok';
+    const cardBg=isOOS||cov.status==='crit'?'rgba(255,85,114,.07)':isLow?'rgba(255,170,68,.06)':isWatch?'rgba(255,204,0,.05)':isOk?'rgba(46,204,138,.06)':`var(--bg-dark)`;
+    const cardBdr=isOOS||cov.status==='crit'?'1px solid rgba(255,85,114,.3)':isLow?'1px solid rgba(255,170,68,.3)':isWatch?'1px solid rgba(255,204,0,.3)':isOk?'1px solid rgba(46,204,138,.25)':`1px solid transparent`;
+    const inputColor=isOOS||cov.status==='crit'?'var(--red)':isLow?'var(--orange)':isWatch?'var(--gold)':isOk?'var(--green)':`var(--blue)`;
     const pendingBadge=pending>0
       ?`<span style="font-size:11px;color:var(--purple-d);font-weight:800">🚚 สั่งแล้ว ${pending}</span>`
       :``;
@@ -4885,16 +5264,13 @@ function renderBeltCard(g, days){
         title="คลิกเพื่อเปิดเติมอีกครั้ง">🚫 ไม่เติมแล้ว</button>
     </div>`;
     const beltInCart = isInCart(g.parentSku, item.sku);
-    // ── Status pill (สถานะสต๊อกจริง) ──
-    const statusPill = isOOS
+    // ── Status pill: สต๊อกจริง + coverage ──
+    const stockPill = isOOS
       ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(239,68,68,.15);color:var(--red-d);border-radius:8px;font-size:11px;font-weight:800">🔴 หมด</span>`
-      : isLow
-      ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(240,168,117,.15);color:var(--orange-d);border-radius:8px;font-size:11px;font-weight:800">🟡 เหลือ ${onHand}</span>`
-      : isOk
-      ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(22,163,74,.12);color:var(--green-d);border-radius:8px;font-size:11px;font-weight:700">✓ มี ${onHand}</span>`
       : onHand!==null
       ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(176,136,145,.1);color:var(--muted);border-radius:8px;font-size:11px;font-weight:700">📦 ${onHand}</span>`
-      : `<span style="font-size:11px;color:var(--faint)">—</span>`;
+      : `<span style="font-size:11px;color:var(--faint)">— ไม่มีสต๊อก</span>`;
+    const statusPill = stockPill + (cov.status!=='na' ? ' ' + covPill(cov) : '');
     const pendingPill = pending>0
       ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(124,58,237,.13);color:var(--purple-d);border-radius:8px;font-size:11px;font-weight:800">🚚 สั่งแล้ว ${pending}</span>`
       : ``;
@@ -4918,7 +5294,7 @@ function renderBeltCard(g, days){
         </div>
         <!-- Demand line (smaller, secondary info) -->
         <div style="font-size:11px;color:var(--muted);line-height:1.3">
-          ขาย ${Math.ceil(rawAvg)} ชิ้น/${days}วัน${onHand!==null&&(net>0||pending>0)?` · ${pending>0?`สั่งแล้ว ${pending} · `:''}<span style="color:var(--orange-d);font-weight:700">ขาด ${net}</span>`:''}
+          ขาย ${cov.rate>0?cov.rate.toFixed(1):(rawAvg/Math.max(1,days)).toFixed(1)}/วัน · ต้องมี ${Math.ceil(rawAvg)} ชิ้น/${days}วัน${onHand!==null&&(net>0||pending>0)?` · ${pending>0?`สั่งแล้ว ${pending} · `:''}<span style="color:var(--orange-d);font-weight:700">ขาด ${net}</span>`:''}${gClear?' · <span style="color:var(--muted)">🏷️ ระบาย ไม่สั่งเพิ่ม</span>':''}
         </div>
         <!-- SKU + cart button -->
         <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
@@ -4955,7 +5331,7 @@ function renderBeltCard(g, days){
     const skuKey2=(item.sku||'').toLowerCase();
     const onH2=isStockLoaded()&&skuKey2 in stockMap?Math.max(0,Number(stockMap[skuKey2])||0):0;
     const pend2=(getPendingQtyMap()[skuKey2]||0);
-    const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(Math.max(0,getAvg(item,days)-onH2-pend2)/10)*10;
+    const saved=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:(isClearance(g.parentSku,g.name)?0:Math.ceil(Math.max(0,getAvg(item,days)-onH2-pend2)/10)*10);
     return s+saved;
   },0);
   const beltDisc = isDiscontinued(g.parentSku);
@@ -4970,6 +5346,8 @@ function renderBeltCard(g, days){
           title="${beltDisc?'คลิกเพื่อเปิดเติมสต๊อกอีกครั้ง':'ไม่เติมรุ่นนี้แล้ว'}">
           ${beltDisc?'🚫 ไม่เติมแล้ว':'ยังเติมอยู่'}
         </button>
+        ${beltDisc?'':groupCovBadge(g)}
+        ${beltDisc?'':tierControlsHtml(g, esc)}
         ${Object.keys((orderConfig[g.parentSku]||{}).qtys||{}).length>0?
           `<button class="btn" style="font-size:11px;padding:3px 9px;color:var(--orange-d);gap:4px"
             onclick="event.stopPropagation();resetModelOverrides('${esc}')"
@@ -4992,7 +5370,7 @@ function renderBeltCard(g, days){
           const skuKey2=(item.sku||'').toLowerCase();
           const onH2=isStockLoaded()&&skuKey2 in stockMap?Math.max(0,Number(stockMap[skuKey2])||0):0;
           const pend2=getPendingQtyMap()[skuKey2]||0;
-          const qty=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:Math.ceil(Math.max(0,getAvg(item,days)-onH2-pend2)/10)*10;
+          const qty=(cfg.qtys||{})[item.sku]!==undefined?(cfg.qtys||{})[item.sku]:(isClearance(g.parentSku,g.name)?0:Math.ceil(Math.max(0,getAvg(item,days)-onH2-pend2)/10)*10);
           totalCost+=c*qty;
         });
         if(!totalCost) return '';
@@ -5395,6 +5773,7 @@ async function submitCartOrder(){
   const order = {
     createdAt: Date.now(),
     days,
+    leadDays: getLeadDays(),
     items,
     customName: null,
     autoName,
@@ -5682,7 +6061,7 @@ function renderHistDetail(order){
   const nSz=usedSizes.length;
   const colSpanAll=3+nSz+2;
 
-  const deliveryDate=new Date(order.createdAt+(order.days||15)*24*60*60*1000);
+  const deliveryDate=new Date(order.createdAt+(Number(order.leadDays)||getLeadDays()||15)*24*60*60*1000);
   const deliveryStr=`${deliveryDate.getDate()}/${deliveryDate.getMonth()+1}/${deliveryDate.getFullYear()}`;
   const d=new Date(order.createdAt);
   const dateStr=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
@@ -6130,7 +6509,7 @@ function reloadCartFromHistory(key){
 
 function generateOrder(){
   if(!appData.length) return;
-  const days=getOrderDays();
+  const days=getOrderCoverDays();
   let html='';
   const pantsGroups=groupByParent(appData.filter(d=>classifyCat(d.category)==='pants'));
   if(pantsGroups.length){
@@ -6182,7 +6561,7 @@ function generateOrder(){
 
 // ── EXPORT CSV ──
 function exportOrderCSV(){
-  const days=getOrderDays();
+  const days=getOrderCoverDays();
   const rows=[['ประเภท','รุ่น','สี','ไซส์','SKU','ล็อคต้องการ','ล็อคจริง(+เกิน)','ตัว/ล็อค','รวมตัว','ไม้','เฉลี่ย/'+days+'วัน']];
   const pantsGroups=groupByParent(appData.filter(d=>classifyCat(d.category)==='pants'));
   pantsGroups.forEach(g=>{
@@ -6313,6 +6692,7 @@ async function syncData(){
     showL('กำลังอ่านข้อมูลคำสั่งซื้อ…');
     const sales=await fetchJSON('Orders');
     const bySkU={}, allDates=new Set();
+    const chanByDate={};   // วันที่ → { marketplace: จำนวนออเดอร์ } (คอลัมน์ C) — ใช้แยกช่องทางในโมดูลเงิน
 
     sales.table.rows.forEach(row=>{
       if(!row?.c) return;
@@ -6321,6 +6701,9 @@ async function syncData(){
       // ตัดส่วนเวลาออก รองรับทั้ง "01/03/2026 11:48:29" และ "1/3/2026, 11:49:08"
       const d=ds.split(/[\s,]/)[0].trim();
       if(!d) return;
+      { const mkt=String(row.c[2]?.v||'').trim().toLowerCase()||'other';
+        if(!chanByDate[d]) chanByDate[d]={};
+        chanByDate[d][mkt]=(chanByDate[d][mkt]||0)+1; }
       for(let c=6;c<=27;c++){
         const sc=row.c[c];
         if(sc?.v){
@@ -6343,6 +6726,16 @@ async function syncData(){
       .filter(x=>!isNaN(x.t))
       .sort((a,b)=>a.t-b.t)
       .map(x=>x.s);
+    // สัดส่วนออเดอร์ต่อช่องทาง 30 วันล่าสุด → window._channelShare = { tiktok:0.7, ... }
+    try {
+      const lastT0 = parseDate(sortedAllDates[sortedAllDates.length-1]);
+      const cut0 = lastT0 - 29*864e5;
+      const cnt = {}; let tot = 0;
+      Object.entries(chanByDate).forEach(([ds0, m])=>{ const t=parseDate(ds0); if(isNaN(t)||t<cut0||t>lastT0) return; Object.entries(m).forEach(([k,n])=>{ cnt[k]=(cnt[k]||0)+n; tot+=n; }); });
+      const share = {}; Object.entries(cnt).forEach(([k,n])=>{ if(n/tot >= 0.005) share[k]=n/tot; });
+      const sSum = Object.values(share).reduce((a,b)=>a+b,0)||1; Object.keys(share).forEach(k=>share[k]/=sSum);
+      window._channelShare = share; window._channelOrders30 = cnt;
+    } catch(e){ console.warn('channel share:', e); }
 
     appData=Object.entries(bySkU).filter(([sku])=>isValidSku(sku)).map(([sku,d])=>{
       const activeDays=d.days.size;
@@ -6430,6 +6823,22 @@ async function syncData(){
         }
       });
       const vals=Object.values(dailySales);
+      // ── ยอดขายรายวัน 30 วันล่าสุด (index 0 = เก่าสุด, 29 = วันล่าสุดของข้อมูล) ──
+      // key ของ dailySales เป็นข้อความวันที่ตามชีต (เช่น 1/3/2026) → ต้องแปลงเป็น
+      // timestamp ก่อนค่อยไล่ทีละวัน (เดิมไล่ด้วย key แบบ ISO เลยหาไม่เจอ ได้ 0 ตลอด)
+      const arr30 = (()=>{
+        if(!sortedAllDates.length) return [];
+        const lastT = parseDate(sortedAllDates[sortedAllDates.length-1]);
+        if(isNaN(lastT)) return [];
+        const byTs = {};
+        Object.entries(dailySales).forEach(([k,q])=>{ const t=parseDate(k); if(!isNaN(t)) byTs[t]=(byTs[t]||0)+q; });
+        const out = [];
+        for(let i=29; i>=0; i--){ const dt=new Date(lastT); dt.setDate(dt.getDate()-i); out.push(Number(byTs[dt.getTime()]||0)); }
+        return out;
+      })();
+      // จำนวนวันท้ายสุดที่ขายได้ 0 ติดต่อกัน — ใช้จับ "ของหมดอยู่ตอนนี้" ตอนคำนวณสั่งของ
+      let zeroTail30 = 0;
+      for(let zi=arr30.length-1; zi>=0 && arr30[zi]===0; zi--) zeroTail30++;
       const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
       const variance=vals.reduce((s,v)=>s+(v-mean)**2,0)/vals.length;
       const sd=Math.sqrt(variance);
@@ -6556,19 +6965,9 @@ async function syncData(){
           // Logic: ถ้ามี 0 ติดกัน > 3 วัน และยอดขายเฉลี่ย 3 วันหลัง > 3 วันก่อน
           //         → ตัด zeros ออก (เป็น stockout จริง)
           // ถ้าไม่เข้าเงื่อนไข → นับ 0 ตามปกติ
-          if(!sortedAllDates.length) return 0;
-          const lastDateStr = sortedAllDates[sortedAllDates.length-1];
-          const lastT = parseDate(lastDateStr);
-          if(isNaN(lastT)) return 0;
-          // สร้าง array 30 วันล่าสุด (ทุกวัน รวมวันที่ขาย=0)
-          const arr = [];
-          for(let i=29; i>=0; i--){
-            const t = lastT - i*24*60*60*1000;
-            const dt = new Date(t);
-            const dStr = dt.toISOString().slice(0,10); // YYYY-MM-DD
-            arr.push(Number(dailySales[dStr]||0));
-          }
+          const arr = arr30;
           const n = arr.length;
+          if(!n) return 0;
           // หา streaks ของ zeros และ skip ตามเงื่อนไข
           const skip = new Array(n).fill(false);
           let i = 0;
@@ -6605,6 +7004,8 @@ async function syncData(){
           }
           return validDays>0 ? +(total/validDays).toFixed(3) : 0;
         })(),
+        zeroTail: zeroTail30,
+        last30: arr30,
         early60: (()=>{
           // ยอดขายช่วง 31-90 วันก่อน (60 วัน — ก่อน recent30)
           // ใช้สำหรับ trend-aware weighted formula
@@ -6689,8 +7090,8 @@ async function syncData(){
     try { renderAll(getFilteredData()); } catch(e){}
     try { renderOrderTab(); } catch(e){}
     if(!isStockLoaded()){
-      loadStockFromFirebase().catch(e=>console.warn('Firebase stock auto-load:', e));
-    }
+      loadStockFromFirebase().catch(e=>console.warn('Firebase stock auto-load:', e)).finally(()=>setTimeout(p365MaybeAutoSync, 1500));
+    } else setTimeout(p365MaybeAutoSync, 1500);
     // Save appData cache to Firebase (background)
     if(appData.length) saveAppDataCache(appData).catch(e=>console.warn('Cache save:', e));
   })();
@@ -6748,23 +7149,8 @@ function daysBetween(a,b){
 //   - safety ×1.5       : รองรับ lead time + demand spike
 function calcStock(item, days, mult){
   if(!item || typeof item !== 'object') return 0;
-  const recent30  = Number(item.recent30) || 0;
-  const rawVel    = Number(item.rawVel)   || 0;
-  const e60       = item.early60 || {total:0, days:1};
-  const earlyTot  = Number(e60.total) || 0;
-  const earlyDays = Math.max(1, Number(e60.days) || 1);
-  // Smart rate: ตัด stockout zeros ออก ถ้ายอดเด้งกลับสูงกว่าก่อน 0
-  const smartRate30 = Number(item.smartRate30) || 0;
-
-  const recentRate = recent30 / 30;                   // ชิ้น/วัน (30 วันล่าสุด - รวม 0)
-  const earlyRate  = earlyTot / earlyDays;            // ชิ้น/วัน (ช่วง 31-90 วันก่อน)
-  const weighted   = 0.5 * recentRate + 0.5 * earlyRate;
-
-  // ขาขึ้น: recentRate > weighted → ใช้ recent เต็ม
-  // ขาลง:  recentRate < weighted → ใช้ weighted (ลดลงครึ่งทาง)
-  // กัน underestimate ด้วย rawVel × 0.7 (สำหรับสินค้าขายเป็นช่วงๆ)
-  // ถ้า smartRate30 สูงกว่า → มี stockout จริง, ใช้ smart rate (ของหมดทำให้ยอดถูกตัด)
-  const baseRate = Math.max(recentRate, weighted, rawVel * 0.7, smartRate30);
+  // สูตรเดียวกับแท็บสั่งของ (calcBaseRate) — รวมการแก้กรณีของหมดอยู่ตอนนี้
+  const baseRate = calcBaseRate(item);
 
   const safety = mult || item.safetyMult || 1.5;
   const finalSafety = Math.max(safety, 1.5);
@@ -6805,6 +7191,9 @@ function kpiSort(key, dir, label){
 // ════════════════════════════════════════════════
 let stockMap = {};  // sku → stock_amount (number)
 let stockFileName = '';
+window.stockUpdatedAt = 0;   // เวลาที่สต๊อกชุดนี้ถูกดึง/อัพโหลดจริง (ไม่ใช่เวลาโหลดจาก Firebase)
+window.priceMap = {};        // sku → ราคาขาย (จาก Page365 / ไฟล์ xlsx) — ใช้คิด GMV
+function priceOf(sku){ const m=window.priceMap||{}; const v = m[sku] !== undefined ? m[sku] : m[(sku||'').toLowerCase()]; return Number(v)>0 ? Number(v) : 0; }
 
 // ── FIREBASE CONFIG (Realtime Database) ──────────────────
 const FIREBASE_CONFIG = {
@@ -6875,6 +7264,8 @@ function serializeAppData(data){
     peakSold:item.peakSold, vel7:item.vel7,
     activeVelAvg:item.activeVelAvg, maxVel7:item.maxVel7, recent30:item.recent30||0,
     smartRate30: item.smartRate30||0,
+    zeroTail: item.zeroTail||0,
+    last30: Array.isArray(item.last30) ? item.last30 : [],
     early60: item.early60 || {total:0,days:1},
     _noSales:item._noSales||false
     // dailySales omitted — too large; chart will fetch on demand if needed
@@ -6888,7 +7279,8 @@ async function saveAppDataCache(data){
       savedAt: Date.now(),
       rowCount: data.length,
       data: serializeAppData(data),
-      productDict: window._productDict||{}  // เก็บ dict ไว้ด้วยเพื่อ order tab
+      productDict: window._productDict||{},  // เก็บ dict ไว้ด้วยเพื่อ order tab
+      channelShare: window._channelShare||{}
     };
     await db.ref(RTDB_CACHE).set(payload);
     console.log('[Cache] Saved', data.length, 'SKUs to Firebase');
@@ -6936,6 +7328,7 @@ async function loadAppDataCache(){
         }
       }, 1500);
     }
+    if(payload.channelShare && typeof payload.channelShare==='object') window._channelShare = payload.channelShare;
     // restore _productDict from cache
     if(payload.productDict && Object.keys(payload.productDict).length){
       window._productDict = payload.productDict;
@@ -6998,6 +7391,20 @@ async function loadAllConfigs(){
     if(data.orderConfig && typeof data.orderConfig==='object'){
       Object.assign(orderConfig, data.orderConfig);
     }
+    if(typeof data.orderLeadDays==='number' && data.orderLeadDays>=0 && data.orderLeadDays<=90){
+      window.orderLeadDays = data.orderLeadDays;
+      try { localStorage.setItem('orderLeadDays', String(data.orderLeadDays)); }catch(e){}
+    }
+    if(typeof data.orderReviewDays==='number' && data.orderReviewDays>=1 && data.orderReviewDays<=60){
+      window.orderReviewDays = data.orderReviewDays;
+      try { localStorage.setItem('orderReviewDays', String(data.orderReviewDays)); }catch(e){}
+    }
+    if(typeof data.orderSafetyDays==='number' && data.orderSafetyDays>=0 && data.orderSafetyDays<=60){
+      window.orderSafetyDays = data.orderSafetyDays;
+      try { localStorage.setItem('orderSafetyDays', String(data.orderSafetyDays)); }catch(e){}
+    }
+    if(Array.isArray(data.promoCalendar)) promoCalendar = data.promoCalendar.filter(p=>p && p.start);
+    if(data.cashCfg && typeof data.cashCfg==='object') cashCfg = Object.assign({ payTermDays:0, codLagDays:5, channels:{} }, data.cashCfg, { channels: Object.assign({}, data.cashCfg.channels||{}) });
     // Page365: ชื่อร้าน / proxy / การจับคู่ที่ผู้ใช้ตั้งเอง
     if(typeof data.p365Shop === 'string' && data.p365Shop) p365Shop = data.p365Shop;
     if(typeof data.p365Proxy === 'string') p365Proxy = data.p365Proxy;
@@ -7019,7 +7426,7 @@ function getRtdb(){
 }
 
 // ── SAVE stock to RTDB ──
-async function saveStockToFirebase(map, fileName){
+async function saveStockToFirebase(map, fileName, prices){
   const db = getRtdb(); if(!db){ alert('Firebase ไม่พร้อม'); return false; }
   try {
     updateFbStatus('saving');
@@ -7032,6 +7439,7 @@ async function saveStockToFirebase(map, fileName){
       updatedAt: Date.now()
     };
     updates[RTDB_PATH+'/skus'] = map;
+    if(prices && Object.keys(prices).length) updates[RTDB_PATH+'/prices'] = prices;
     await db.ref().update(updates);
     console.log('[RTDB] Saved', Object.keys(map).length, 'SKUs');
     return true;
@@ -7054,7 +7462,8 @@ async function loadStockFromFirebase(){
     const skus = data.skus || {};
     if(!Object.keys(skus).length){ updateFbStatus('empty'); return false; }
     stockFileName = meta.fileName || 'Firebase';
-    applyStockMap(skus);
+    if(data.prices && typeof data.prices==='object') window.priceMap = data.prices;
+    applyStockMap(skus, { fromFirebase:true, updatedAt: meta.updatedAt || 0 });
     const ts = meta.updatedAt ? new Date(meta.updatedAt) : new Date();
     updateFbStatus('loaded', meta.fileName||'Firebase', Object.keys(skus).length, ts);
     return true;
@@ -7211,6 +7620,7 @@ function extractStockFromRows(rows){
   }
 
   const map={};          // sku → stock_amount
+  const prices={};       // sku → price (คอลัมน์ price ในไฟล์ Page365)
   const uploadDict={};   // sku → { parentSku, name, category, color, size, variant }
 
   for(let i=headerIdx+1; i<rows.length; i++){
@@ -7224,6 +7634,7 @@ function extractStockFromRows(rows){
     const v = parseFloat(cv('stock_amount'));
     map[sku] = isNaN(v) ? null : v;
     if(sku !== sku.toLowerCase()) map[sku.toLowerCase()] = isNaN(v) ? null : v;
+    if(COL['price']!==undefined){ const pr=parseFloat(cv('price')); if(pr>0){ prices[sku]=pr; prices[sku.toLowerCase()]=pr; } }
 
     // product info — parse variant "สี, ไซส์" same as Google Sheets logic
     // parentRaw = ค่าดิบ (ว่างได้) ใช้ตัดสินใจว่าจะทับข้อมูลเดิมไหม
@@ -7248,7 +7659,7 @@ function extractStockFromRows(rows){
   if(!Object.keys(map).length){ alert('ไม่พบข้อมูลสต๊อกในไฟล์ (0 rows)'); return; }
 
   mergeUploadDict(uploadDict);
-  applyStockMap(map);
+  applyStockMap(map, { prices });
 }
 
 // ── Merge ข้อมูลสินค้าจากไฟล์ export (Page 365) เข้า _productDict + appData ──
@@ -7327,8 +7738,12 @@ function mergeUploadDict(uploadDict){
   return {added, moved:moved.length, movedList:moved};
 }
 
-function applyStockMap(map){
+function applyStockMap(map, opts){
+  opts = opts || {};
   stockMap = map;
+  // โหลดจาก Firebase แล้วไม่มีเวลา → ถือว่า "ไม่ทราบ" (0) ไม่ใช่ "เมื่อกี้"
+  window.stockUpdatedAt = opts.fromFirebase ? (Number(opts.updatedAt)||0) : (Number(opts.updatedAt)||Date.now());
+  if(opts.prices && Object.keys(opts.prices).length) window.priceMap = Object.assign({}, window.priceMap||{}, opts.prices);
   console.log('[Stock] Loaded', Object.keys(map).length, 'SKUs. Sample key:', Object.keys(map)[0]);
   const vals  = map ? Object.values(map).filter(v=>v!==null) : [];
   const total = Object.keys(map).length;
@@ -7356,8 +7771,9 @@ function applyStockMap(map){
   setCol('stock-hdr-btn',   'var(--green)');
 
   // Save to Firebase (async, don't block UI)
-  if(stockFileName && stockFileName !== 'Firebase'){
-    saveStockToFirebase(map, stockFileName).then(ok=>{
+  // ห้ามเซฟซ้ำตอนที่เพิ่งโหลดมาจาก Firebase เอง — ไม่งั้น updatedAt จะถูกทับเป็น "เมื่อกี้" ทุกครั้งที่เปิดแอป
+  if(!opts.fromFirebase && stockFileName && stockFileName !== 'Firebase'){
+    saveStockToFirebase(map, stockFileName, window.priceMap).then(ok=>{
       if(ok){
         const ts = new Date();
         updateFbStatus('loaded', stockFileName, Object.keys(map).length, ts);
@@ -7432,7 +7848,276 @@ const P365_SHOP_DEFAULT = 'lamsangstores';
 let p365Shop  = P365_SHOP_DEFAULT;
 let p365Proxy = '';   // proxy ของผู้ใช้เอง (ใส่ {url} เป็นตัวแทน URL เต็ม) — ลองก่อนตัว default
 let p365Map   = {};   // groupKey → productId ที่ผู้ใช้เลือกเอง (0 = สั่งข้าม ไม่ต้องดึง)
-const _p365   = { list:null, detail:{}, match:null, proxyIdx:-1, cfgLoaded:false };
+const _p365   = { list:null, detail:{}, match:null, proxyIdx:-1, cfgLoaded:false,
+  // สถานะการดึงรอบล่าสุด — ใช้แสดงแจ้งเตือนในแท็บสั่งของ (เดิมล้มเงียบๆ ใน console)
+  status:{ running:false, progress:'', lastAt:0, lastOkAt:0, lastError:'', failedNames:[] } };
+const P365_AUTO_SYNC_HOURS = 6;   // เปิดแอปแล้วสต๊อกเก่ากว่านี้ → ดึงใหม่เองเบื้องหลัง
+
+function p365SetHdr(txt, color){
+  const el = $('p365-btn-label'); if(el) el.textContent = txt;
+  const btn = $('p365-hdr-btn');  if(btn && color) btn.style.color = color;
+}
+function p365Esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtAge(ms){
+  const m = Math.max(0, Math.round(ms/60000));
+  if(m < 60) return m+' นาที';
+  const h = Math.round(m/60);
+  if(h < 48) return h+' ชม.';
+  return Math.round(h/24)+' วัน';
+}
+
+// ══ แจ้งเตือนในแท็บสั่งของ: สต๊อกเก่า / ดึง Page365 ไม่สำเร็จ / ออเดอร์ค้างเกินกำหนด ══
+function renderOrderAlerts(){
+  const box = $('order-alerts'); if(!box) return;
+  const alerts = [];
+  const mk = (lvl, icon, txt, btns) => alerts.push({lvl, icon, txt, btns: btns||''});
+  const st = _p365.status || {};
+  const syncBtn = `<button class="btn" onclick="syncStockFromPage365()" style="font-size:11px;padding:3px 9px;color:var(--green-d)">↻ ดึงสต๊อก Page365</button>`;
+  const cfgBtn  = `<button class="btn" onclick="openP365Modal()" style="font-size:11px;padding:3px 9px;color:var(--muted)">⚙ จับคู่ / proxy</button>`;
+
+  // 1) สถานะสต๊อกที่ใช้คำนวณ
+  if(st.running){
+    mk('info', '⏳', 'กำลังดึงสต๊อกสดจาก Page 365… ' + p365Esc(st.progress||''));
+  } else if(!isStockLoaded()){
+    mk('red', '🚨', 'ยังไม่มีข้อมูลสต๊อก — ระบบคิดว่าทุกตัวเหลือ 0 ยอดสั่งจะสูงเกินจริง', syncBtn);
+  } else {
+    const age = Date.now() - (window.stockUpdatedAt||0);
+    if(!window.stockUpdatedAt || age > 72*3600e3){
+      mk('red', '🕒', `สต๊อกที่ใช้คำนวณเก่ามาก (อัปเดต ${window.stockUpdatedAt ? fmtAge(age)+' ที่แล้ว' : 'ไม่ทราบเมื่อไหร่'}) — ของที่ขายไปแล้วยังถูกนับว่ามีอยู่ ทำให้สั่งน้อยเกินไป`, syncBtn);
+    } else if(age > 12*3600e3){
+      mk('orange', '🕒', `สต๊อกอัปเดตล่าสุด ${fmtAge(age)} ที่แล้ว — ควรดึงใหม่ก่อนกดสั่ง`, syncBtn);
+    }
+  }
+  // 2) ผลการดึง Page365 รอบล่าสุด
+  if(!st.running && st.lastError){
+    mk('red', '❌', `ดึงสต๊อก Page 365 ไม่สำเร็จ${st.lastAt ? ' ('+fmtAge(Date.now()-st.lastAt)+' ที่แล้ว)' : ''}: ${p365Esc(st.lastError)}`, syncBtn + ' ' + cfgBtn);
+  } else if(!st.running && st.failedNames && st.failedNames.length){
+    const n = st.failedNames.length;
+    mk('orange', '⚠️', `ดึงสต๊อกได้ไม่ครบ — ${n} รุ่นดึงไม่สำเร็จ ใช้ค่าเก่าไปก่อน: ${p365Esc(st.failedNames.slice(0,6).join(', '))}${n>6 ? ' …' : ''}`, syncBtn);
+  }
+  // 3) ออเดอร์ค้างรับเกินกำหนด (ไม่ถูกหักจากยอดสั่งแล้ว)
+  const stale = window._stalePendingOrders || [];
+  if(stale.length){
+    const names = stale.slice(0,4).map(o=>o.customName||o.autoName||'').filter(Boolean).join(' · ');
+    mk('orange', '📦', `${stale.length} ออเดอร์สั่งไปเกิน ${getLeadDays()+PENDING_GRACE_DAYS} วันแล้วยังไม่กด "รับแล้ว" (${p365Esc(names)}) — ระบบเลิกนับเป็นของค้างส่ง ถ้าของถึงแล้วไปกดรับ ถ้าโรงงานยังไม่ส่งให้แก้วันที่สั่ง`,
+      `<button class="btn" onclick="switchTabByName('history')" style="font-size:11px;padding:3px 9px;color:var(--blue-d)">ไปหน้าประวัติ</button>`);
+  }
+
+  // 4) งบไม่พอ → รายการที่ควรเลื่อน + วันที่จะกลับมาวิกฤต (ราคาของการเลื่อน)
+  const plan = budgetCutPlan();
+  if(plan){
+    const items = plan.cut.map(b=>`<b>${p365Esc(b.name)}</b> T${b.tier} ${Math.round(b.cost).toLocaleString('th-TH')}฿ (${critDateLabel(b.minCov)}${b.minCovLabel?' · '+p365Esc(b.minCovLabel):''})`).join(' · ');
+    mk('orange', '💸', `เงินที่มีถึงวันจ่าย ${Math.round(plan.budget).toLocaleString('th-TH')}฿ (งบ + เงินเข้า) ไม่พอ — ต้องใช้ ${Math.round(plan.total).toLocaleString('th-TH')}฿ ขาด ${Math.round(plan.total-plan.budget).toLocaleString('th-TH')}฿ — แนะนำเลื่อน: ${items||'—'}`
+      + (plan.remaining>0 ? ` · <b style="color:var(--red-d)">ตัด Tier 2–3 หมดแล้วยังขาดอีก ${Math.round(plan.remaining).toLocaleString('th-TH')}฿ ต้องลด Tier 1 เอง</b>` : ''));
+  }
+  if(!alerts.length){ box.style.display='none'; box.innerHTML=''; return; }
+  const col = { red:'var(--red-d)', orange:'var(--orange-d)', info:'var(--blue-d)' };
+  const bg  = { red:'rgba(255,85,114,.09)', orange:'rgba(255,170,68,.09)', info:'rgba(77,143,255,.09)' };
+  box.style.display = 'flex';
+  box.innerHTML = alerts.map(a=>`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;border-radius:12px;background:${bg[a.lvl]};border-left:3px solid ${col[a.lvl]}">
+      <span style="font-size:15px">${a.icon}</span>
+      <span style="flex:1 1 260px;font-size:12.5px;font-weight:700;color:${col[a.lvl]};line-height:1.45">${a.txt}</span>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${a.btns}</div>
+    </div>`).join('');
+}
+
+// ══ โมดูลเงิน (สเปคข้อ 3): เงินเข้าคาดการณ์ vs เงินต้องจ่าย 30 วันข้างหน้า ══
+//   expected_inflow/วัน = GMV เฉลี่ย 7 วัน × Σ(สัดส่วนช่องทาง × (1 − fee%))
+//   settlement lag + COD ทำให้มีเงิน "ค้างอยู่ในระบบ" = เงินเข้า/วัน × วันรอเฉลี่ย (แสดงเป็นข้อมูล)
+//   cash_gap = ต้องจ่ายรอบนี้ − (งบที่มี + เงินเข้าสะสมถึงวันจ่าย)
+let cashCfg = { payTermDays:0, codLagDays:5, channels:{} };
+const CASH_CH_DEFAULT = {
+  tiktok:{fee:9,lag:3,cod:30}, shopee:{fee:8,lag:5,cod:30}, lazada:{fee:8,lag:5,cod:30},
+  facebook:{fee:3,lag:1,cod:70}, line:{fee:3,lag:1,cod:70}, page365:{fee:3,lag:1,cod:70}, other:{fee:5,lag:3,cod:50}
+};
+function chCfg(key){ return Object.assign({}, CASH_CH_DEFAULT[key]||CASH_CH_DEFAULT.other, (cashCfg.channels||{})[key]||{}); }
+function cashModel(){
+  const H = 30;
+  const items = (appData||[]).filter(d=>Array.isArray(d.last30) && d.last30.length>=7 && classifyCat(d.category||'')!=='skip');
+  let gmv7=0, units7=0, pricedUnits=0, noPriceSku=0;
+  items.forEach(d=>{
+    const u = d.last30.slice(-7).reduce((a,b)=>a+b,0); if(!u) return;
+    units7 += u;
+    const p = priceOf(d.sku);
+    if(p>0){ gmv7 += u*p; pricedUnits += u; } else noPriceSku++;
+  });
+  const avgPrice = pricedUnits>0 ? gmv7/pricedUnits : 0;
+  gmv7 += (units7-pricedUnits)*avgPrice;              // ตัวที่ไม่มีราคา → ใช้ราคาเฉลี่ยแทน
+  const gmvDaily = gmv7/7;
+  const shareSrc = window._channelShare && Object.keys(window._channelShare).length ? window._channelShare : { other:1 };
+  let netRate=0, avgLag=0; const chRows=[];
+  Object.entries(shareSrc).sort((a,b)=>b[1]-a[1]).forEach(([k,s])=>{
+    const c = chCfg(k);
+    const lagEff = (Number(c.lag)||0) + (Number(c.cod)||0)/100*(Number(cashCfg.codLagDays)||0);
+    netRate += s*(1-(Number(c.fee)||0)/100);
+    avgLag  += s*lagEff;
+    chRows.push({ key:k, share:s, fee:Number(c.fee)||0, lag:Number(c.lag)||0, cod:Number(c.cod)||0, lagEff, net:gmvDaily*s*(1-(Number(c.fee)||0)/100) });
+  });
+  const dailyNet = gmvDaily*netRate;
+  const pipeline = dailyNet*avgLag;
+  const payTerm  = Math.min(H, Math.max(0, Number(cashCfg.payTermDays)||0));
+  const review   = getReviewDays();
+  const thisOrder= window._orderGrandTotalAll||0;
+  const cycle    = window._orderCycleCost||0;
+  const payments = [{ day:payTerm, amount:thisOrder, label:'ออเดอร์รอบนี้' }];
+  for(let k=1; payTerm+k*review<=H; k++) payments.push({ day:payTerm+k*review, amount:cycle, label:'รอบถัดไป (ประมาณจากอัตราขาย)' });
+  const budget = getOrderBudget();
+  const inflow=[], pay=[]; let cp=0;
+  for(let t=0;t<=H;t++){ inflow.push(budget + dailyNet*t); payments.filter(p=>p.day===t).forEach(p=>cp+=p.amount); pay.push(cp); }
+  let crunchDay=null; for(let t=0;t<=H;t++){ if(pay[t] > inflow[t]+0.5){ crunchDay=t; break; } }
+  const availAtPay = budget + dailyNet*payTerm;
+  return { H, gmvDaily, units7, pricedUnits, noPriceSku, avgPrice, dailyNet, netRate, avgLag, pipeline, payTerm, thisOrder, cycle, payments,
+           inflow, pay, crunchDay, budget, availAtPay, gap: thisOrder-availAtPay, chRows, hasData: items.length>0, hasPrice: pricedUnits>0 };
+}
+let _cashChart = null;
+function _dLabel(offset){ const d=new Date(); d.setDate(d.getDate()+offset); return d.getDate()+'/'+(d.getMonth()+1); }
+function _thb(n){ return Math.round(n).toLocaleString('th-TH'); }
+function renderOrderCash(){
+  const box = $('order-cash'); if(!box) return;
+  if(!appData || !appData.length){ box.style.display='none'; return; }
+  const m = cashModel();
+  box.style.display = 'block';
+  if(!m.hasData){
+    box.innerHTML = `<div class="cash-hdr"><span class="cash-ttl">💵 เงินเข้า–เงินออก 30 วันข้างหน้า</span><span class="cash-note">ต้องกด "ซิงก์ข้อมูล" ก่อน เพื่อให้มียอดขายรายวันสำหรับคำนวณ GMV</span></div>`;
+    return;
+  }
+  const gapPos = m.gap > 0;
+  const crunch = m.crunchDay===null ? '<span style="color:var(--green-d)">ไม่ตึงใน 30 วัน</span>' : `<span style="color:var(--red-d)">${_dLabel(m.crunchDay)} (อีก ${m.crunchDay} วัน)</span>`;
+  const stat = (l,v,s,color) => `<div class="cash-stat"><div class="cash-stat-l">${l}</div><div class="cash-stat-v" style="color:${color||'var(--text)'}">${v}</div><div class="cash-stat-s">${s||''}</div></div>`;
+  box.innerHTML = `
+    <div class="cash-hdr">
+      <span class="cash-ttl">💵 เงินเข้า–เงินออก 30 วันข้างหน้า</span>
+      <span class="cash-note" style="margin:0">ช่องทาง: ${m.chRows.map(c=>`${c.key} ${Math.round(c.share*100)}% (fee ${c.fee}%)`).join(' · ')}</span>
+      <div style="flex:1"></div>
+      <button class="btn" onclick="openCashModal()" style="font-size:12px;padding:4px 10px;color:var(--muted)">⚙ ตั้งค่าเงิน</button>
+    </div>
+    <div class="cash-stats">
+      ${stat('ยอดขาย/วัน (7 วัน)', _thb(m.gmvDaily)+' ฿', `${m.units7} ชิ้น/สัปดาห์${m.noPriceSku?` · ไม่มีราคา ${m.noPriceSku} SKU ใช้ราคาเฉลี่ย`:''}`)}
+      ${stat('เงินเข้าสุทธิ/วัน', _thb(m.dailyNet)+' ฿', `หลังหัก fee เฉลี่ย ${Math.round((1-m.netRate)*100)}% · ค้างเข้าในระบบ ~${_thb(m.pipeline)} ฿ (รอ ${m.avgLag.toFixed(1)} วัน)`, 'var(--green-d)')}
+      ${stat('ต้องจ่ายรอบนี้', _thb(m.thisOrder)+' ฿', `จ่าย ${_dLabel(m.payTerm)}${m.payTerm?` (${m.payTerm} วันหลังสั่ง)`:' (ตอนสั่ง)'} · รอบถัดไป ~${_thb(m.cycle)} ฿/${getReviewDays()} วัน`, 'var(--orange-d)')}
+      ${stat('มีถึงวันจ่าย', m.budget>0 ? _thb(m.availAtPay)+' ฿' : '— ใส่งบ', m.budget>0 ? `งบ ${_thb(m.budget)} + เงินเข้า ${m.payTerm} วัน` : 'ใส่ "งบรอบนี้" = เงินสดที่จ่ายได้ตอนนี้', 'var(--blue-d)')}
+      ${stat('cash gap', m.budget>0 ? (gapPos?'−':'+')+_thb(Math.abs(m.gap))+' ฿' : '—', m.budget>0 ? (gapPos ? 'ขาด — ดูรายการที่ควรเลื่อนด้านล่าง' : 'พอจ่าย') : '', m.budget>0 ? (gapPos?'var(--red-d)':'var(--green-d)') : 'var(--muted)')}
+      ${stat('วันเงินตึง', crunch, m.budget>0 ? 'จุดที่เงินต้องจ่ายสะสมแซงเงินเข้าสะสม' : 'คิดจากเงินเข้าอย่างเดียว (ยังไม่ใส่งบ)')}
+    </div>
+    <div class="cash-chart-wrap"><canvas id="cash-chart"></canvas></div>
+    <div class="cash-note">เส้นเขียว = งบ + เงินเข้าสุทธิสะสม · เส้นส้ม = เงินต้องจ่ายสะสม (ออเดอร์รอบนี้ + รอบถัดไปทุก ${getReviewDays()} วัน ประมาณจากอัตราขาย × ต้นทุน) · ถ้ายังไม่ตั้งต้นทุน/ชิ้น รุ่นนั้นจะไม่ถูกนับ</div>`;
+  try { drawCashChart(m); } catch(e){ console.warn('cash chart:', e); }
+}
+function drawCashChart(m){
+  if(typeof Chart==='undefined') return;
+  const c = $('cash-chart'); if(!c) return;
+  if(_cashChart){ try{ _cashChart.destroy(); }catch(e){} _cashChart=null; }
+  const labels = []; for(let t=0;t<=m.H;t++) labels.push(_dLabel(t));
+  const payPts = m.payments.filter(p=>p.amount>0);
+  _cashChart = new Chart(c, {
+    type:'line',
+    data:{ labels, datasets:[
+      { label:'งบ + เงินเข้าสะสม', data:m.inflow, borderColor:'#2ecc8a', backgroundColor:'rgba(46,204,138,.12)', fill:true, tension:.2, pointRadius:0, borderWidth:2 },
+      { label:'เงินต้องจ่ายสะสม', data:m.pay, borderColor:'#e8955a', backgroundColor:'rgba(232,149,90,.10)', fill:true, stepped:true, pointRadius:labels.map((_,t)=>payPts.some(p=>p.day===t)?4:0), pointBackgroundColor:'#e8955a', borderWidth:2 }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, animation:{duration:400},
+      interaction:{ mode:'index', intersect:false },
+      plugins:{ legend:{ display:true, labels:{ font:{family:'Anuphan',size:11,weight:'700'}, boxWidth:10, color:'#8b7378' } },
+        tooltip:{ backgroundColor:'rgba(74,42,47,.92)', titleFont:{family:'Anuphan',size:12,weight:'700'}, bodyFont:{family:'Anuphan',size:12},
+          callbacks:{ title:(ctx)=>'วันที่ '+ctx[0].label+' (อีก '+ctx[0].dataIndex+' วัน)',
+            label:(ctx)=>ctx.dataset.label+': '+_thb(ctx.parsed.y)+' ฿',
+            afterBody:(ctx)=>{ const t=ctx[0].dataIndex; const ps=payPts.filter(p=>p.day===t); const diff=m.inflow[t]-m.pay[t];
+              return ps.map(p=>'• '+p.label+' '+_thb(p.amount)+' ฿').concat(['คงเหลือ '+(diff<0?'−':'')+_thb(Math.abs(diff))+' ฿']); } } } },
+      scales:{ x:{ grid:{display:false}, ticks:{ font:{family:'Anuphan',size:10}, color:'#8b7378', maxTicksLimit:11 }, border:{display:false} },
+               y:{ beginAtZero:true, grid:{ color:'rgba(139,115,120,.12)' }, ticks:{ font:{family:'IBM Plex Mono',size:10}, color:'#8b7378', callback:v=>(v/1000).toFixed(0)+'k' }, border:{display:false} } } }
+  });
+}
+function openCashModal(){
+  const m = cashModel();
+  $('cash-payterm').value = Number(cashCfg.payTermDays)||0;
+  $('cash-codlag').value  = Number(cashCfg.codLagDays)||0;
+  const keys = [...new Set([...m.chRows.map(c=>c.key), ...Object.keys(cashCfg.channels||{})])];
+  $('cash-ch-list').innerHTML = keys.map(k=>{ const c=chCfg(k); const s=(window._channelShare||{})[k]; return `<div class="cash-row" data-ch="${p365Esc(k)}">
+      <span class="k">${p365Esc(k)}</span>
+      <span style="color:var(--muted);font-weight:700">${s!==undefined?Math.round(s*100)+'%':'—'}</span>
+      <input type="number" data-k="fee" min="0" max="50" step="0.5" value="${c.fee}">
+      <input type="number" data-k="lag" min="0" max="60" step="1" value="${c.lag}">
+      <input type="number" data-k="cod" min="0" max="100" step="5" value="${c.cod}">
+    </div>`; }).join('') || '<div class="p365-empty">ยังไม่มีข้อมูลช่องทาง — กด "ซิงก์ข้อมูล" ก่อน</div>';
+  $('cashModal').classList.add('on');
+}
+async function saveCashCfg(){
+  const ch = {};
+  document.querySelectorAll('#cash-ch-list .cash-row').forEach(row=>{
+    const k = row.getAttribute('data-ch'); const g = kk => Number(row.querySelector(`[data-k="${kk}"]`)?.value);
+    ch[k] = { fee: Math.max(0, g('fee')||0), lag: Math.max(0, g('lag')||0), cod: Math.min(100, Math.max(0, g('cod')||0)) };
+  });
+  cashCfg = { payTermDays: Math.max(0, Number($('cash-payterm').value)||0), codLagDays: Math.max(0, Number($('cash-codlag').value)||0), channels: ch };
+  try { await fbSave('cashCfg', cashCfg); } catch(e){}
+  $('cashModal').classList.remove('on');
+  renderOrderTab();
+}
+
+// ══ สรุปหัวแท็บสั่งของ: 🔴/🟠/🟡 ราย variant + เงินที่ต้องใช้ + งบ ══
+function orderCoverageSummary(){
+  const counts = { crit:0, reorder:0, watch:0, ok:0, na:0 };
+  const critList = [];
+  (appData||[]).forEach(d=>{
+    if(classifyCat(d.category||'')==='skip') return;
+    const p = d.parentSku||d.sku;
+    if(isDiscontinued(p, d.color||'')) return;
+    const c = skuCoverage(d);
+    counts[c.status]++;
+    if(c.status==='crit') critList.push({ d, c, inAds:getInAds(p) });
+  });
+  critList.sort((a,b)=> (b.inAds-a.inAds) || (a.c.days-b.c.days));
+  return { counts, critList };
+}
+function renderOrderKpi(){
+  const box = $('order-kpi'); if(!box) return;
+  if(!appData || !appData.length || !isStockLoaded()){ box.style.display='none'; box.innerHTML=''; return; }
+  const { counts, critList } = orderCoverageSummary();
+  const total = window._orderGrandTotal||0, budget = getOrderBudget();
+  const cm = budget>0 ? cashModel() : null;
+  const avail = cm ? cm.availAtPay : budget;
+  const gap = budget>0 ? total - avail : 0;
+  const ads = critList.filter(x=>x.inAds).length;
+  const critNames = critList.slice(0,3).map(x=>`${_modelCode(x.d.name)||x.d.name.slice(0,10)} ${[x.d.color,x.d.size].filter(Boolean).join('/')}`).join(' · ');
+  const card = (lbl, val, sub, color, onclick) => `<div class="order-kpi-card" ${onclick?`style="cursor:pointer" onclick="${onclick}"`:''}>
+      <div class="order-kpi-lbl">${lbl}</div><div class="order-kpi-val" style="color:${color}">${val}</div><div class="order-kpi-sub">${sub}</div></div>`;
+  box.style.display = 'flex';
+  box.innerHTML =
+    card('🔴 สั่งด่วน (พอ ≤'+getLeadDays()+' วัน)', counts.crit, (ads?`📣 ในแอด ${ads} · `:'')+(critNames||'ไม่มี — ดี'), 'var(--red-d)', "setOrderSort('cov_asc');$('order-sort').value='cov_asc'")
+  + card('🟠 ถึงจุดสั่ง (≤'+getReorderPointDays()+' วัน)', counts.reorder, 'ต้องออกออเดอร์รอบนี้', 'var(--orange-d)')
+  + card('🟡 จับตา (≤'+(getLeadDays()+20)+' วัน)', counts.watch, `🟢 ปกติ ${counts.ok} · ไม่มีข้อมูล ${counts.na}`, 'var(--gold)')
+  + card('💰 ยอดออเดอร์รวม', total>0 ? Math.round(total).toLocaleString('th-TH')+' ฿' : '—',
+      budget>0 ? (gap>0 ? `ขาด ${Math.round(gap).toLocaleString('th-TH')} ฿ จากเงินที่มีถึงวันจ่าย ${Math.round(avail).toLocaleString('th-TH')} ฿ — ดูรายการที่ควรเลื่อนด้านล่าง` : `พอจ่าย · เหลือ ${Math.round(-gap).toLocaleString('th-TH')} ฿ (งบ + เงินเข้าถึงวันจ่าย)`) : 'ใส่ "งบรอบนี้" (เงินสดที่จ่ายได้) เพื่อให้ระบบช่วยตัดรายการ',
+      gap>0 ? 'var(--red-d)' : 'var(--orange-d)');
+}
+// เสนอรายการที่ควรเลื่อนเมื่องบไม่พอ: ตัด Tier 3 ก่อน (ที่ยังพอขายได้นานสุดก่อน) แล้วค่อย Tier 2 · ไม่แตะ Tier 1
+function budgetCutPlan(){
+  const budget0 = getOrderBudget(), total = window._orderGrandTotal||0;
+  if(!(budget0>0)) return null;
+  const budget = cashModel().availAtPay;   // งบ + เงินเข้าสะสมถึงวันจ่าย
+  if(total <= budget) return null;
+  const list = Object.values(window._orderBrandCosts||{}).filter(b=>b.cost>0 && b.tier!==1)
+    .sort((a,b)=> (b.tier-a.tier) || ((b.minCov??1e9)-(a.minCov??1e9)));
+  let over = total - budget; const cut = [];
+  for(const b of list){ if(over<=0) break; cut.push(b); over -= b.cost; }
+  return { budget, total, cut, remaining: Math.max(0, over) };
+}
+function critDateLabel(minCov){
+  if(minCov===null||minCov===undefined||minCov===Infinity) return 'ยังไม่วิกฤต';
+  const d = new Date(); d.setDate(d.getDate() + Math.max(0, Math.floor(minCov - getLeadDays())));
+  return `วิกฤต ${d.getDate()}/${d.getMonth()+1}`;
+}
+
+// เปิดแอปมาแล้วสต๊อกเก่ากว่า P365_AUTO_SYNC_HOURS → ดึงใหม่เองเบื้องหลัง (ไม่บังหน้าจอ ไม่เด้ง alert)
+function p365MaybeAutoSync(){
+  try {
+    if(_p365.status.running) return;
+    const pd = window._productDict || {};
+    if(!Object.keys(pd).length) return;
+    const age = Date.now() - (window.stockUpdatedAt||0);
+    if(isStockLoaded() && window.stockUpdatedAt && age < P365_AUTO_SYNC_HOURS*3600e3) return;
+    syncStockFromPage365({ background:true });
+  } catch(e){ console.warn('[P365] auto sync:', e.message); }
+}
 
 // Page365 ไม่ส่ง CORS header → browser ยิงตรงไม่ได้ ต้องผ่าน proxy
 // เรียงจากตัวที่เสถียรสุดก่อน · ตัวไหนล้มก็ไล่ตัวถัดไปเอง
@@ -7628,23 +8313,35 @@ async function p365LoadCfg(){
  * ถ้าอยากให้เร็วและนิ่ง ตั้ง proxy ของตัวเองได้ในหน้า "จับคู่สินค้า"
  */
 const P365_CONCURRENCY = 6;
-async function p365FetchAllDetails(products){
+/** @returns {{details:Object, failed:Array}} failed = สินค้าที่ดึงไม่ได้แม้ลองซ้ำแล้ว */
+async function p365FetchAllDetails(products, onProgress){
   const details = {};
-  const queue = products.slice();
-  let done = 0;
-  const worker = async () => {
-    while(queue.length){
-      const p = queue.shift();
-      try { details[p.id] = await p365Detail(p.id, true); }
-      catch(e){ console.warn('[P365] detail '+p.id+':', e.message); }
-      done++;
-      showL('กำลังดึงสต๊อกจาก Page 365… '+done+'/'+products.length);
-    }
+  let failed = [];
+  const run = async (list, conc, label) => {
+    const queue = list.slice();
+    let done = 0;
+    const worker = async () => {
+      while(queue.length){
+        const p = queue.shift();
+        try { details[p.id] = await p365Detail(p.id, true); }
+        catch(e){ failed.push(p); console.warn('[P365] detail '+p.id+' ('+(p.name||'')+'):', e.message); }
+        done++;
+        if(onProgress) onProgress(label + done + '/' + list.length);
+      }
+    };
+    const crew = [];
+    for(let i=0; i<conc; i++) crew.push(worker());
+    await Promise.all(crew);
   };
-  const crew = [];
-  for(let i=0; i<P365_CONCURRENCY; i++) crew.push(worker());
-  await Promise.all(crew);
-  return details;
+  await run(products, P365_CONCURRENCY, '');
+  // ตัวที่ล้ม ลองซ้ำอีกรอบแบบช้าลง — proxy ฟรีมักล้มเป็นช่วงสั้นๆ / โดน rate limit ตอนยิงพร้อมกันเยอะ
+  // (ถ้าล้มเกินครึ่ง = proxy ล่มทั้งกระดาน ไม่ต้องลองซ้ำให้เสียเวลาอีกหลายนาที)
+  if(failed.length && failed.length <= Math.ceil(products.length/2)){
+    const retry = failed; failed = [];
+    _p365.proxyIdx = -1;   // เริ่มไล่ proxy ใหม่ตั้งแต่ตัวแรก
+    await run(retry, 2, 'ลองซ้ำ ');
+  }
+  return { details, failed };
 }
 
 /**
@@ -7652,23 +8349,35 @@ async function p365FetchAllDetails(products){
  * @param {{silent?:boolean}} [opts] silent = ไม่เด้ง alert สรุป (ใช้ตอนเรียกซ้ำจาก modal)
  */
 async function syncStockFromPage365(opts){
-  const silent = !!(opts && opts.silent);
+  const silent     = !!(opts && opts.silent);
+  const background = !!(opts && opts.background);   // ดึงเบื้องหลัง: ไม่บังหน้าจอ ไม่เด้ง alert — แจ้งผลผ่านแถบเตือนแทน
+  const st = _p365.status;
+  if(st.running){ if(!background && !silent) alert('กำลังดึงสต๊อกอยู่ รอสักครู่…'); return; }
   await p365LoadCfg();
 
   const groups = p365AppGroups();
   if(!groups.length){
-    alert('ยังไม่มีรายชื่อสินค้าในแอป\n\nกด "ซิงก์ข้อมูล" ให้โหลดจาก Google Sheets ก่อน แล้วค่อยดึงสต๊อก');
+    if(!background) alert('ยังไม่มีรายชื่อสินค้าในแอป\n\nกด "ซิงก์ข้อมูล" ให้โหลดจาก Google Sheets ก่อน แล้วค่อยดึงสต๊อก');
     return;
   }
 
+  const prog = (t) => {
+    st.progress = t;
+    if(background){ p365SetHdr('⏳ '+t, 'var(--orange-d)'); }
+    else showL('กำลังดึงสต๊อกจาก Page 365… '+t);
+    try { renderOrderAlerts(); } catch(e){}
+  };
+  st.running = true; st.progress = ''; st.lastAt = Date.now();
+  prog('อ่านรายการสินค้า…');
+
   try {
-    showL('กำลังอ่านรายการสินค้าจาก Page 365…');
     const products = await p365ListProducts(true);
     if(!products.length) throw new Error('ไม่พบสินค้าในร้าน "'+p365Shop+'" — เช็คชื่อร้าน (subdomain) อีกที');
 
     // ต้องมี variants ครบก่อน ทั้งเอาไปทำสต๊อกและใช้ช่วยจับคู่ตอนชื่อไม่ตรง
-    const details = await p365FetchAllDetails(products);
-    if(!Object.keys(details).length) throw new Error('ดึงรายละเอียดสินค้าไม่ได้เลย');
+    const { details, failed } = await p365FetchAllDetails(products, prog);
+    if(!Object.keys(details).length) throw new Error('ดึงรายละเอียดสินค้าไม่ได้เลย ('+failed.length+' รายการ) — proxy น่าจะล่มทั้งหมด');
+    const failedIds = new Set(failed.map(p=>p.id));
 
     const match = p365AutoMatch(groups, products, details);
     _p365.match = match;
@@ -7684,9 +8393,23 @@ async function syncStockFromPage365(opts){
     // กติกา: in_stock=false ให้เป็น 0 ทันที ไม่ต้องดู available
     // (Page365 ส่ง available = -1 มาเวลาขายเกิน — ถ้าเชื่อตรงๆ จะได้ค่าติดลบ)
     const map = {};
-    let hitSku = 0, missSku = 0;
+    const prices = {};   // sku → ราคาขาย (ใช้คำนวณ GMV ในโมดูลเงิน)
+    let hitSku = 0, missSku = 0, keptOld = 0;
+    const failedNames = [];
     groups.forEach(g=>{
       const m = match[g.key];
+      if(m && m.product && failedIds.has(m.product.id)){
+        // ดึงรุ่นนี้ไม่สำเร็จ → คงค่าสต๊อกเดิมไว้ ดีกว่าปล่อยให้กลายเป็น "ไม่ทราบ" (= สต๊อก 0 ในแท็บสั่งของ)
+        failedNames.push(m.product.name || g.name || g.key);
+        g.items.forEach(it=>{
+          const old = getStockAmount(it.sku);
+          if(old === null) return;
+          map[it.sku] = old;
+          if(it.sku !== it.sku.toLowerCase()) map[it.sku.toLowerCase()] = old;
+          keptOld++;
+        });
+        return;
+      }
       const d = m && m.product ? details[m.product.id] : null;
       if(!d) return;
       const vars = d.variants || [];
@@ -7699,6 +8422,8 @@ async function syncStockFromPage365(opts){
         const n = pv.in_stock ? Math.max(0, Number(pv.available)||0) : 0;
         map[it.sku] = n;
         if(it.sku !== it.sku.toLowerCase()) map[it.sku.toLowerCase()] = n;
+        const pr = Number(pv.price) || Number(d.price) || 0;
+        if(pr > 0){ prices[it.sku] = pr; prices[it.sku.toLowerCase()] = pr; }
         hitSku++;
       });
     });
@@ -7706,18 +8431,28 @@ async function syncStockFromPage365(opts){
     if(!hitSku) throw new Error('จับคู่สินค้าไม่ได้เลยสักตัว — ลองกด "จับคู่สินค้า" แล้วเลือกเอง');
 
     const now = new Date();
-    stockFileName = 'Page365 · ' + now.toLocaleString('th-TH',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-    applyStockMap(map);
-    hideL();
+    stockFileName = 'Page365 · ' + now.toLocaleString('th-TH',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
+      + (failedNames.length ? ' (ไม่ครบ '+failedNames.length+' รุ่น)' : '');
+    applyStockMap(map, { updatedAt: now.getTime(), prices });
+    if(!background) hideL();
+
+    st.running = false; st.lastError = ''; st.lastOkAt = now.getTime(); st.failedNames = failedNames; st.progress = '';
+    const hm = now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    p365SetHdr(failedNames.length ? '⚠️ Page365 '+hm+' (ไม่ครบ '+failedNames.length+')' : '✓ Page365 '+hm,
+               failedNames.length ? 'var(--orange-d)' : 'var(--green-d)');
+    try { renderOrderAlerts(); } catch(e){}
 
     const matchedKeys = groups.filter(g=>match[g.key] && match[g.key].product);
     const skipped     = groups.filter(g=>match[g.key] && match[g.key].via==='skip').length;
     const noGroup     = products.filter(p=>!matchedKeys.some(g=>match[g.key].product.id===p.id));
 
-    if(!silent){
+    if(!silent && !background){
       let msg = '✅ ดึงสต๊อกจาก Page 365 แล้ว\n\n'
         + '• สินค้าในร้าน '+products.length+' รายการ · จับคู่ได้ '+matchedKeys.length+' กลุ่ม\n'
         + '• อัปเดตสต๊อก '+hitSku+' SKU';
+      if(failedNames.length) msg += '\n\n⚠️ ดึงไม่สำเร็จ '+failedNames.length+' รุ่น (ใช้ค่าเก่า '+keptOld+' SKU):\n'
+        + failedNames.slice(0,8).map(n=>'   • '+n).join('\n') + (failedNames.length>8 ? '\n   …และอีก '+(failedNames.length-8) : '')
+        + '\nลองกดดึงอีกครั้ง หรือตั้ง proxy ของตัวเองในหน้า "จับคู่สินค้า"';
       if(missSku)  msg += '\n• ไม่พบรุ่นที่ตรงกัน '+missSku+' SKU (ปล่อยเป็น "ไม่ทราบ")';
       if(skipped)  msg += '\n• ข้ามตามที่ตั้งไว้ '+skipped+' กลุ่ม';
       if(noGroup.length){
@@ -7731,10 +8466,15 @@ async function syncStockFromPage365(opts){
       }
     }
   } catch(e){
-    hideL();
+    if(!background) hideL();
     console.error('[P365] sync failed:', e);
-    alert('ดึงสต๊อกจาก Page 365 ไม่สำเร็จ\n\n'+e.message
-      + '\n\nถ้าเจอบ่อย ให้ใส่ CORS proxy ของตัวเองในหน้า "จับคู่สินค้า"');
+    st.running = false; st.lastError = e.message || String(e); st.progress = '';
+    p365SetHdr('⚠️ Page365 ล้มเหลว', 'var(--red-d)');
+    try { renderOrderAlerts(); } catch(x){}
+    if(!background){
+      alert('ดึงสต๊อกจาก Page 365 ไม่สำเร็จ\n\n'+e.message
+        + '\n\nถ้าเจอบ่อย ให้ใส่ CORS proxy ของตัวเองในหน้า "จับคู่สินค้า"');
+    }
   }
 }
 
@@ -8228,10 +8968,11 @@ function renderAll(data){
     if(stockAmt !== null){
       // วันที่จะของหมด (จากสต๊อกจริง / อัตราขายต่อวัน)
       const daysLeft = baseRate>0 ? stockAmt/baseRate : 999;
+      const L = getLeadDays();                  // เกณฑ์ตาม lead time (เดิม 7/15/30 = เตือนตอนสายไปแล้ว ~2 สัปดาห์)
       if(stockAmt === 0) score += 100;          // หมดแล้ว = ด่วนสูงสุด
-      else if(daysLeft <= 7) score += 80;       // หมดใน 1 สัปดาห์
-      else if(daysLeft <= 15) score += 50;      // หมดใน 2 สัปดาห์
-      else if(daysLeft <= 30) score += 20;
+      else if(daysLeft <= L) score += 80;       // ต่ำกว่า lead time — ของรอบใหม่มาไม่ทันแน่
+      else if(daysLeft <= L+10) score += 50;    // ถึงจุดสั่ง
+      else if(daysLeft <= L+20) score += 20;    // จับตา
     }
     // คูณด้วย velocity (ขายดียิ่งด่วน)
     score *= Math.min(2.0, Math.max(0.5, baseRate / 2));
@@ -8416,9 +9157,10 @@ function renderAll(data){
         ${(()=>{
           const dl = item.daysLeft;
           if(dl===null) return td('daysleft','<span style="color:var(--faint)">—</span>','tc');
-          const dlColor = dl<=7?'var(--red)':dl<=15?'var(--orange)':dl<=30?'var(--gold)':'var(--green)';
+          const L0 = getLeadDays();
+          const dlColor = dl<=L0?'var(--red)':dl<=L0+10?'var(--orange)':dl<=L0+20?'var(--gold)':'var(--green)';
           const dlLabel = dl===0?'หมดแล้ว':dl+' วัน';
-          const dlSub = dl<=30 ? `<div style="font-size:11px;color:var(--faint)">จาก MaxVel7</div>` : '';
+          const dlSub = dl<=L0+20 ? `<div style="font-size:11px;color:var(--faint)">จาก MaxVel7 · จุดสั่ง ≤${L0+10}</div>` : '';
           return td('daysleft',`<span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:${dlColor}">${dlLabel}</span>${dlSub}`,'tr');
         })()}
         ${(()=>{
@@ -8530,7 +9272,7 @@ function getMobCardSlots(item, stkSt, stkAm, isDisc, rec, stockAvg, days){
 
   return {
     status:   { name:'สถานะ',      cls:statusCls, label:statusTxt,  val:statusTxt.replace(/[^ก-๙a-z0-9()\s]/gi,'').trim(), unit:'' },
-    daysleft: { name:'หมดใน',      cls:dL===null?'':dL<=3?'danger':dL<=7?'warn':'ok', label:`⏳ ${dL!==null?dL+'วัน':'—'}`, val:dL!==null?dL:'—', unit:dL!==null?'วัน':'' },
+    daysleft: { name:'หมดใน',      cls:dL===null?'':dL<=getLeadDays()?'danger':dL<=getLeadDays()+10?'warn':'ok', label:`⏳ ${dL!==null?dL+'วัน':'—'}`, val:dL!==null?dL:'—', unit:dL!==null?'วัน':'' },
     restock:  { name:'คาดรับ',     cls:ri?ri.daysAway<=3?'warn':'ok':'', label:ri?`📦 ${ri.daysAway<=0?'วันนี้':ri.daysAway===1?'พรุ่งนี้':ri.label}`:'📦 ยังไม่มีกำหนด', val:ri?ri.label:'—', unit:'' },
     trend:    { name:'Trend',       cls:item.trendPct>=30?'ok':item.trendPct<=-10?'danger':'', label:`${item.trendLabel||'→'} ${item.trendPct>0?'+':''}${item.trendPct||0}%`, val:(item.trendPct>0?'+':'')+( item.trendPct||0)+'%', unit:'' },
     maxvel7:  { name:'MaxVel/วัน', cls:'', label:`🔥 ${(item.maxVel7||0).toFixed(2)}`, val:(item.maxVel7||0).toFixed(2), unit:'ชิ้น/วัน' },
