@@ -376,6 +376,21 @@ td .stock-pill.instock{background:rgba(46,204,138,.13);color:var(--green-d)}
 .order-kpi-lbl{font-size:11px;font-weight:800;letter-spacing:.4px;color:var(--muted)}
 .order-kpi-val{font-size:20px;font-weight:800;font-family:'IBM Plex Mono',monospace;line-height:1.2}
 .order-kpi-sub{font-size:11px;color:var(--faint)}
+/* Cash module */
+.cash-panel{margin:10px 24px 0;background:var(--bg);box-shadow:var(--sx);border-radius:14px;padding:12px 16px}
+.cash-hdr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.cash-ttl{font-size:14px;font-weight:800;color:var(--text)}
+.cash-stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.cash-stat{flex:1 1 130px;background:var(--bg-dark);border-radius:10px;padding:7px 10px}
+.cash-stat-l{font-size:10.5px;font-weight:800;color:var(--muted);letter-spacing:.3px}
+.cash-stat-v{font-size:16px;font-weight:800;font-family:'IBM Plex Mono',monospace;line-height:1.25}
+.cash-stat-s{font-size:10.5px;color:var(--faint)}
+.cash-chart-wrap{position:relative;height:210px;width:100%}
+.cash-note{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
+.cash-row{display:grid;grid-template-columns:1.2fr .7fr .8fr .8fr .8fr;gap:8px;align-items:center;padding:8px 12px;border-radius:12px;background:var(--bg);box-shadow:var(--sx);font-size:12px}
+.cash-row input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--text);background:var(--bg-dark);border:none;border-radius:8px;padding:5px 8px;outline:none;text-align:center}
+.cash-row .k{font-weight:800;color:var(--text);text-transform:capitalize}
+@media(max-width:600px){.cash-row{grid-template-columns:1fr 1fr 1fr;font-size:11px}.cash-chart-wrap{height:180px}}
 .disc-collapsed{opacity:.45;pointer-events:none}
 /* ─── DROPDOWN ─── */
 .dd-item{padding:8px 12px;border-radius:8px;font-size:16px;font-weight:600;color:var(--muted);cursor:pointer;transition:background .1s}
@@ -2411,6 +2426,35 @@ tbody td { border-bottom: 1px solid rgba(217,154,90,.08) !important; }
   </div>
 </nav>
 
+<!-- CASH SETTINGS MODAL -->
+<div class="modal-overlay" id="cashModal" onclick="if(event.target===this)this.classList.remove('on')">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-ttl">💵 ตั้งค่าเงินเข้า–เงินออก</div>
+        <div class="modal-sub">สัดส่วนช่องทางมาจากชีต Orders 30 วันล่าสุด (คอลัมน์ Marketplace) · fee / วันเคลียร์ / COD ปรับตามจริงจาก PEAK</div>
+      </div>
+      <button class="modal-close" onclick="$('cashModal').classList.remove('on')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="p365-cfg">
+        <label>จ่ายเงินซัพพลายเออร์หลังสั่งกี่วัน <code>0 = จ่ายตอนสั่ง · ใส่ 20 ถ้าจ่ายตอนของถึง</code>
+          <input type="number" id="cash-payterm" min="0" max="90" step="1"></label>
+        <label>COD บวกวันรอเงินเพิ่ม (รอบขนส่งเก็บเงิน) <code>วัน — คูณกับสัดส่วน COD ของแต่ละช่องทาง</code>
+          <input type="number" id="cash-codlag" min="0" max="30" step="1"></label>
+      </div>
+      <div class="cash-row" style="background:none;box-shadow:none;color:var(--muted);font-weight:800;padding-bottom:2px">
+        <span>ช่องทาง</span><span>สัดส่วน</span><span>fee %</span><span>เคลียร์ (วัน)</span><span>COD %</span>
+      </div>
+      <div id="cash-ch-list" class="p365-list" style="max-height:40vh"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <div style="flex:1"></div>
+        <button class="btn" onclick="saveCashCfg()" style="color:var(--green-d)">💾 บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- PROMO CALENDAR MODAL -->
 <div class="modal-overlay" id="promoModal" onclick="if(event.target===this)this.classList.remove('on')">
   <div class="modal" style="max-width:640px">
@@ -3044,6 +3088,8 @@ tbody td { border-bottom: 1px solid rgba(217,154,90,.08) !important; }
 
     <!-- สรุปสถานะ coverage รายสี/ไซซ์ + เงินที่ต้องใช้ -->
     <div id="order-kpi" class="order-kpi" style="display:none"></div>
+    <!-- โมดูลเงิน: เงินเข้าคาดการณ์สะสม vs เงินต้องจ่ายสะสม 30 วันข้างหน้า -->
+    <div id="order-cash" class="cash-panel" style="display:none"></div>
     <!-- แจ้งเตือน: สต๊อกเก่า / ดึง Page365 ไม่สำเร็จ / ออเดอร์ค้างเกินกำหนด / งบไม่พอ -->
     <div id="order-alerts" style="display:none;flex-direction:column;gap:6px;padding:10px 24px 0"></div>
 
@@ -4689,6 +4735,8 @@ function renderOrderTab(){
   // ── คำนวณต้นทุนรวม (ตามฟิลเตอร์ประเภท) ──
   (()=>{
     let grandTotal=0;
+    let grandTotalAll=0;   // ไม่สนฟิลเตอร์ — ใช้ในโมดูลเงิน (ต้องจ่ายรอบนี้ทั้งหมด)
+    let cycleCost=0;       // ต้นทุนเติมของต่อรอบสั่งแบบคงที่ = Σ อัตราขาย × รอบสั่ง × ต้นทุน/ชิ้น
     const brandCosts = {}; // parentSku → { name, cost }
     function addBrandCost(parentSku, name, amount, g){
       if(!brandCosts[parentSku]){
@@ -4723,7 +4771,6 @@ function renderOrderTab(){
       const gClear=isClearance(g.parentSku, g.name);
       let pantsBrand=0;
       g.skus.forEach(item=>{
-        if(!matchesFilter(item)) return;
         // ข้าม SKU สีที่ "ไม่เติมแล้ว"
         if(isDiscontinued(g.parentSku, item.color||'')) return;
         const sk=(item.sku||'').toLowerCase();
@@ -4737,6 +4784,9 @@ function renderOrderTab(){
         const lots=ov!==undefined?ov:(net>0?Math.ceil(net/ppl):0);
         const pieces=lots*ppl;
         const c=(isXXL?cxxl:cp)*pieces;
+        grandTotalAll+=c;
+        if(!gClear && !item._noSales) cycleCost+=orderRate(item)*getReviewDays()*(isXXL?cxxl:cp);
+        if(!matchesFilter(item)) return;
         grandTotal+=c;
         pantsBrand+=c;
       });
@@ -4756,7 +4806,6 @@ function renderOrderTab(){
       const gClear=isClearance(g.parentSku, g.name);
       let beltBrand=0;
       g.skus.forEach(item=>{
-        if(!matchesFilter(item)) return;
         // ข้าม SKU สีที่ "ไม่เติมแล้ว"
         if(isDiscontinued(g.parentSku, item.color||'')) return;
         const c=Number(costs[item.sku])||0;
@@ -4766,12 +4815,17 @@ function renderOrderTab(){
         const pend=pm[sk]||0;
         const qty=(cfg2.qtys||{})[item.sku]!==undefined?(cfg2.qtys||{})[item.sku]:(gClear?0:Math.ceil(Math.max(0,getAvg(item,gDays)-onH-pend)/10)*10);
         const sub=c*qty;
+        grandTotalAll+=sub;
+        if(!gClear && !item._noSales) cycleCost+=orderRate(item)*getReviewDays()*c;
+        if(!matchesFilter(item)) return;
         grandTotal+=sub;
         beltBrand+=sub;
       });
       if(beltBrand>0) addBrandCost(g.parentSku, g.name||g.parentSku, beltBrand, g);
     });
     window._orderBrandCosts = brandCosts;   // ใช้เสนอรายการที่ควรเลื่อนเมื่องบไม่พอ
+    window._orderGrandTotalAll = grandTotalAll;
+    window._orderCycleCost = cycleCost;
     // Top brands by cost (for KPI card) — ตามฟิลเตอร์
     window._orderTopBrands = Object.values(brandCosts)
       .sort((a,b)=>b.cost-a.cost)
@@ -4825,6 +4879,7 @@ function renderOrderTab(){
     }catch(e){}
   })();
   try { renderOrderKpi(); } catch(e){ console.warn('renderOrderKpi:', e); }
+  try { renderOrderCash(); } catch(e){ console.warn('renderOrderCash:', e); }
   try { renderOrderAlerts(); } catch(e){ console.warn('renderOrderAlerts:', e); }
 
   } catch(ex){ console.error('renderOrderTab error:',ex); const oc=$('order-content'); if(oc) oc.innerHTML='<div class="empty" style="padding:60px;color:var(--red-d)">เกิดข้อผิดพลาด: '+ex.message+'</div>'; }
@@ -6637,6 +6692,7 @@ async function syncData(){
     showL('กำลังอ่านข้อมูลคำสั่งซื้อ…');
     const sales=await fetchJSON('Orders');
     const bySkU={}, allDates=new Set();
+    const chanByDate={};   // วันที่ → { marketplace: จำนวนออเดอร์ } (คอลัมน์ C) — ใช้แยกช่องทางในโมดูลเงิน
 
     sales.table.rows.forEach(row=>{
       if(!row?.c) return;
@@ -6645,6 +6701,9 @@ async function syncData(){
       // ตัดส่วนเวลาออก รองรับทั้ง "01/03/2026 11:48:29" และ "1/3/2026, 11:49:08"
       const d=ds.split(/[\s,]/)[0].trim();
       if(!d) return;
+      { const mkt=String(row.c[2]?.v||'').trim().toLowerCase()||'other';
+        if(!chanByDate[d]) chanByDate[d]={};
+        chanByDate[d][mkt]=(chanByDate[d][mkt]||0)+1; }
       for(let c=6;c<=27;c++){
         const sc=row.c[c];
         if(sc?.v){
@@ -6667,6 +6726,16 @@ async function syncData(){
       .filter(x=>!isNaN(x.t))
       .sort((a,b)=>a.t-b.t)
       .map(x=>x.s);
+    // สัดส่วนออเดอร์ต่อช่องทาง 30 วันล่าสุด → window._channelShare = { tiktok:0.7, ... }
+    try {
+      const lastT0 = parseDate(sortedAllDates[sortedAllDates.length-1]);
+      const cut0 = lastT0 - 29*864e5;
+      const cnt = {}; let tot = 0;
+      Object.entries(chanByDate).forEach(([ds0, m])=>{ const t=parseDate(ds0); if(isNaN(t)||t<cut0||t>lastT0) return; Object.entries(m).forEach(([k,n])=>{ cnt[k]=(cnt[k]||0)+n; tot+=n; }); });
+      const share = {}; Object.entries(cnt).forEach(([k,n])=>{ if(n/tot >= 0.005) share[k]=n/tot; });
+      const sSum = Object.values(share).reduce((a,b)=>a+b,0)||1; Object.keys(share).forEach(k=>share[k]/=sSum);
+      window._channelShare = share; window._channelOrders30 = cnt;
+    } catch(e){ console.warn('channel share:', e); }
 
     appData=Object.entries(bySkU).filter(([sku])=>isValidSku(sku)).map(([sku,d])=>{
       const activeDays=d.days.size;
@@ -7123,6 +7192,8 @@ function kpiSort(key, dir, label){
 let stockMap = {};  // sku → stock_amount (number)
 let stockFileName = '';
 window.stockUpdatedAt = 0;   // เวลาที่สต๊อกชุดนี้ถูกดึง/อัพโหลดจริง (ไม่ใช่เวลาโหลดจาก Firebase)
+window.priceMap = {};        // sku → ราคาขาย (จาก Page365 / ไฟล์ xlsx) — ใช้คิด GMV
+function priceOf(sku){ const m=window.priceMap||{}; const v = m[sku] !== undefined ? m[sku] : m[(sku||'').toLowerCase()]; return Number(v)>0 ? Number(v) : 0; }
 
 // ── FIREBASE CONFIG (Realtime Database) ──────────────────
 const FIREBASE_CONFIG = {
@@ -7208,7 +7279,8 @@ async function saveAppDataCache(data){
       savedAt: Date.now(),
       rowCount: data.length,
       data: serializeAppData(data),
-      productDict: window._productDict||{}  // เก็บ dict ไว้ด้วยเพื่อ order tab
+      productDict: window._productDict||{},  // เก็บ dict ไว้ด้วยเพื่อ order tab
+      channelShare: window._channelShare||{}
     };
     await db.ref(RTDB_CACHE).set(payload);
     console.log('[Cache] Saved', data.length, 'SKUs to Firebase');
@@ -7256,6 +7328,7 @@ async function loadAppDataCache(){
         }
       }, 1500);
     }
+    if(payload.channelShare && typeof payload.channelShare==='object') window._channelShare = payload.channelShare;
     // restore _productDict from cache
     if(payload.productDict && Object.keys(payload.productDict).length){
       window._productDict = payload.productDict;
@@ -7331,6 +7404,7 @@ async function loadAllConfigs(){
       try { localStorage.setItem('orderSafetyDays', String(data.orderSafetyDays)); }catch(e){}
     }
     if(Array.isArray(data.promoCalendar)) promoCalendar = data.promoCalendar.filter(p=>p && p.start);
+    if(data.cashCfg && typeof data.cashCfg==='object') cashCfg = Object.assign({ payTermDays:0, codLagDays:5, channels:{} }, data.cashCfg, { channels: Object.assign({}, data.cashCfg.channels||{}) });
     // Page365: ชื่อร้าน / proxy / การจับคู่ที่ผู้ใช้ตั้งเอง
     if(typeof data.p365Shop === 'string' && data.p365Shop) p365Shop = data.p365Shop;
     if(typeof data.p365Proxy === 'string') p365Proxy = data.p365Proxy;
@@ -7352,7 +7426,7 @@ function getRtdb(){
 }
 
 // ── SAVE stock to RTDB ──
-async function saveStockToFirebase(map, fileName){
+async function saveStockToFirebase(map, fileName, prices){
   const db = getRtdb(); if(!db){ alert('Firebase ไม่พร้อม'); return false; }
   try {
     updateFbStatus('saving');
@@ -7365,6 +7439,7 @@ async function saveStockToFirebase(map, fileName){
       updatedAt: Date.now()
     };
     updates[RTDB_PATH+'/skus'] = map;
+    if(prices && Object.keys(prices).length) updates[RTDB_PATH+'/prices'] = prices;
     await db.ref().update(updates);
     console.log('[RTDB] Saved', Object.keys(map).length, 'SKUs');
     return true;
@@ -7387,6 +7462,7 @@ async function loadStockFromFirebase(){
     const skus = data.skus || {};
     if(!Object.keys(skus).length){ updateFbStatus('empty'); return false; }
     stockFileName = meta.fileName || 'Firebase';
+    if(data.prices && typeof data.prices==='object') window.priceMap = data.prices;
     applyStockMap(skus, { fromFirebase:true, updatedAt: meta.updatedAt || 0 });
     const ts = meta.updatedAt ? new Date(meta.updatedAt) : new Date();
     updateFbStatus('loaded', meta.fileName||'Firebase', Object.keys(skus).length, ts);
@@ -7544,6 +7620,7 @@ function extractStockFromRows(rows){
   }
 
   const map={};          // sku → stock_amount
+  const prices={};       // sku → price (คอลัมน์ price ในไฟล์ Page365)
   const uploadDict={};   // sku → { parentSku, name, category, color, size, variant }
 
   for(let i=headerIdx+1; i<rows.length; i++){
@@ -7557,6 +7634,7 @@ function extractStockFromRows(rows){
     const v = parseFloat(cv('stock_amount'));
     map[sku] = isNaN(v) ? null : v;
     if(sku !== sku.toLowerCase()) map[sku.toLowerCase()] = isNaN(v) ? null : v;
+    if(COL['price']!==undefined){ const pr=parseFloat(cv('price')); if(pr>0){ prices[sku]=pr; prices[sku.toLowerCase()]=pr; } }
 
     // product info — parse variant "สี, ไซส์" same as Google Sheets logic
     // parentRaw = ค่าดิบ (ว่างได้) ใช้ตัดสินใจว่าจะทับข้อมูลเดิมไหม
@@ -7581,7 +7659,7 @@ function extractStockFromRows(rows){
   if(!Object.keys(map).length){ alert('ไม่พบข้อมูลสต๊อกในไฟล์ (0 rows)'); return; }
 
   mergeUploadDict(uploadDict);
-  applyStockMap(map);
+  applyStockMap(map, { prices });
 }
 
 // ── Merge ข้อมูลสินค้าจากไฟล์ export (Page 365) เข้า _productDict + appData ──
@@ -7665,6 +7743,7 @@ function applyStockMap(map, opts){
   stockMap = map;
   // โหลดจาก Firebase แล้วไม่มีเวลา → ถือว่า "ไม่ทราบ" (0) ไม่ใช่ "เมื่อกี้"
   window.stockUpdatedAt = opts.fromFirebase ? (Number(opts.updatedAt)||0) : (Number(opts.updatedAt)||Date.now());
+  if(opts.prices && Object.keys(opts.prices).length) window.priceMap = Object.assign({}, window.priceMap||{}, opts.prices);
   console.log('[Stock] Loaded', Object.keys(map).length, 'SKUs. Sample key:', Object.keys(map)[0]);
   const vals  = map ? Object.values(map).filter(v=>v!==null) : [];
   const total = Object.keys(map).length;
@@ -7694,7 +7773,7 @@ function applyStockMap(map, opts){
   // Save to Firebase (async, don't block UI)
   // ห้ามเซฟซ้ำตอนที่เพิ่งโหลดมาจาก Firebase เอง — ไม่งั้น updatedAt จะถูกทับเป็น "เมื่อกี้" ทุกครั้งที่เปิดแอป
   if(!opts.fromFirebase && stockFileName && stockFileName !== 'Firebase'){
-    saveStockToFirebase(map, stockFileName).then(ok=>{
+    saveStockToFirebase(map, stockFileName, window.priceMap).then(ok=>{
       if(ok){
         const ts = new Date();
         updateFbStatus('loaded', stockFileName, Object.keys(map).length, ts);
@@ -7828,7 +7907,7 @@ function renderOrderAlerts(){
   const plan = budgetCutPlan();
   if(plan){
     const items = plan.cut.map(b=>`<b>${p365Esc(b.name)}</b> T${b.tier} ${Math.round(b.cost).toLocaleString('th-TH')}฿ (${critDateLabel(b.minCov)}${b.minCovLabel?' · '+p365Esc(b.minCovLabel):''})`).join(' · ');
-    mk('orange', '💸', `งบ ${Math.round(plan.budget).toLocaleString('th-TH')}฿ ไม่พอ (ต้องใช้ ${Math.round(plan.total).toLocaleString('th-TH')}฿ ขาด ${Math.round(plan.total-plan.budget).toLocaleString('th-TH')}฿) — แนะนำเลื่อน: ${items||'—'}`
+    mk('orange', '💸', `เงินที่มีถึงวันจ่าย ${Math.round(plan.budget).toLocaleString('th-TH')}฿ (งบ + เงินเข้า) ไม่พอ — ต้องใช้ ${Math.round(plan.total).toLocaleString('th-TH')}฿ ขาด ${Math.round(plan.total-plan.budget).toLocaleString('th-TH')}฿ — แนะนำเลื่อน: ${items||'—'}`
       + (plan.remaining>0 ? ` · <b style="color:var(--red-d)">ตัด Tier 2–3 หมดแล้วยังขาดอีก ${Math.round(plan.remaining).toLocaleString('th-TH')}฿ ต้องลด Tier 1 เอง</b>` : ''));
   }
   if(!alerts.length){ box.style.display='none'; box.innerHTML=''; return; }
@@ -7840,6 +7919,138 @@ function renderOrderAlerts(){
       <span style="flex:1 1 260px;font-size:12.5px;font-weight:700;color:${col[a.lvl]};line-height:1.45">${a.txt}</span>
       <div style="display:flex;gap:6px;flex-wrap:wrap">${a.btns}</div>
     </div>`).join('');
+}
+
+// ══ โมดูลเงิน (สเปคข้อ 3): เงินเข้าคาดการณ์ vs เงินต้องจ่าย 30 วันข้างหน้า ══
+//   expected_inflow/วัน = GMV เฉลี่ย 7 วัน × Σ(สัดส่วนช่องทาง × (1 − fee%))
+//   settlement lag + COD ทำให้มีเงิน "ค้างอยู่ในระบบ" = เงินเข้า/วัน × วันรอเฉลี่ย (แสดงเป็นข้อมูล)
+//   cash_gap = ต้องจ่ายรอบนี้ − (งบที่มี + เงินเข้าสะสมถึงวันจ่าย)
+let cashCfg = { payTermDays:0, codLagDays:5, channels:{} };
+const CASH_CH_DEFAULT = {
+  tiktok:{fee:9,lag:3,cod:30}, shopee:{fee:8,lag:5,cod:30}, lazada:{fee:8,lag:5,cod:30},
+  facebook:{fee:3,lag:1,cod:70}, line:{fee:3,lag:1,cod:70}, page365:{fee:3,lag:1,cod:70}, other:{fee:5,lag:3,cod:50}
+};
+function chCfg(key){ return Object.assign({}, CASH_CH_DEFAULT[key]||CASH_CH_DEFAULT.other, (cashCfg.channels||{})[key]||{}); }
+function cashModel(){
+  const H = 30;
+  const items = (appData||[]).filter(d=>Array.isArray(d.last30) && d.last30.length>=7 && classifyCat(d.category||'')!=='skip');
+  let gmv7=0, units7=0, pricedUnits=0, noPriceSku=0;
+  items.forEach(d=>{
+    const u = d.last30.slice(-7).reduce((a,b)=>a+b,0); if(!u) return;
+    units7 += u;
+    const p = priceOf(d.sku);
+    if(p>0){ gmv7 += u*p; pricedUnits += u; } else noPriceSku++;
+  });
+  const avgPrice = pricedUnits>0 ? gmv7/pricedUnits : 0;
+  gmv7 += (units7-pricedUnits)*avgPrice;              // ตัวที่ไม่มีราคา → ใช้ราคาเฉลี่ยแทน
+  const gmvDaily = gmv7/7;
+  const shareSrc = window._channelShare && Object.keys(window._channelShare).length ? window._channelShare : { other:1 };
+  let netRate=0, avgLag=0; const chRows=[];
+  Object.entries(shareSrc).sort((a,b)=>b[1]-a[1]).forEach(([k,s])=>{
+    const c = chCfg(k);
+    const lagEff = (Number(c.lag)||0) + (Number(c.cod)||0)/100*(Number(cashCfg.codLagDays)||0);
+    netRate += s*(1-(Number(c.fee)||0)/100);
+    avgLag  += s*lagEff;
+    chRows.push({ key:k, share:s, fee:Number(c.fee)||0, lag:Number(c.lag)||0, cod:Number(c.cod)||0, lagEff, net:gmvDaily*s*(1-(Number(c.fee)||0)/100) });
+  });
+  const dailyNet = gmvDaily*netRate;
+  const pipeline = dailyNet*avgLag;
+  const payTerm  = Math.min(H, Math.max(0, Number(cashCfg.payTermDays)||0));
+  const review   = getReviewDays();
+  const thisOrder= window._orderGrandTotalAll||0;
+  const cycle    = window._orderCycleCost||0;
+  const payments = [{ day:payTerm, amount:thisOrder, label:'ออเดอร์รอบนี้' }];
+  for(let k=1; payTerm+k*review<=H; k++) payments.push({ day:payTerm+k*review, amount:cycle, label:'รอบถัดไป (ประมาณจากอัตราขาย)' });
+  const budget = getOrderBudget();
+  const inflow=[], pay=[]; let cp=0;
+  for(let t=0;t<=H;t++){ inflow.push(budget + dailyNet*t); payments.filter(p=>p.day===t).forEach(p=>cp+=p.amount); pay.push(cp); }
+  let crunchDay=null; for(let t=0;t<=H;t++){ if(pay[t] > inflow[t]+0.5){ crunchDay=t; break; } }
+  const availAtPay = budget + dailyNet*payTerm;
+  return { H, gmvDaily, units7, pricedUnits, noPriceSku, avgPrice, dailyNet, netRate, avgLag, pipeline, payTerm, thisOrder, cycle, payments,
+           inflow, pay, crunchDay, budget, availAtPay, gap: thisOrder-availAtPay, chRows, hasData: items.length>0, hasPrice: pricedUnits>0 };
+}
+let _cashChart = null;
+function _dLabel(offset){ const d=new Date(); d.setDate(d.getDate()+offset); return d.getDate()+'/'+(d.getMonth()+1); }
+function _thb(n){ return Math.round(n).toLocaleString('th-TH'); }
+function renderOrderCash(){
+  const box = $('order-cash'); if(!box) return;
+  if(!appData || !appData.length){ box.style.display='none'; return; }
+  const m = cashModel();
+  box.style.display = 'block';
+  if(!m.hasData){
+    box.innerHTML = `<div class="cash-hdr"><span class="cash-ttl">💵 เงินเข้า–เงินออก 30 วันข้างหน้า</span><span class="cash-note">ต้องกด "ซิงก์ข้อมูล" ก่อน เพื่อให้มียอดขายรายวันสำหรับคำนวณ GMV</span></div>`;
+    return;
+  }
+  const gapPos = m.gap > 0;
+  const crunch = m.crunchDay===null ? '<span style="color:var(--green-d)">ไม่ตึงใน 30 วัน</span>' : `<span style="color:var(--red-d)">${_dLabel(m.crunchDay)} (อีก ${m.crunchDay} วัน)</span>`;
+  const stat = (l,v,s,color) => `<div class="cash-stat"><div class="cash-stat-l">${l}</div><div class="cash-stat-v" style="color:${color||'var(--text)'}">${v}</div><div class="cash-stat-s">${s||''}</div></div>`;
+  box.innerHTML = `
+    <div class="cash-hdr">
+      <span class="cash-ttl">💵 เงินเข้า–เงินออก 30 วันข้างหน้า</span>
+      <span class="cash-note" style="margin:0">ช่องทาง: ${m.chRows.map(c=>`${c.key} ${Math.round(c.share*100)}% (fee ${c.fee}%)`).join(' · ')}</span>
+      <div style="flex:1"></div>
+      <button class="btn" onclick="openCashModal()" style="font-size:12px;padding:4px 10px;color:var(--muted)">⚙ ตั้งค่าเงิน</button>
+    </div>
+    <div class="cash-stats">
+      ${stat('ยอดขาย/วัน (7 วัน)', _thb(m.gmvDaily)+' ฿', `${m.units7} ชิ้น/สัปดาห์${m.noPriceSku?` · ไม่มีราคา ${m.noPriceSku} SKU ใช้ราคาเฉลี่ย`:''}`)}
+      ${stat('เงินเข้าสุทธิ/วัน', _thb(m.dailyNet)+' ฿', `หลังหัก fee เฉลี่ย ${Math.round((1-m.netRate)*100)}% · ค้างเข้าในระบบ ~${_thb(m.pipeline)} ฿ (รอ ${m.avgLag.toFixed(1)} วัน)`, 'var(--green-d)')}
+      ${stat('ต้องจ่ายรอบนี้', _thb(m.thisOrder)+' ฿', `จ่าย ${_dLabel(m.payTerm)}${m.payTerm?` (${m.payTerm} วันหลังสั่ง)`:' (ตอนสั่ง)'} · รอบถัดไป ~${_thb(m.cycle)} ฿/${getReviewDays()} วัน`, 'var(--orange-d)')}
+      ${stat('มีถึงวันจ่าย', m.budget>0 ? _thb(m.availAtPay)+' ฿' : '— ใส่งบ', m.budget>0 ? `งบ ${_thb(m.budget)} + เงินเข้า ${m.payTerm} วัน` : 'ใส่ "งบรอบนี้" = เงินสดที่จ่ายได้ตอนนี้', 'var(--blue-d)')}
+      ${stat('cash gap', m.budget>0 ? (gapPos?'−':'+')+_thb(Math.abs(m.gap))+' ฿' : '—', m.budget>0 ? (gapPos ? 'ขาด — ดูรายการที่ควรเลื่อนด้านล่าง' : 'พอจ่าย') : '', m.budget>0 ? (gapPos?'var(--red-d)':'var(--green-d)') : 'var(--muted)')}
+      ${stat('วันเงินตึง', crunch, m.budget>0 ? 'จุดที่เงินต้องจ่ายสะสมแซงเงินเข้าสะสม' : 'คิดจากเงินเข้าอย่างเดียว (ยังไม่ใส่งบ)')}
+    </div>
+    <div class="cash-chart-wrap"><canvas id="cash-chart"></canvas></div>
+    <div class="cash-note">เส้นเขียว = งบ + เงินเข้าสุทธิสะสม · เส้นส้ม = เงินต้องจ่ายสะสม (ออเดอร์รอบนี้ + รอบถัดไปทุก ${getReviewDays()} วัน ประมาณจากอัตราขาย × ต้นทุน) · ถ้ายังไม่ตั้งต้นทุน/ชิ้น รุ่นนั้นจะไม่ถูกนับ</div>`;
+  try { drawCashChart(m); } catch(e){ console.warn('cash chart:', e); }
+}
+function drawCashChart(m){
+  if(typeof Chart==='undefined') return;
+  const c = $('cash-chart'); if(!c) return;
+  if(_cashChart){ try{ _cashChart.destroy(); }catch(e){} _cashChart=null; }
+  const labels = []; for(let t=0;t<=m.H;t++) labels.push(_dLabel(t));
+  const payPts = m.payments.filter(p=>p.amount>0);
+  _cashChart = new Chart(c, {
+    type:'line',
+    data:{ labels, datasets:[
+      { label:'งบ + เงินเข้าสะสม', data:m.inflow, borderColor:'#2ecc8a', backgroundColor:'rgba(46,204,138,.12)', fill:true, tension:.2, pointRadius:0, borderWidth:2 },
+      { label:'เงินต้องจ่ายสะสม', data:m.pay, borderColor:'#e8955a', backgroundColor:'rgba(232,149,90,.10)', fill:true, stepped:true, pointRadius:labels.map((_,t)=>payPts.some(p=>p.day===t)?4:0), pointBackgroundColor:'#e8955a', borderWidth:2 }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, animation:{duration:400},
+      interaction:{ mode:'index', intersect:false },
+      plugins:{ legend:{ display:true, labels:{ font:{family:'Anuphan',size:11,weight:'700'}, boxWidth:10, color:'#8b7378' } },
+        tooltip:{ backgroundColor:'rgba(74,42,47,.92)', titleFont:{family:'Anuphan',size:12,weight:'700'}, bodyFont:{family:'Anuphan',size:12},
+          callbacks:{ title:(ctx)=>'วันที่ '+ctx[0].label+' (อีก '+ctx[0].dataIndex+' วัน)',
+            label:(ctx)=>ctx.dataset.label+': '+_thb(ctx.parsed.y)+' ฿',
+            afterBody:(ctx)=>{ const t=ctx[0].dataIndex; const ps=payPts.filter(p=>p.day===t); const diff=m.inflow[t]-m.pay[t];
+              return ps.map(p=>'• '+p.label+' '+_thb(p.amount)+' ฿').concat(['คงเหลือ '+(diff<0?'−':'')+_thb(Math.abs(diff))+' ฿']); } } } },
+      scales:{ x:{ grid:{display:false}, ticks:{ font:{family:'Anuphan',size:10}, color:'#8b7378', maxTicksLimit:11 }, border:{display:false} },
+               y:{ beginAtZero:true, grid:{ color:'rgba(139,115,120,.12)' }, ticks:{ font:{family:'IBM Plex Mono',size:10}, color:'#8b7378', callback:v=>(v/1000).toFixed(0)+'k' }, border:{display:false} } } }
+  });
+}
+function openCashModal(){
+  const m = cashModel();
+  $('cash-payterm').value = Number(cashCfg.payTermDays)||0;
+  $('cash-codlag').value  = Number(cashCfg.codLagDays)||0;
+  const keys = [...new Set([...m.chRows.map(c=>c.key), ...Object.keys(cashCfg.channels||{})])];
+  $('cash-ch-list').innerHTML = keys.map(k=>{ const c=chCfg(k); const s=(window._channelShare||{})[k]; return `<div class="cash-row" data-ch="${p365Esc(k)}">
+      <span class="k">${p365Esc(k)}</span>
+      <span style="color:var(--muted);font-weight:700">${s!==undefined?Math.round(s*100)+'%':'—'}</span>
+      <input type="number" data-k="fee" min="0" max="50" step="0.5" value="${c.fee}">
+      <input type="number" data-k="lag" min="0" max="60" step="1" value="${c.lag}">
+      <input type="number" data-k="cod" min="0" max="100" step="5" value="${c.cod}">
+    </div>`; }).join('') || '<div class="p365-empty">ยังไม่มีข้อมูลช่องทาง — กด "ซิงก์ข้อมูล" ก่อน</div>';
+  $('cashModal').classList.add('on');
+}
+async function saveCashCfg(){
+  const ch = {};
+  document.querySelectorAll('#cash-ch-list .cash-row').forEach(row=>{
+    const k = row.getAttribute('data-ch'); const g = kk => Number(row.querySelector(`[data-k="${kk}"]`)?.value);
+    ch[k] = { fee: Math.max(0, g('fee')||0), lag: Math.max(0, g('lag')||0), cod: Math.min(100, Math.max(0, g('cod')||0)) };
+  });
+  cashCfg = { payTermDays: Math.max(0, Number($('cash-payterm').value)||0), codLagDays: Math.max(0, Number($('cash-codlag').value)||0), channels: ch };
+  try { await fbSave('cashCfg', cashCfg); } catch(e){}
+  $('cashModal').classList.remove('on');
+  renderOrderTab();
 }
 
 // ══ สรุปหัวแท็บสั่งของ: 🔴/🟠/🟡 ราย variant + เงินที่ต้องใช้ + งบ ══
@@ -7862,7 +8073,9 @@ function renderOrderKpi(){
   if(!appData || !appData.length || !isStockLoaded()){ box.style.display='none'; box.innerHTML=''; return; }
   const { counts, critList } = orderCoverageSummary();
   const total = window._orderGrandTotal||0, budget = getOrderBudget();
-  const gap = budget>0 ? total - budget : 0;
+  const cm = budget>0 ? cashModel() : null;
+  const avail = cm ? cm.availAtPay : budget;
+  const gap = budget>0 ? total - avail : 0;
   const ads = critList.filter(x=>x.inAds).length;
   const critNames = critList.slice(0,3).map(x=>`${_modelCode(x.d.name)||x.d.name.slice(0,10)} ${[x.d.color,x.d.size].filter(Boolean).join('/')}`).join(' · ');
   const card = (lbl, val, sub, color, onclick) => `<div class="order-kpi-card" ${onclick?`style="cursor:pointer" onclick="${onclick}"`:''}>
@@ -7873,13 +8086,15 @@ function renderOrderKpi(){
   + card('🟠 ถึงจุดสั่ง (≤'+getReorderPointDays()+' วัน)', counts.reorder, 'ต้องออกออเดอร์รอบนี้', 'var(--orange-d)')
   + card('🟡 จับตา (≤'+(getLeadDays()+20)+' วัน)', counts.watch, `🟢 ปกติ ${counts.ok} · ไม่มีข้อมูล ${counts.na}`, 'var(--gold)')
   + card('💰 ยอดออเดอร์รวม', total>0 ? Math.round(total).toLocaleString('th-TH')+' ฿' : '—',
-      budget>0 ? (gap>0 ? `เกินงบ ${Math.round(gap).toLocaleString('th-TH')} ฿ — ดูรายการที่ควรเลื่อนด้านล่าง` : `อยู่ในงบ ${Math.round(budget).toLocaleString('th-TH')} ฿ · เหลือ ${Math.round(-gap).toLocaleString('th-TH')} ฿`) : 'ใส่ "งบรอบนี้" เพื่อให้ระบบช่วยตัดรายการ',
+      budget>0 ? (gap>0 ? `ขาด ${Math.round(gap).toLocaleString('th-TH')} ฿ จากเงินที่มีถึงวันจ่าย ${Math.round(avail).toLocaleString('th-TH')} ฿ — ดูรายการที่ควรเลื่อนด้านล่าง` : `พอจ่าย · เหลือ ${Math.round(-gap).toLocaleString('th-TH')} ฿ (งบ + เงินเข้าถึงวันจ่าย)`) : 'ใส่ "งบรอบนี้" (เงินสดที่จ่ายได้) เพื่อให้ระบบช่วยตัดรายการ',
       gap>0 ? 'var(--red-d)' : 'var(--orange-d)');
 }
 // เสนอรายการที่ควรเลื่อนเมื่องบไม่พอ: ตัด Tier 3 ก่อน (ที่ยังพอขายได้นานสุดก่อน) แล้วค่อย Tier 2 · ไม่แตะ Tier 1
 function budgetCutPlan(){
-  const budget = getOrderBudget(), total = window._orderGrandTotal||0;
-  if(!(budget>0) || total <= budget) return null;
+  const budget0 = getOrderBudget(), total = window._orderGrandTotal||0;
+  if(!(budget0>0)) return null;
+  const budget = cashModel().availAtPay;   // งบ + เงินเข้าสะสมถึงวันจ่าย
+  if(total <= budget) return null;
   const list = Object.values(window._orderBrandCosts||{}).filter(b=>b.cost>0 && b.tier!==1)
     .sort((a,b)=> (b.tier-a.tier) || ((b.minCov??1e9)-(a.minCov??1e9)));
   let over = total - budget; const cut = [];
@@ -8178,6 +8393,7 @@ async function syncStockFromPage365(opts){
     // กติกา: in_stock=false ให้เป็น 0 ทันที ไม่ต้องดู available
     // (Page365 ส่ง available = -1 มาเวลาขายเกิน — ถ้าเชื่อตรงๆ จะได้ค่าติดลบ)
     const map = {};
+    const prices = {};   // sku → ราคาขาย (ใช้คำนวณ GMV ในโมดูลเงิน)
     let hitSku = 0, missSku = 0, keptOld = 0;
     const failedNames = [];
     groups.forEach(g=>{
@@ -8206,6 +8422,8 @@ async function syncStockFromPage365(opts){
         const n = pv.in_stock ? Math.max(0, Number(pv.available)||0) : 0;
         map[it.sku] = n;
         if(it.sku !== it.sku.toLowerCase()) map[it.sku.toLowerCase()] = n;
+        const pr = Number(pv.price) || Number(d.price) || 0;
+        if(pr > 0){ prices[it.sku] = pr; prices[it.sku.toLowerCase()] = pr; }
         hitSku++;
       });
     });
@@ -8215,7 +8433,7 @@ async function syncStockFromPage365(opts){
     const now = new Date();
     stockFileName = 'Page365 · ' + now.toLocaleString('th-TH',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
       + (failedNames.length ? ' (ไม่ครบ '+failedNames.length+' รุ่น)' : '');
-    applyStockMap(map, { updatedAt: now.getTime() });
+    applyStockMap(map, { updatedAt: now.getTime(), prices });
     if(!background) hideL();
 
     st.running = false; st.lastError = ''; st.lastOkAt = now.getTime(); st.failedNames = failedNames; st.progress = '';
