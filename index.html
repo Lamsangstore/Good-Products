@@ -2491,9 +2491,7 @@ tbody td { border-bottom: 1px solid rgba(217,154,90,.08) !important; }
         <label>ชื่อร้าน (subdomain)
           <input id="p365-shop-input" type="text" placeholder="lamsangstores" oninput="p365Shop=this.value.trim()">
         </label>
-        <label>CORS proxy ของตัวเอง (ไม่บังคับ — ใส่แล้วเร็วขึ้นมาก)
-          <input id="p365-proxy-input" type="text" placeholder="https://xxx.workers.dev/?url={url}" oninput="p365Proxy=this.value.trim()">
-        </label>
+        <p class="p365-hub-note" style="font-size:12px;opacity:.7;margin:0">สต๊อกอ่านจาก Hub ของร้าน (lamsangstore.com) ซึ่งดึงจาก Page365 ทุก 15 นาที — ไม่ต้องตั้ง proxy แล้ว</p>
       </div>
       <div class="p365-tools">
         <input id="p365-search" type="text" placeholder="ค้นหาชื่อสินค้า…" oninput="renderP365Match()">
@@ -8119,56 +8117,40 @@ function p365MaybeAutoSync(){
   } catch(e){ console.warn('[P365] auto sync:', e.message); }
 }
 
-// Page365 ไม่ส่ง CORS header → browser ยิงตรงไม่ได้ ต้องผ่าน proxy
-// เรียงจากตัวที่เสถียรสุดก่อน · ตัวไหนล้มก็ไล่ตัวถัดไปเอง
-const P365_PROXIES = [
-  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
-  u => 'https://proxy.cors.sh/' + u,
-  u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
-  u => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
-  u => 'https://r.jina.ai/' + u,
-];
+// สต๊อก Page365 อ่านจาก Hub ของร้าน (lamsangstore.com) — เว็บร้านเป็นผู้ดึงจาก Page365 รายเดียว (ทุก 15 นาที)
+// เดิมหน้านี้ยิง Page365 เองผ่าน CORS proxy สาธารณะ 5 ตัว ช้าและพังบ่อย
+// ข้อมูลโครงสร้างเดียวกับ JSON ของ Page365 ตัวจับคู่ด้านล่างจึงใช้ได้เหมือนเดิม
+// กุญแจออกที่ หลังบ้านเว็บ → Hub เชื่อมแอป (origin https://analytics.lamsangstore.com · ไม่เปิดต้นทุน)
+const HUB_STOCK_URL = 'https://lamsangstore.com/api/hub/v1/stock';
+const HUB_KEY = 'lsh_-5NRThXSnBCmbAK5Jy-OdFfjspntIdbLdLyUSDbELD0';
+let _hubStockData = null; // { ts, data } — รายการทั้งร้านมีสต๊อกทุกตัวเลือกครบในก้อนเดียว
 
-function p365ProxyList(){
-  const list = P365_PROXIES.slice();
-  const tpl = (p365Proxy||'').trim();
-  if(tpl) list.unshift(u => tpl.includes('{url}') ? tpl.replace('{url}', encodeURIComponent(u)) : tpl + u);
-  return list;
+async function hubStockGet(url){
+  if(!HUB_KEY) throw new Error('ยังไม่ได้ตั้งกุญแจ Hub');
+  const ctrl = new AbortController();
+  const to = setTimeout(()=>ctrl.abort(), 20000);
+  try {
+    const res = await fetch(url, { headers:{ Authorization:'Bearer '+HUB_KEY }, signal:ctrl.signal, cache:'no-store' });
+    if(!res.ok) throw new Error('Hub HTTP '+res.status);
+    return await res.json();
+  } finally { clearTimeout(to); }
 }
 
-// proxy หลายตัวคืนหน้า HTML error มาแทน JSON เวลาโดน rate limit
-// r.jina.ai ห่อด้วย markdown → ตัดหัวท้ายทิ้งแล้วค่อย parse
-function p365ParseJson(txt){
-  const s = String(txt||'').trim();
-  try { return JSON.parse(s); } catch(e){}
-  const i = s.indexOf('{'), j = s.lastIndexOf('}');
-  if(i >= 0 && j > i){ try { return JSON.parse(s.slice(i, j+1)); } catch(e){} }
-  throw new Error('ไม่ใช่ JSON (proxy คืนหน้า error)');
-}
-
+/** แทนการยิง Page365 — รับ URL แบบเดิม ตอบจาก Hub ในรูปแบบเดียวกับ Page365 */
 async function p365Fetch(url){
-  // cache-buster: Page365/CDN แคชค่าสต๊อกเก่าไว้ ต้องบังคับให้สด
-  const full = url + (url.includes('?') ? '&' : '?') + '_cb=' + Date.now();
-  const proxies = p365ProxyList();
-  // proxy ตัวที่เพิ่งใช้ได้ ลองก่อนเสมอ ไม่งั้น 50+ request จะไปรอ timeout ตัวเสียซ้ำๆ
-  const order = _p365.proxyIdx >= 0
-    ? [_p365.proxyIdx].concat(proxies.map((_,i)=>i).filter(i=>i!==_p365.proxyIdx))
-    : proxies.map((_,i)=>i);
-  let lastErr;
-  for(const i of order){
-    if(!proxies[i]) continue;
-    const ctrl = new AbortController();
-    const to = setTimeout(()=>ctrl.abort(), 20000);
-    try {
-      const res = await fetch(proxies[i](full), { signal:ctrl.signal, cache:'no-store' });
-      if(!res.ok) throw new Error('HTTP '+res.status);
-      const data = p365ParseJson(await res.text());
-      _p365.proxyIdx = i;
-      return data;
-    } catch(e){ lastErr = e; }
-    finally { clearTimeout(to); }
+  const list = url.match(/page365\.net\/products\.json(?:\?page=(\d+))?/);
+  const one  = url.match(/page365\.net\/products\/(\d+)\.json/);
+  if(list || one){
+    if(!_hubStockData || Date.now() - _hubStockData.ts > 60e3){
+      _hubStockData = { ts: Date.now(), data: await hubStockGet(HUB_STOCK_URL + '?lite=1') };
+    }
+    const d = _hubStockData.data;
+    if(list) return Number(list[1]||1) === 1 ? { items: d.items, count: d.count } : { items: [], count: d.count };
+    const hit = d.items.find(p => String(p.id) === one[1]);
+    if(hit) return hit;
+    return (await hubStockGet(HUB_STOCK_URL + '?id=' + one[1])).product;
   }
-  throw new Error('ดึงข้อมูลไม่สำเร็จ — proxy ล้มทุกตัว ('+(lastErr?lastErr.message:'')+')');
+  throw new Error('ไม่รองรับ URL นี้: ' + url);
 }
 
 /** รายการสินค้าทั้งร้าน — dedupe + หยุดเองเมื่อครบ (Page365 วนส่งหน้าเดิมเมื่อเกิน) */
