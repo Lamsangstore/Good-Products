@@ -3703,11 +3703,71 @@ async function savePromoCalendar(){
   renderOrderTab();
 }
 
-// ── run-rate สำหรับสั่งของ: 7 วันล่าสุด (กฎข้อ 1) ──
-//   ของหมดอยู่ตอนนี้ → ใช้สัปดาห์เต็มล่าสุดที่ยังมีของขาย ไม่ใช่ช่วงหลับ (กฎข้อ 4)
-//   กันตัวที่ 7 วันเป็น 0 บังเอิญ (variant ขายช้า): ไม่ต่ำกว่าครึ่งของอัตราผสม 30/90 วัน
+// ── run-rate สำหรับสั่งของ (สูตรที่ใช้แสดง "ขาย X/วัน" และคำนวณจำนวนสั่ง) ──
+//   1) ยอด 90 วันของ SKU (sales90) · วันจันทร์ ÷2 เพราะอาทิตย์ไม่ส่งของ ยอดอาทิตย์ไปกองวันจันทร์
+//   2) ตัดวันที่ขายได้ 0 "เพราะของหมด" ออก — มีประวัติสต๊อกจาก Hub ใช้ประวัติ (หมดช่วงไหนของวันก็นับว่าหมด)
+//      วันที่ยังไม่มีประวัติ → เดาว่าหมดถ้าเป็น 0 ติดกัน ≥3 วันทำการ · 0 ทั้งที่มีของ = นับ (ยอดตกจริง)
+//   3) แนวโน้ม: เฉลี่ยต่อวัน 30 วันล่าสุด เทียบ 30 วันก่อนหน้า (เฉพาะวันที่นับได้จากข้อ 2)
+//      ขึ้น ≥30% (และ 2 เดือนรวม ≥10 ชิ้น กันตัวเลขเพี้ยนจากยอดน้อย) = ขาขึ้น
+//   4) ขาขึ้น → เฉลี่ย 15 วันที่ขายได้มากสุด · นอกนั้น → เฉลี่ย 25 วันที่ขายได้มากสุด (ไม่ตัดหัวท้าย)
+//   ทดสอบย้อนหลังกับชีตจริง (ก.ย. 2026): ของไม่พอ 17/70 SKU เทียบ 21/70 ถ้าใช้ 25 วันทุกตัว
+//   ที่มาของตัวเลข: rateInfo(item) → { rate, n, rising, trendPct, prev30, recent30, histDays }
+const TREND_UP_PCT = 30, TREND_MIN_UNITS = 10, TOP_N_UP = 15, TOP_N_NORMAL = 25;
+let stockHist = {};        // sku(lowercase) → { 'YYYY-MM-DD': [ต่ำสุด, ล่าสุด, รอบที่หมด, รอบทั้งหมด] } จาก Hub
+let stockHistVer = 0;      // เปลี่ยนเมื่อโหลดประวัติใหม่ → ล้างผลคำนวณที่จำไว้
+function _isoDay(t){ const d=new Date(t); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function rateInfo(item){
+  const arr = item && Array.isArray(item.sales90) ? item.sales90 : null;
+  if(!arr || arr.length < 60 || !item.sales90End) return null;
+  if(item._rate && item._rate.ver === stockHistVer) return item._rate;
+  const hist = stockHist[(item.sku||'').toLowerCase()] || null;
+  const n = arr.length, end = new Date(item.sales90End);
+  const days = [];   // เฉพาะวันที่มีออเดอร์ในชีต: { i, q(ปรับวันจันทร์), raw, iso }
+  for(let i=0;i<n;i++){
+    if(arr[i] < 0) continue;
+    const dt = new Date(end); dt.setDate(dt.getDate()-(n-1-i));
+    days.push({ i, raw:arr[i], q: dt.getDay()===1 ? arr[i]/2 : arr[i], iso:_isoDay(dt.getTime()) });
+  }
+  // วันที่ 0 ติดกัน ≥3 วันทำการ (ใช้เฉพาะวันที่ไม่มีประวัติสต๊อก)
+  const inZeroRun = new Array(days.length).fill(false);
+  for(let a=0;a<days.length;){
+    if(days[a].raw !== 0){ a++; continue; }
+    let b=a; while(b<days.length && days[b].raw===0) b++;
+    if(b-a >= 3) for(let k=a;k<b;k++) inZeroRun[k]=true;
+    a=b;
+  }
+  let histDays = 0;
+  const valid = days.filter((d,k)=>{
+    if(d.raw > 0) return true;
+    const h = hist && hist[d.iso];
+    if(h){ histDays++; return !(h[2] > 0); }
+    return !inZeroRun[k];
+  });
+  const avg = (lo,hi)=>{ const v=valid.filter(d=>d.i>=lo&&d.i<=hi); return v.length ? v.reduce((a,d)=>a+d.q,0)/v.length : 0; };
+  const sum = (lo,hi)=>days.filter(d=>d.i>=lo&&d.i<=hi).reduce((a,d)=>a+d.raw,0);
+  const recentAvg = avg(n-30,n-1), prevAvg = avg(n-60,n-31);
+  const recent30 = sum(n-30,n-1), prev30 = sum(n-60,n-31);
+  const trendPct = prevAvg > 0 ? (recentAvg-prevAvg)/prevAvg*100 : (recentAvg > 0 ? Infinity : 0);
+  const rising = recent30 + prev30 >= TREND_MIN_UNITS && trendPct >= TREND_UP_PCT;
+  const topN = rising ? TOP_N_UP : TOP_N_NORMAL;
+  const top = valid.map(d=>d.q).sort((a,b)=>b-a).slice(0, topN);
+  const rate = top.length ? top.reduce((a,b)=>a+b,0)/top.length : 0;
+  item._rate = { ver:stockHistVer, rate, n:topN, used:top.length, rising, trendPct, prev30, recent30, histDays };
+  return item._rate;
+}
+function trendBadge(item){
+  const r = rateInfo(item);
+  if(!r || r.prev30 + r.recent30 < TREND_MIN_UNITS) return '';
+  const pct = r.trendPct === Infinity ? 'ใหม่' : (r.trendPct>=0?'+':'')+Math.round(r.trendPct)+'%';
+  const up = r.rising, down = r.trendPct <= -TREND_UP_PCT;
+  const color = up ? 'var(--green-d)' : down ? 'var(--red-d)' : 'var(--muted)';
+  return `<span style="color:${color};font-weight:700" title="ขายเฉลี่ย/วัน 30 วันล่าสุด เทียบ 30 วันก่อนหน้า (ไม่นับวันที่ของหมด) · ยอด ${r.prev30} → ${r.recent30} ชิ้น · ใช้เฉลี่ย ${r.n} วันที่ขายดีสุด${r.histDays?` · มีประวัติสต๊อก ${r.histDays} วัน`:''}">${up?'📈':down?'📉':'➖'} ${pct} (${r.prev30}→${r.recent30})</span>`;
+}
 function orderRate(item){
   if(!item) return 0;
+  const info = rateInfo(item);
+  if(info) return info.rate;
+  // fallback (cache เก่าที่ยังไม่มี sales90): 7 วันล่าสุด ไม่ต่ำกว่าครึ่งของอัตราผสม 30/90 วัน
   const base = calcBaseRate(item);
   const arr = Array.isArray(item.last30) ? item.last30 : null;
   if(!arr || arr.length < 7) return base;                    // cache เก่ายังไม่มี last30 → ใช้สูตรผสม
@@ -5292,7 +5352,7 @@ function renderBeltCard(g, days){
         </div>
         <!-- Demand line (smaller, secondary info) -->
         <div style="font-size:11px;color:var(--muted);line-height:1.3">
-          ขาย ${cov.rate>0?cov.rate.toFixed(1):(rawAvg/Math.max(1,days)).toFixed(1)}/วัน · ต้องมี ${Math.ceil(rawAvg)} ชิ้น/${days}วัน${onHand!==null&&(net>0||pending>0)?` · ${pending>0?`สั่งแล้ว ${pending} · `:''}<span style="color:var(--orange-d);font-weight:700">ขาด ${net}</span>`:''}${gClear?' · <span style="color:var(--muted)">🏷️ ระบาย ไม่สั่งเพิ่ม</span>':''}
+          ขาย ${cov.rate>0?cov.rate.toFixed(1):(rawAvg/Math.max(1,days)).toFixed(1)}/วัน${(()=>{const b=trendBadge(item);return b?' '+b:'';})()} · ต้องมี ${Math.ceil(rawAvg)} ชิ้น/${days}วัน${onHand!==null&&(net>0||pending>0)?` · ${pending>0?`สั่งแล้ว ${pending} · `:''}<span style="color:var(--orange-d);font-weight:700">ขาด ${net}</span>`:''}${gClear?' · <span style="color:var(--muted)">🏷️ ระบาย ไม่สั่งเพิ่ม</span>':''}
         </div>
         <!-- SKU + cart button -->
         <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
@@ -7004,6 +7064,19 @@ async function syncData(){
         })(),
         zeroTail: zeroTail30,
         last30: arr30,
+        // ยอดขาย 90 วันปฏิทินล่าสุด (index 0 = เก่าสุด · 89 = วันล่าสุดของข้อมูล) ใช้กับ orderRate()
+        // -1 = วันที่ไม่มีออเดอร์เลยทั้งร้าน (วันอาทิตย์ไม่ส่งของ) — ไม่ใช่วันที่ขายได้ 0
+        sales90: (()=>{
+          if(!sortedAllDates.length) return [];
+          const lastT = parseDate(sortedAllDates[sortedAllDates.length-1]);
+          if(isNaN(lastT)) return [];
+          const byTs = {};
+          Object.entries(dailySales).forEach(([k,q])=>{ const t=parseDate(k); if(!isNaN(t)) byTs[t]=(byTs[t]||0)+q; });
+          const out = [];
+          for(let i=89; i>=0; i--){ const dt=new Date(lastT); dt.setDate(dt.getDate()-i); const t=dt.getTime(); out.push(t in byTs ? byTs[t] : -1); }
+          return out;
+        })(),
+        sales90End: (()=>{ const t=parseDate(sortedAllDates[sortedAllDates.length-1]); return isNaN(t)?null:t; })(),
         early60: (()=>{
           // ยอดขายช่วง 31-90 วันก่อน (60 วัน — ก่อน recent30)
           // ใช้สำหรับ trend-aware weighted formula
@@ -7264,6 +7337,8 @@ function serializeAppData(data){
     smartRate30: item.smartRate30||0,
     zeroTail: item.zeroTail||0,
     last30: Array.isArray(item.last30) ? item.last30 : [],
+    sales90: Array.isArray(item.sales90) ? item.sales90 : [],
+    sales90End: item.sales90End || null,
     early60: item.early60 || {total:0,days:1},
     _noSales:item._noSales||false
     // dailySales omitted — too large; chart will fetch on demand if needed
@@ -8136,6 +8211,22 @@ async function hubStockGet(url){
   } finally { clearTimeout(to); }
 }
 
+/**
+ * ประวัติสต๊อกรายวันจาก Hub (/stock/history) → stockHist[sku] — ใช้ตัดวันที่ขายได้ 0 เพราะของหมดใน orderRate()
+ * varIdBySku มาจากรอบจับคู่สต๊อก (sku ของเรา → variant id ของ Page365) · Hub ยังไม่มี endpoint นี้ = ข้ามเงียบๆ
+ */
+async function loadStockHistory(varIdBySku){
+  try {
+    const d = await hubStockGet(HUB_STOCK_URL + '/history?days=90');
+    const byVid = {};
+    (d.items||[]).forEach(p=>(p.variants||[]).forEach(v=>{ byVid[v.id] = v.history || {}; }));
+    const next = {};
+    Object.entries(varIdBySku).forEach(([sku, vid])=>{ if(byVid[vid]) next[sku] = byVid[vid]; });
+    stockHist = next; stockHistVer++;
+    try { renderOrderTab(); } catch(e){}
+  } catch(e){ console.warn('[stock history]', e.message||e); }
+}
+
 /** แทนการยิง Page365 — รับ URL แบบเดิม ตอบจาก Hub ในรูปแบบเดียวกับ Page365 */
 async function p365Fetch(url){
   const list = url.match(/page365\.net\/products\.json(?:\?page=(\d+))?/);
@@ -8376,6 +8467,7 @@ async function syncStockFromPage365(opts){
     // (Page365 ส่ง available = -1 มาเวลาขายเกิน — ถ้าเชื่อตรงๆ จะได้ค่าติดลบ)
     const map = {};
     const prices = {};   // sku → ราคาขาย (ใช้คำนวณ GMV ในโมดูลเงิน)
+    const varIdBySku = {}; // sku(lowercase) → variant id ของ Page365 (ใช้ดึงประวัติสต๊อก)
     let hitSku = 0, missSku = 0, keptOld = 0;
     const failedNames = [];
     groups.forEach(g=>{
@@ -8404,6 +8496,7 @@ async function syncStockFromPage365(opts){
         const n = pv.in_stock ? Math.max(0, Number(pv.available)||0) : 0;
         map[it.sku] = n;
         if(it.sku !== it.sku.toLowerCase()) map[it.sku.toLowerCase()] = n;
+        if(pv.id) varIdBySku[it.sku.toLowerCase()] = pv.id;
         const pr = Number(pv.price) || Number(d.price) || 0;
         if(pr > 0){ prices[it.sku] = pr; prices[it.sku.toLowerCase()] = pr; }
         hitSku++;
@@ -8416,6 +8509,7 @@ async function syncStockFromPage365(opts){
     stockFileName = 'Page365 · ' + now.toLocaleString('th-TH',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
       + (failedNames.length ? ' (ไม่ครบ '+failedNames.length+' รุ่น)' : '');
     applyStockMap(map, { updatedAt: now.getTime(), prices });
+    loadStockHistory(varIdBySku);   // ไม่ต้องรอ — มาแล้วค่อยวาดแท็บสั่งของใหม่
     if(!background) hideL();
 
     st.running = false; st.lastError = ''; st.lastOkAt = now.getTime(); st.failedNames = failedNames; st.progress = '';
