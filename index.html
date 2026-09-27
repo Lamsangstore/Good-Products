@@ -6702,6 +6702,74 @@ function switchTabByName(name){
   if(btn) switchTab(name, btn);
 }
 
+/* =========================================================
+ *  ใบแพคของ (เดิมอ่านจากชีต Orders ของแอป Scanner)
+ *
+ *  ร้านสั่ง 27 ก.ย. 2569: ข้อมูลแพคย้ายไปอยู่ที่ Hub ของเว็บร้านแล้ว หน้านี้จึงอ่านที่เดียวกับ
+ *  สต๊อกและรายการสินค้า ไม่ต้องพึ่งชีตอีก (ของเก่าทั้งหมดถูกยกเข้า Hub แล้ว)
+ *
+ *  **คืนรูปแบบเดียวกับที่ gviz ของชีตเคยคืน** (`table.rows[].c[]`) โค้ดที่คำนวณต่อจึงไม่ต้องแก้:
+ *    c[0]=เวลา  c[1]=OrderID  c[2]=Marketplace  c[3]=Tracking
+ *    c[4]=URL Video  c[5]=Remark  c[6]=จำนวน  c[7..]=รหัสสินค้า
+ *
+ *  Hub คืนได้สูงสุด 20,000 ใบต่อครั้ง (ของร้านเดือนละ ~10,000) จึงขอทีละ 30 วันแล้วต่อกัน
+ *  ยิง Hub ไม่ได้ → ถอยไปอ่านชีตแบบเดิม ไม่ให้หน้าพัง
+ * ========================================================= */
+const HUB_PACKS_URL = 'https://lamsangstore.com/api/hub/v1/packs';
+const HUB_PACK_DAYS = 120;   // เท่าที่ Hub เก็บไว้
+const HUB_PACK_WINDOW = 30;  // ขอทีละกี่วัน
+
+const _bkkDate = (ms, opts) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', ...opts }).formatToParts(new Date(ms));
+
+/** "26/9/2026, 14:16:31" — รูปแบบเดียวกับที่ชีตเคยส่งมา (โค้ดข้างล่างตัดเอาเฉพาะวันที่) */
+function _packTimeText(ms){
+  const p = _bkkDate(ms, { day:'numeric', month:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+  const g = t => (p.find(x => x.type === t) || {}).value || '';
+  return `${g('day')}/${g('month')}/${g('year')}, ${g('hour')}:${g('minute')}:${g('second')}`;
+}
+
+/** "2026-09-27" ตามวันที่ไทย */
+function _bkkDay(ms){
+  const p = _bkkDate(ms, { day:'2-digit', month:'2-digit', year:'numeric' });
+  const g = t => (p.find(x => x.type === t) || {}).value || '';
+  return `${g('year')}-${g('month')}-${g('day')}`;
+}
+
+async function hubPacksFetch(since, until){
+  const url = `${HUB_PACKS_URL}?since=${since}&until=${until}&limit=20000`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 60000);
+  try {
+    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + HUB_KEY }, signal: ctrl.signal, cache: 'no-store' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.json();
+  } finally { clearTimeout(timer); }
+}
+
+/** ใบแพคย้อนหลัง `HUB_PACK_DAYS` วัน ในรูปแบบเดียวกับชีต */
+async function fetchPacksAsSheet(){
+  const now = Date.now();
+  const rows = [];
+  let truncated = false;
+  for(let back = 0; back < HUB_PACK_DAYS; back += HUB_PACK_WINDOW){
+    const until = _bkkDay(now - back * 864e5);
+    const since = _bkkDay(now - Math.min(back + HUB_PACK_WINDOW - 1, HUB_PACK_DAYS - 1) * 864e5);
+    const page = await hubPacksFetch(since, until);
+    truncated = truncated || !!page.truncated;
+    (page.packs || []).forEach(pk => {
+      const when = _packTimeText(pk.t);
+      const c = [ { v: when, f: when }, { v: pk.o || '' }, { v: pk.m || '' }, { v: pk.p || '' },
+                  { v: pk.v || '' }, { v: pk.r || '' }, { v: String((pk.i || []).length) } ];
+      (pk.i || []).forEach(sku => c.push({ v: String(sku) }));
+      rows.push({ t: pk.t, c });
+    });
+  }
+  if(truncated) console.warn('[hub] ใบแพคบางช่วงเกิน 20,000 ใบต่อรอบ — ตัวเลขอาจไม่ครบ');
+  /* เรียงเก่า→ใหม่ให้เหมือนลำดับแถวในชีต (Hub ส่งใหม่สุดมาก่อน) */
+  rows.sort((a, b) => a.t - b.t);
+  return { table: { rows: rows.map(r => ({ c: r.c })) }, _fromHub: true };
+}
+
 async function fetchJSON(sheet){
   const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheet)}`;
   const r=await fetch(url);
@@ -6747,8 +6815,16 @@ async function syncData(){
       dict[sku] = { sku, name: name||'ไม่มีชื่อสินค้า', parentSku, category, variant, color, size, _noSales:true };
     });
 
-    showL('กำลังอ่านข้อมูลคำสั่งซื้อ…');
-    const sales=await fetchJSON('Orders');
+    showL('กำลังอ่านข้อมูลการแพคจาก Hub…');
+    let sales;
+    try {
+      sales = await fetchPacksAsSheet();
+    } catch(e) {
+      /* Hub ล่ม/กุญแจถูกปิด → ใช้ชีตเดิมต่อ ข้อมูลเหมือนกัน แค่ช้ากว่า */
+      console.warn('[hub] อ่านใบแพคจาก Hub ไม่ได้ ใช้ชีต Orders แทน', e);
+      showL('Hub ไม่ตอบ — อ่านจากชีต Orders แทน…');
+      sales = await fetchJSON('Orders');
+    }
     const bySkU={}, allDates=new Set();
     const chanByDate={};   // วันที่ → { marketplace: จำนวนออเดอร์ } (คอลัมน์ C) — ใช้แยกช่องทางในโมดูลเงิน
 
