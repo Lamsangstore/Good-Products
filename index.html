@@ -5030,14 +5030,16 @@ function setLotsOverride(parentSku,sku,n){
 }
 
 // ── MAIN RENDER ──
-// คำนวณยอดรวมสั่งของ group หนึ่ง (ใช้ logic เดียวกับการ์ด)
-function getGroupTotalOrder(g, days){
-  if(!g || !g.skus || !g.skus.length) return 0;
-  if(isDiscontinued(g.parentSku)) return 0; // ทั้ง parent ไม่เติมแล้ว
+// ยอดที่ควรสั่งของ group หนึ่ง แยกราย SKU (ใช้ logic เดียวกับการ์ด)
+// **ตัวเดียวกับที่ส่งไปหน้าภาพรวมของเว็บร้าน** (_syncIncomingToHub) — แก้สูตรที่นี่แล้วสองที่เปลี่ยนพร้อมกัน
+// กางเกง = lots × piecesPerLot (ไม่รวมล็อตที่เติมให้เต็มม้วน — ตรงกับตัวเลขบนการ์ดและยอดเงิน)
+function getGroupOrderBySku(g, days){
+  const out = {};
+  if(!g || !g.skus || !g.skus.length) return out;
+  if(isDiscontinued(g.parentSku)) return out; // ทั้ง parent ไม่เติมแล้ว
   const ct = classifyCat(g.category||'');
   const pm = getPendingQtyMap();
   const gClear = isClearance(g.parentSku, g.name);
-  let total = 0;
   if(ct === 'pants'){
     // Pants: ใช้ lots × piecesPerLot
     const cfg = getPantsCfg(g.parentSku);
@@ -5051,7 +5053,7 @@ function getGroupTotalOrder(g, days){
       const net = gClear ? 0 : Math.max(0, demand - onH - pend);
       const ov = (cfg.lotsOverride||{})[item.sku];
       const lots = ov!==undefined ? ov : (net>0 ? Math.ceil(net/ppl) : 0);
-      total += lots * ppl;
+      out[item.sku] = (out[item.sku]||0) + lots * ppl;
     });
   } else {
     // Belt + Other: ใช้ qty โดยตรง
@@ -5064,10 +5066,15 @@ function getGroupTotalOrder(g, days){
       const saved = (cfg.qtys||{})[item.sku] !== undefined
         ? (cfg.qtys||{})[item.sku]
         : (gClear ? 0 : Math.ceil(Math.max(0, getAvg(item, days) - onH - pend) / 10) * 10);
-      total += saved;
+      out[item.sku] = (out[item.sku]||0) + (Number(saved)||0);
     });
   }
-  return total;
+  return out;
+}
+// คำนวณยอดรวมสั่งของ group หนึ่ง — ผลรวมของ getGroupOrderBySku
+function getGroupTotalOrder(g, days){
+  const m = getGroupOrderBySku(g, days);
+  return Object.values(m).reduce((n, q) => n + q, 0);
 }
 
 // เรียง group list ตาม orderSort
@@ -5090,6 +5097,7 @@ function setOrderSort(v){
 }
 
 function renderOrderTab(){
+  _scheduleIncomingSync();   // สต๊อก/ข้อมูลขายเพิ่งมาครบ — ส่งยอดค้างรับ + ยอดที่ควรสั่งไปเว็บร้าน
   try {
   _cachedPendingMap = null; // reset cache ทุกครั้งที่ render ใหม่
   // Sync safety slider UI with state (in case loaded from localStorage)
@@ -6356,25 +6364,36 @@ async function toggleCancelOrder(key, cancel){
 
 /* ── ส่งยอด "สั่งแล้วยังไม่ได้รับ" ไปหน้าภาพรวมของเว็บร้าน (ร้านสั่ง 3 ต.ค. 2569) ──
    เว็บร้านเอาไปหักออกจาก "ควรสั่งเพิ่ม" · **ใช้ getPendingQtyMap ตัวเดียวกับหน้านี้**
+   · ส่ง "ยอดที่ควรสั่ง" (recommend) จาก getGroupOrderBySku ไปด้วย — หน้าภาพรวมใช้สูตรของแอปนี้ (ร้านสั่ง 3 ต.ค.)
    ห้ามให้เว็บร้านคิดเอง (การแตกไซส์กางเกงเป็น SKU ใช้ข้อมูลที่อยู่ในแอปนี้)
    · ส่งเฉพาะตอนล็อกอินด้วยบัญชีร้าน (โทเค็นของคน `lsa_`) — กุญแจแอปถูกเว็บร้านปฏิเสธอยู่แล้ว
    · ต้องรอข้อมูลสินค้าโหลดก่อน ไม่งั้นกางเกงหา SKU ของไซส์ไม่เจอแล้วยอดหายไปเงียบ ๆ
    · ส่งซ้ำเฉพาะตอนยอดเปลี่ยน หรือส่งไปนานเกิน 6 ชม. (หน้าภาพรวมบอกเวลาที่ส่งมาล่าสุด) */
-const HUB_INCOMING_URL = 'https://lamsangstore.com/api/hub/v1/incoming';
-let _incomingTimer = null;
+var HUB_INCOMING_URL = 'https://lamsangstore.com/api/hub/v1/incoming';
+/* ตัวจับเวลาเก็บบน window ไม่ใช่ let — renderOrderTab เรียกตัวนี้ได้ก่อนบรรทัดนี้ถูกรัน (TDZ) */
 function _scheduleIncomingSync(){
-  clearTimeout(_incomingTimer);
-  _incomingTimer = setTimeout(()=>{ _syncIncomingToHub().catch(e=>console.warn('incoming sync:', e)); }, 1500);
+  clearTimeout(window._incomingTimer);
+  window._incomingTimer = setTimeout(()=>{ _syncIncomingToHub().catch(e=>console.warn('incoming sync:', e)); }, 1500);
 }
 async function _syncIncomingToHub(){
   const token = window.HubLogin && HubLogin.auth(HUB_KEY);
   if(!token || !String(token).startsWith('lsa_')) return;
   if(!Array.isArray(orderHistory) || !appData || !appData.length) return;
+  /* ยอดที่ควรสั่งต้องมีสต๊อกก่อน — ไม่งั้นทุกตัวคิดเป็นสต๊อก 0 แล้วแนะนำให้สั่งเกินจริง */
+  if(!isStockLoaded()) return;
   _cachedPendingMap = null;   // คิดใหม่จากข้อมูลล่าสุด (กดรับของแล้วยังไม่ได้ render)
   const qty = getPendingQtyMap();
   const items = Object.keys(qty).sort().map(sku=>({ sku, qty: Math.round(qty[sku]||0), eta: _cachedPendingEta[sku]||'' }))
     .filter(i=>i.qty>0);
-  const body = JSON.stringify({ items });
+  /* ยอดที่ควรสั่ง — สูตรเดียวกับแท็บ "แบบสั่งสินค้า" ทุกกลุ่ม (ไม่สนตัวกรองหมวดที่เลือกอยู่) */
+  const recommend = [];
+  groupByParent(appData.filter(d=>classifyCat(d.category||'')!=='skip')).forEach(g=>{
+    const days = getGroupCoverDays(g);
+    const m = getGroupOrderBySku(g, days);
+    Object.entries(m).forEach(([sku, q])=>{ if(q>0) recommend.push({ sku, qty: Math.round(q), coverDays: days }); });
+  });
+  recommend.sort((a,b)=>a.sku<b.sku?-1:1);
+  const body = JSON.stringify({ items, recommend });
   let last = null;
   try { last = JSON.parse(localStorage.getItem('hub_incoming_sent')||'null'); } catch(e){}
   if(last && last.body===body && Date.now()-last.at < 6*3600e3) return;
