@@ -4553,9 +4553,20 @@ function getFactoryName(parentSku){ return (orderConfig[parentSku]||{}).factoryN
 
 // ── Cache สำหรับ pending map (reset ทุกครั้งที่ renderOrderTab) ──
 let _cachedPendingMap = null;
+/* sku → วันที่ล็อตแรกที่ค้างรับจะถึง (YYYY-MM-DD) — คิดคู่กับ getPendingQtyMap ในรอบเดียวกัน
+   ส่งไปหน้าภาพรวมของเว็บร้าน (ดู _syncIncomingToHub) */
+let _cachedPendingEta = {};
+function _orderEta(order){
+  const created = Number(order.createdAt)||Date.now();
+  const lead = Number(order.leadDays)||getLeadDays()||15;
+  /* วันไทย — เครื่องพนักงานตั้งเขตเวลาไทยอยู่แล้ว แต่ไม่พึ่งค่านั้น */
+  return new Date(created + lead*864e5 + 7*3600e3).toISOString().slice(0,10);
+}
 function getPendingQtyMap(){
   if(_cachedPendingMap) return _cachedPendingMap;
   const map = {};
+  const etaMap = {};
+  _cachedPendingEta = etaMap;
   const stale = [];
   window._stalePendingOrders = stale;
   if(!orderHistory||!orderHistory.length){ _cachedPendingMap=map; return map; }
@@ -4566,6 +4577,11 @@ function getPendingQtyMap(){
     // ค้างรับนานเกิน lead time + ผ่อนผัน → ไม่หักออกจากยอดสั่งใหม่ (แต่เตือนให้ไปเคลียร์)
     if(isPendingOrderStale(order, nowTs)){ stale.push(order); return; }
     const rcv = order.receivedItems||{};
+    const eta = _orderEta(order);
+    const addPending = (k, qty)=>{
+      map[k]=(map[k]||0)+(qty||0);
+      if(!etaMap[k] || eta<etaMap[k]) etaMap[k]=eta;
+    };
     (order.items||[]).forEach(item=>{
       // ตรวจว่า item นี้ยัง pending (ยังไม่ได้รับ)
       const itemKey = item.type==='belt'
@@ -4576,7 +4592,7 @@ function getPendingQtyMap(){
       if(item.type==='belt'){
         // belt/other → qty ต่อ sku
         const k=(item.skuKey||item.sku||'').toLowerCase();
-        if(k) map[k]=(map[k]||0)+(item.qty||0);
+        if(k) addPending(k, item.qty);
       } else {
         // pants → skuList+sizes มี qty ต่อไซส์
         const sizes = item.sizes||{};
@@ -4601,16 +4617,14 @@ function getPendingQtyMap(){
               if(skuItem) matchedSku=skuItem.sku;
             }
             if(matchedSku){
-              const k=matchedSku.toLowerCase();
-              map[k]=(map[k]||0)+(qty||0);
+              addPending(matchedSku.toLowerCase(), qty);
             }
           });
         } else if(item.skuList&&item.skuList.length>0){
           // pants ที่ไม่มี sizes breakdown → แบ่งเท่าๆ กัน
           const perSku = Math.round((item.pieces||0)/item.skuList.length);
           item.skuList.forEach(s=>{
-            const k=s.toLowerCase();
-            map[k]=(map[k]||0)+perSku;
+            addPending(s.toLowerCase(), perSku);
           });
         }
       }
@@ -6340,6 +6354,39 @@ async function toggleCancelOrder(key, cancel){
   } catch(e){ console.warn('toggleCancel:', e); }
 }
 
+/* ── ส่งยอด "สั่งแล้วยังไม่ได้รับ" ไปหน้าภาพรวมของเว็บร้าน (ร้านสั่ง 3 ต.ค. 2569) ──
+   เว็บร้านเอาไปหักออกจาก "ควรสั่งเพิ่ม" · **ใช้ getPendingQtyMap ตัวเดียวกับหน้านี้**
+   ห้ามให้เว็บร้านคิดเอง (การแตกไซส์กางเกงเป็น SKU ใช้ข้อมูลที่อยู่ในแอปนี้)
+   · ส่งเฉพาะตอนล็อกอินด้วยบัญชีร้าน (โทเค็นของคน `lsa_`) — กุญแจแอปถูกเว็บร้านปฏิเสธอยู่แล้ว
+   · ต้องรอข้อมูลสินค้าโหลดก่อน ไม่งั้นกางเกงหา SKU ของไซส์ไม่เจอแล้วยอดหายไปเงียบ ๆ
+   · ส่งซ้ำเฉพาะตอนยอดเปลี่ยน หรือส่งไปนานเกิน 6 ชม. (หน้าภาพรวมบอกเวลาที่ส่งมาล่าสุด) */
+const HUB_INCOMING_URL = 'https://lamsangstore.com/api/hub/v1/incoming';
+let _incomingTimer = null;
+function _scheduleIncomingSync(){
+  clearTimeout(_incomingTimer);
+  _incomingTimer = setTimeout(()=>{ _syncIncomingToHub().catch(e=>console.warn('incoming sync:', e)); }, 1500);
+}
+async function _syncIncomingToHub(){
+  const token = window.HubLogin && HubLogin.auth(HUB_KEY);
+  if(!token || !String(token).startsWith('lsa_')) return;
+  if(!Array.isArray(orderHistory) || !appData || !appData.length) return;
+  _cachedPendingMap = null;   // คิดใหม่จากข้อมูลล่าสุด (กดรับของแล้วยังไม่ได้ render)
+  const qty = getPendingQtyMap();
+  const items = Object.keys(qty).sort().map(sku=>({ sku, qty: Math.round(qty[sku]||0), eta: _cachedPendingEta[sku]||'' }))
+    .filter(i=>i.qty>0);
+  const body = JSON.stringify({ items });
+  let last = null;
+  try { last = JSON.parse(localStorage.getItem('hub_incoming_sent')||'null'); } catch(e){}
+  if(last && last.body===body && Date.now()-last.at < 6*3600e3) return;
+  const res = await fetch(HUB_INCOMING_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+    body,
+  });
+  if(!res.ok){ console.warn('incoming sync HTTP', res.status); return; }
+  try { localStorage.setItem('hub_incoming_sent', JSON.stringify({ body, at: Date.now() })); } catch(e){}
+}
+
 async function loadOrderHistory(){
   const db=getRtdb();
   const area=$('history-content');
@@ -6364,6 +6411,7 @@ async function loadOrderHistory(){
       }
     }
     renderOrderHistory();
+    _scheduleIncomingSync();
     // Re-render table if data already loaded (so nextRestock column shows)
     if(appData&&appData.length){
       try { renderAll(getFilteredData()); } catch(e){}
@@ -6397,6 +6445,8 @@ function isOrderFullyReceived(order){
 }
 
 function renderOrderHistory(){
+  /* ทุกครั้งที่ประวัติเปลี่ยน (กดรับของ · ยกเลิก · ลบ) ส่งยอดค้างรับใหม่ไปเว็บร้านด้วย */
+  _scheduleIncomingSync();
   const area=$('history-content'); if(!area) return;
   if(!orderHistory.length){ area.innerHTML='<div class="empty" style="padding:40px">ยังไม่มีประวัติ</div>'; return; }
 
