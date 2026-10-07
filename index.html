@@ -4139,10 +4139,12 @@ async function savePromoCalendar(){
 //      วันที่ยังไม่มีประวัติ → เดาว่าหมดถ้าเป็น 0 ติดกัน ≥3 วันทำการ · 0 ทั้งที่มีของ = นับ (ยอดตกจริง)
 //   3) แนวโน้ม: เฉลี่ยต่อวัน 30 วันล่าสุด เทียบ 30 วันก่อนหน้า (เฉพาะวันที่นับได้จากข้อ 2)
 //      ขึ้น ≥30% (และ 2 เดือนรวม ≥10 ชิ้น กันตัวเลขเพี้ยนจากยอดน้อย) = ขาขึ้น
-//   4) ขาขึ้น → เฉลี่ย 15 วันที่ขายได้มากสุด · นอกนั้น → เฉลี่ย 25 วันที่ขายได้มากสุด (ไม่ตัดหัวท้าย)
-//   ทดสอบย้อนหลังกับชีตจริง (ก.ย. 2026): ของไม่พอ 17/70 SKU เทียบ 21/70 ถ้าใช้ 25 วันทุกตัว
+//   4) อัตราที่ใช้สั่งของ = เฉลี่ย 15 วันที่ขายได้มากสุด **ใน 30 วันล่าสุด** (เฉพาะวันที่นับได้จากข้อ 2)
+//      ร้านสั่ง 8 ต.ค. 2569 — เดิมเลือกวันขายดีสุด 25 วัน (ขาขึ้น 15) จากทั้ง 90 วัน ยอดพีคเก่าจึงค้างอยู่
+//      ในสูตรนานเป็นเดือน (B21 น้ำตาลอ่อน: 111/วัน ทั้งที่ 30 วันล่าสุดขายจริง 38/วัน)
+//      · วันที่นับได้ใน 30 วันไม่ถึง 15 วัน = เฉลี่ยเท่าที่มี · แนวโน้ม (ข้อ 3) ยังคิดไว้โชว์ แต่ไม่เปลี่ยนสูตรแล้ว
 //   ที่มาของตัวเลข: rateInfo(item) → { rate, n, rising, trendPct, prev30, recent30, histDays }
-const TREND_UP_PCT = 30, TREND_MIN_UNITS = 10, TOP_N_UP = 15, TOP_N_NORMAL = 25;
+const TREND_UP_PCT = 30, TREND_MIN_UNITS = 10, RATE_TOP_N = 15, RATE_WINDOW_DAYS = 30;
 let stockHist = {};        // sku(lowercase) → { 'YYYY-MM-DD': [ต่ำสุด, ล่าสุด, รอบที่หมด, รอบทั้งหมด] } จาก Hub
 let stockHistVer = 0;      // เปลี่ยนเมื่อโหลดประวัติใหม่ → ล้างผลคำนวณที่จำไว้
 function _isoDay(t){ const d=new Date(t); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -4179,8 +4181,8 @@ function rateInfo(item){
   const recent30 = sum(n-30,n-1), prev30 = sum(n-60,n-31);
   const trendPct = prevAvg > 0 ? (recentAvg-prevAvg)/prevAvg*100 : (recentAvg > 0 ? Infinity : 0);
   const rising = recent30 + prev30 >= TREND_MIN_UNITS && trendPct >= TREND_UP_PCT;
-  const topN = rising ? TOP_N_UP : TOP_N_NORMAL;
-  const top = valid.map(d=>d.q).sort((a,b)=>b-a).slice(0, topN);
+  const topN = RATE_TOP_N;
+  const top = valid.filter(d=>d.i >= n-RATE_WINDOW_DAYS).map(d=>d.q).sort((a,b)=>b-a).slice(0, topN);
   const rate = top.length ? top.reduce((a,b)=>a+b,0)/top.length : 0;
   item._rate = { ver:stockHistVer, rate, n:topN, used:top.length, rising, trendPct, prev30, recent30, histDays, recentAvg };
   return item._rate;
@@ -4191,7 +4193,7 @@ function trendBadge(item){
   const pct = r.trendPct === Infinity ? 'ใหม่' : (r.trendPct>=0?'+':'')+Math.round(r.trendPct)+'%';
   const up = r.rising, down = r.trendPct <= -TREND_UP_PCT;
   const color = up ? 'var(--green-d)' : down ? 'var(--red-d)' : 'var(--muted)';
-  return `<span style="color:${color};font-weight:700" title="ขายเฉลี่ย/วัน 30 วันล่าสุด เทียบ 30 วันก่อนหน้า (ไม่นับวันที่ของหมด) · ยอด ${r.prev30} → ${r.recent30} ชิ้น · ใช้เฉลี่ย ${r.n} วันที่ขายดีสุด${r.histDays?` · มีประวัติสต๊อก ${r.histDays} วัน`:''}">${up?'📈':down?'📉':'➖'} ${pct} (${r.prev30}→${r.recent30})</span>`;
+  return `<span style="color:${color};font-weight:700" title="ขายเฉลี่ย/วัน 30 วันล่าสุด เทียบ 30 วันก่อนหน้า (ไม่นับวันที่ของหมด) · ยอด ${r.prev30} → ${r.recent30} ชิ้น · ใช้เฉลี่ย ${r.used} วันที่ขายดีสุดใน 30 วันล่าสุด${r.histDays?` · มีประวัติสต๊อก ${r.histDays} วัน`:''}">${up?'📈':down?'📉':'➖'} ${pct} (${r.prev30}→${r.recent30})</span>`;
 }
 function orderRate(item){
   if(!item) return 0;
@@ -6415,7 +6417,7 @@ async function _syncIncomingToHub(){
   const recommend = [];
   /* ขายต่อวันต่อ SKU — เฉลี่ย 30 วันล่าสุด **เฉพาะวันที่มีของขาย** (rateInfo().recentAvg)
      หน้าภาพรวมใช้คิด "ขาย/วัน" กับ "พออีกกี่วัน" (ร้านสั่ง 7 ต.ค.) · นับจากใบแพคตรง ๆ ช่วงของหมดดึงตัวเลขลง
-     ⚠️ ห้ามส่ง orderRate() — นั่นคือเฉลี่ย 25 วันที่ขายดีสุด (ไว้คิดยอดสั่ง) สูงกว่ายอดขายจริงหลายเท่า
+     ⚠️ ห้ามส่ง orderRate() — นั่นคือเฉลี่ย 15 วันที่ขายดีสุดใน 30 วัน (ไว้คิดยอดสั่ง) สูงกว่ายอดขายเฉลี่ยจริง
      เอาไปโชว์เป็น "ขาย/วัน" แล้ว "พออีกกี่วัน" จะสั้นเกินจริง (B21 น้ำตาลอ่อน: 111/วัน เทียบขายจริง 38/วัน) */
   const rates = [];
   groupByParent(appData.filter(d=>classifyCat(d.category||'')!=='skip')).forEach(g=>{
