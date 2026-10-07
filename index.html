@@ -6390,6 +6390,7 @@ async function toggleCancelOrder(key, cancel){
 /* ── ส่งยอด "สั่งแล้วยังไม่ได้รับ" ไปหน้าภาพรวมของเว็บร้าน (ร้านสั่ง 3 ต.ค. 2569) ──
    เว็บร้านเอาไปหักออกจาก "ควรสั่งเพิ่ม" · **ใช้ getPendingQtyMap ตัวเดียวกับหน้านี้**
    · ส่ง "ยอดที่ควรสั่ง" (recommend) จาก getGroupOrderBySku ไปด้วย — หน้าภาพรวมใช้สูตรของแอปนี้ (ร้านสั่ง 3 ต.ค.)
+   · ส่ง "ขายต่อวัน" (rates) จาก orderRate ไปด้วย — ตัดวันที่ของหมดแล้ว (ร้านสั่ง 7 ต.ค.)
    ห้ามให้เว็บร้านคิดเอง (การแตกไซส์กางเกงเป็น SKU ใช้ข้อมูลที่อยู่ในแอปนี้)
    · ส่งเฉพาะตอนล็อกอินด้วยบัญชีร้าน (โทเค็นของคน `lsa_`) — กุญแจแอปถูกเว็บร้านปฏิเสธอยู่แล้ว
    · ต้องรอข้อมูลสินค้าโหลดก่อน ไม่งั้นกางเกงหา SKU ของไซส์ไม่เจอแล้วยอดหายไปเงียบ ๆ
@@ -6412,13 +6413,22 @@ async function _syncIncomingToHub(){
     .filter(i=>i.qty>0);
   /* ยอดที่ควรสั่ง — สูตรเดียวกับแท็บ "แบบสั่งสินค้า" ทุกกลุ่ม (ไม่สนตัวกรองหมวดที่เลือกอยู่) */
   const recommend = [];
+  /* ขายต่อวันต่อ SKU (orderRate · ตัดวันที่ของหมดแล้ว) — หน้าภาพรวมใช้คิด "ขาย/วัน" กับ "พออีกกี่วัน"
+     ให้ตรงกับแท็บนี้ ไม่งั้นช่วงของหมดดึงความเร็วขายลงแล้วดูเหมือนของพอขายนานเกินจริง (ร้านสั่ง 7 ต.ค.) */
+  const rates = [];
   groupByParent(appData.filter(d=>classifyCat(d.category||'')!=='skip')).forEach(g=>{
     const days = getGroupCoverDays(g);
     const m = getGroupOrderBySku(g, days);
     Object.entries(m).forEach(([sku, q])=>{ if(q>0) recommend.push({ sku, qty: Math.round(q), coverDays: days }); });
+    (g.skus||[]).forEach(item=>{
+      if(!item || !item.sku || item._noSales) return;
+      const r = orderRate(item);
+      if(Number.isFinite(r) && r >= 0) rates.push({ sku: item.sku, perDay: Math.round(r*100)/100 });
+    });
   });
   recommend.sort((a,b)=>a.sku<b.sku?-1:1);
-  const body = JSON.stringify({ items, recommend });
+  rates.sort((a,b)=>a.sku<b.sku?-1:1);
+  const body = JSON.stringify({ items, recommend, rates });
   let last = null;
   try { last = JSON.parse(localStorage.getItem('hub_incoming_sent')||'null'); } catch(e){}
   if(last && last.body===body && Date.now()-last.at < 6*3600e3) return;
